@@ -1,0 +1,97 @@
+==================================================================================================
+ CPUID: Intel                                        | CPUID: AMD
+==================================================================================================
+
+    00h        - Done                                     00h        - Done 
+    01h        - EAX                                      01h        - EAX
+    02h        - Done                                     02h        - Reserved
+    03h        - To do (only supported on Pentium 3)      03h        - Reserved
+    04h        - Done (edx to do)                         04h        - Reserved
+    05h        - Done                                     05h        - Done
+    06h        - Done                                     06h        - To do
+    07h:ECX:0  - Done                                     07h:ECX:0  - To do
+    07h:ECX:1  - Done                                     07h:ECX:1  - Testing
+    07h:ECX:2  - Done                                     07h:ECX:2  - Testing
+	08h        - Reserved                                 08h        - Reserved
+    09h        - Done                                     09h        - Reserved
+    0Ah        - To do                                    0Ah        - Reserved
+    0Bh        - To do                                    0Bh        - To do 
+    0Ch        - Reserved                                 0Ch        - Reserved
+	0Dh:ECX:0  - Done                                     0Dh:ECX:0  - To do
+    0Dh:ECX:1  - Done                                     0Dh:ECX:1  - To do
+    0Eh        - Reserved                                 0Eh        - Reserved
+	0Fh:ECX:0  - Done                                     0Fh:ECX:0  - Not Supported
+	0Fh:ECX:1  - Done                                     0Fh:ECX:1  - Not Supported
+    10h:ECX:0  - Done                                     10h:ECX:0  - Not Supported
+	10h:ECX:1  - Done                                     10h:ECX:1  - Not Supported
+	10h:ECX:2  - Done                                     10h:ECX:2  - Not Supported
+	10h:ECX:3  - Done                                     10h:ECX:3  - Not Supported
+    11h        - Reserved                                 11h        - Not Supported
+	12h:ECX:0  - Done                                     12h:ECX:0  - Not Supported
+    12h:ECX:1  - Done                                     12h:ECX:1  - Not Supported
+    12h:ECX:2  - To do                                    12h:ECX:2  - Not Supported
+    13h        - Reserved                                 13h        - Not Supported
+	14h:ECX:0  - Done                                     14h:ECX:0  - Not Supported
+    14h:ECX:1  - Done                                     14h:ECX:1  - Not Supported
+    15h        - Done                                     15h        - Not Supported
+    16h        - Done                                     16h        - Not Supported
+    17h:ECX:0  - Done                                     17h:ECX:0  - Not Supported
+    17h:ECX:1  - To do                                    17h:ECX:1  - Not Supported
+    17h:ECX:2  - To do                                    17h:ECX:2  - Not Supported
+    17h:ECX:3  - To do                                    17h:ECX:3  - Not Supported
+    18h:ECX:0  - To do                                    18h:ECX:0  - Not Supported
+    18h:ECX:1+ - To do                                    18h:ECX:1+ - Not Supported
+    19h        - Done                                     19h        - Not Supported
+    1Ah        - Done                                     1Ah        - Not Supported
+    1Bh        - To do                                    1Bh        - Not Supported
+    1Ch        - Done                                     1Ch        - Not Supported
+    1Dh:ECX:0  - To do                                    1Dh        - Not Supported
+    1Dh:ECX:1  - To do                                    1Dh        - Not Supported
+    1Eh        - Done                                     1Eh        - Not Supported
+    1Fh        - To do                                    1Fh        - Not Supported
+    20h        - To do                                    20h        - Not Supported	
+
+    800000000h - Done                                     800000000h - Done
+    800000001h - Done                                     800000001h - Done
+    800000002h - Done                                     800000002h - Done
+    800000003h - Done                                     800000003h - Done
+    800000004h - Done                                     800000004h - Done
+	800000005h - Reserved                                 800000005h - To Do
+    800000006h - To do                                    800000006h - To Do
+    800000007h - Done                                     800000007h - Done
+    800000008h - Done                                     800000008h - Done
+
+	                                                      800000009h - Reserved
+		                                                  80000000Ah - Testing
+		                                                  80000000Bh - Reserved
+                                                          80000000Ch - Reserved
+	                                                      80000000Dh - Reserved
+	                                                      80000000Eh - Reserved
+	                                                      80000000Fh - Reserved
+	                                                      800000010h - Reserved
+	                                                      800000011h - Reserved
+	                                                      800000012h - Reserved
+		                                                  800000013h - Reserved
+		                                                  800000014h - Reserved
+		                                                  800000015h - Reserved
+		                                                  800000016h - Reserved
+		                                                  800000016h - Reserved
+		                                                  800000017h - Reserved
+		                                                  800000019h - To do
+		                                                  80000001Ah - Testing
+		                                                  80000001Bh - Testing
+		                                                  80000001Ch - To do
+		                                                  80000001Dh - Testing
+		                                                  80000001Eh - To do
+		                                                  80000001Fh - Testing
+		                                                  800000020h - Testing
+		                                                  800000021h - Testing
+		                                                  800000022h - Testing
+		                                                  800000023h - Testing
+		                                                  800000024h - Reserved
+		                                                  800000025h - Reserved
+		                                                  800000026h - Testing
+														  
+==================================================================================================
+
+==================================================================================================
