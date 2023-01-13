@@ -6,6 +6,10 @@ paul@freshney.org
 
 Source code and executable
   https://github.com/MaximumOctopus/CPUIDx
+  
+Assembled using "Flat Assembler"
+  https://flatassembler.net/
+  
 ============================================================================================================================
 
 Run it from a command prompt.
