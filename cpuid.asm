@@ -1,7 +1,7 @@
 ; ================================================================================================
 ;
 ; (c) Paul Alan Freshney 2023
-; v0.1, January 9th 2023
+; v0.2, January 13th 2023
 ;
 ; Source code:
 ;   https://github.com/MaximumOctopus/CPUIDx
@@ -27,8 +27,8 @@ start:  call About
         xor eax, eax
         
         cpuid
-        
-        mov dword [__MaxBasic], eax
+
+        mov [__MaxBasic], eax
         mov dword [__VendorID], ebx
         mov dword [__VendorID + 4], edx
         mov dword [__VendorID + 8], ecx
@@ -39,7 +39,7 @@ start:  call About
                 
         cpuid
                 
-        mov dword [__MaxExtended], eax
+        mov [__MaxExtended], eax
 
         cmp eax, 0x80000004
 
@@ -57,66 +57,90 @@ start:  call About
                 
         call ShowFeatures2
 
-        call StructuredExtendedFeatureFlags     ; 07h
-                
-        call ThermalPower                       ; 06h
-
-        call MonitorMWait                       ; 05h
-                
-        call DirectCacheAccessInfo              ; 09h
-                
-        call ArchitecturalPerfMon               ; 0ah
-                
-        call ProcExtStateEnumMain               ; 0dh, ecx = 0
-                
-        call ProcExtStateEnumSub1               ; 0dh, ecx = 1
-                
         cmp dword [__VendorID + 8], 0x6c65746e
         jne .AMDoptions
+
+        call MonitorMWait                       ; 05h
+
+        call ThermalPower                       ; 06h
+
+        call StructuredExtendedFeatureFlags     ; 07h
+
+        call DirectCacheAccessInfo              ; 09h
+
+        call ArchitecturalPerfMon               ; 0ah
+
+        call ProcExtStateEnumMain               ; 0dh, ecx = 0
+
+        call ProcExtStateEnumSub1               ; 0dh, ecx = 1          
 
         call InternalCache                      ; 02h
 
         call CacheTlb                           ; 04h
 
         call IntelRDTMonitoring                 ; 0fh
-                
+
         call IntelRDTAllocEnum                  ; 10h
-                
+
         call IntelSGXCapability                 ; 12h
-                
-        call TimeStampCounter                   ; 15h
-                
+
         call IntelProcessorTrace                ; 14h
-                                
+
+        call TimeStampCounter                   ; 15h
+
         call ProcessorFreqInfo                  ; 16h
 
         call SoCVendor                          ; 17h
-                
+
+        call DATParameters                      ; 18h
+
         call KeyLocker                          ; 19h
-                        
+
         call NativeModelIDEnumeration           ; 1ah
-                
+
         call LastBranchRecords                  ; 1ch
-                
+
         call TileInformation                    ; 1dh
-                
+
         call TMULInformation                    ; 1eh
                 
+        call ProcessorHistoryReset              ; 20h
+
         call ExtendedFeatures                   ; 0x80000001
                 
+        call IntelCacheInformation              ; 0x80000006
+
         call InvariantTSC                       ; 0x80000007
-                
+
         call AddressBits                        ; 0x80000008
-                
+
         jmp .finish
-                
-; extended AMD-only options
+
+; AMD
 
 .AMDoptions:
 
         cmp dword [__VendorID + 8], 0x444d4163
         jne .finish
                 
+        call MonitorMWait                       ; 05h
+
+        call PowerManagementRelated             ; 06h
+                
+        call AMDProcExtTopologyEnum             ; 0bh
+                
+        call AMDProcExtStateEnum                ; 0dh
+
+        call ExtendedFeatures                   ; 0x80000001
+                
+        call AMDCacheTLBLevelOne                ; 0x80000005
+
+        call AMDCacheTLBLevelThreeCache         ; 0x80000006
+
+        call PPMandRAS                          ; 0x80000007
+
+        call ProcessorCapacityParameters        ; 0x80000008
+
         call AMDSVM                             ; 0x8000000A
                 
         call AMDPerformanceOptimisation         ; 0x8000001A
@@ -137,12 +161,6 @@ start:  call About
 
         call AMDExtendedCPUTop                  ; 0x80000026
 
-        call ExtendedFeatures                   ; 0x80000001
-
-        call PPMandRAS                          ; 0x80000007
-                
-        call ProcessorCapacityParameters        ; 0x80000008 
-
 .finish:
 
         xor eax, eax
@@ -150,7 +168,7 @@ start:  call About
 
 ; ================================================================================================
 
-About:  cinvoke printf, "%c    CPUidX v0.1 :: January 9th 2023 :: Paul A Freshney %c", 10, 10
+About:  cinvoke printf, "%c    CPUidX v0.2 :: January 13th 2023 :: Paul A Freshney %c", 10, 10
 
         cinvoke printf, "      https://github.com/MaximumOctopus/CPUIDx %c %c", 10, 10
 
@@ -190,11 +208,16 @@ FamilyModel:
         shr ebx, 20
         mov [__FamilyExt], bl
                 
-                ret
+        ret
 
 ; ================================================================================================
 
 ShowFamilyModel:
+
+        mov eax, dword [__MaxBasic]
+        mov ebx, dword [__MaxExtended]
+
+        cinvoke printf, "  Max Leaf 0x%X, Max Extended Leaf 0x%X %c", eax, ebx, 10
 
         movzx edi, byte [__Family]
 
@@ -258,7 +281,7 @@ lf1:    bt  eax, esi
         jnc .next
 
         push eax
-        cinvoke printf, "    %s %c", edi, 10
+        cinvoke printf, "    %02d::%s %c", esi, edi, 10
         pop eax
 
 .next:  add edi, 11
@@ -315,7 +338,8 @@ CacheTlb:
 
         cinvoke printf, "  Cache List: %c", 10
 
-        mov eax, 0x04
+        mov ecx, 0x00
+                mov eax, 0x04
 
         cpuid
 
@@ -580,6 +604,7 @@ MonitorMWait:
 ; ================================================================================================
 
 ; 06h leaf, data in eax
+; Intel only
 ThermalPower:
 
         mov eax, 0x06
@@ -597,7 +622,7 @@ ThermalPower:
         jnc .tnext
 
         push eax
-        cinvoke printf, "    %s %c", edi, 10
+        cinvoke printf, "    %02d::%s %c", esi, edi, 10
         pop eax
 
 .tnext: add edi, 46
@@ -609,6 +634,30 @@ ThermalPower:
         jne .tloop
 
         ret             
+                
+; ================================================================================================
+
+; 06h leaf, data in eax and ecx
+; AMD only
+PowerManagementRelated:
+
+        mov eax, 0x06
+
+        cpuid
+
+        mov edi, ecx
+
+        bt eax, 2
+        jnc .c0
+
+        cinvoke printf, "    Timebase for the local APIC timer is not affected by processor p-state %c", 10
+
+.c0:    bt edi, 0
+
+        cinvoke printf, "    Effective frequency interface support %c", 10
+        cinvoke printf, "      idicates presence of MSR0000_00E7 (MPERF) and MSR0000_00E8 (APERF) %c", 10
+
+        ret
 
 ; ================================================================================================
 
@@ -639,7 +688,7 @@ showb:  mov esi, 0
         jnc .nextb
 
         push ebx
-        cinvoke printf, "    %s %c", edi, 10
+        cinvoke printf, "    %02d::%s %c", esi, edi, 10
         pop ebx
 
 .nextb: add edi, 30
@@ -650,7 +699,8 @@ showb:  mov esi, 0
 
         jne .lf1
 
-pass2:  mov eax, 0x07           ; second pass
+pass2:  mov ecx, 0
+        mov eax, 0x07           ; second pass
                 
         cpuid
                 
@@ -675,10 +725,10 @@ showc:  mov esi, 0
         jnc .nextc
 
         push ecx
-        cinvoke printf, "    %s %c", edi, 10
+        cinvoke printf, "    %02d::%s %c", esi, edi, 10
         pop ecx
 
-.nextc: add edi, 40
+.nextc: add edi, 39
 
         inc esi
 
@@ -686,7 +736,8 @@ showc:  mov esi, 0
 
         jne .lf2
                 
-pass3:  mov eax, 0x07           ; third pass
+pass3:  mov ecx, 0
+        mov eax, 0x07           ; third pass
                 
         cpuid
                 
@@ -702,7 +753,7 @@ showd:  mov esi, 0
         jnc .nextd
 
         push edx
-        cinvoke printf, "    %s %c", edi, 10
+        cinvoke printf, "    %02d::%s %c", esi, edi, 10
         pop edx
 
 .nextd: add edi, 35
@@ -829,7 +880,7 @@ DirectCacheAccessInfo:
                 
         cpuid
                 
-        cinvoke printf, "  IA32_PLATFORM_DCA_CAP MSR (0x1F8): 0x%X %c", eax, 10
+        cinvoke printf, "  Value of IA32_PLATFORM_DCA_CAP MSR (0x1F8): 0x%X %c", eax, 10
 
 .fin:
         ret
@@ -885,11 +936,58 @@ ArchitecturalPerfMon:
 
         cinvoke printf, "    AnyThread deprecation %c", 10
 
+        mov eax, 0x0A
+
+        cpuid
+
+        cinvoke printf, "    Supported fixed counters bit mask: 0x%X %c", ecx, 10
+
 .fin:   ret
 
 ; ================================================================================================
 
-;lead 0dh (ecx=0), data in eax, ebx, ecx
+;leaf 0bh, data in eax, ebx, ecx, and edx
+; AMD only
+AMDProcExtTopologyEnum:
+
+        cmp [__MaxBasic], 0x0b
+        jl .fin
+
+        cinvoke printf, "  Extended Topology Enumeration %c", 10
+
+        mov ecx, 0
+        mov eax, 0x0b
+
+        cpuid
+
+        mov edi, ebx
+        mov esi, ecx
+
+        cinvoke printf, "    ThreadMaskWidth (bits to shift x2APIC_ID) %d; APIC_ID 0x%X %c", eax, edx, 10
+
+        and edi, 0x0000FFFF
+
+        cinvoke printf, "    Number of threads in a core: %c", edi, 10
+
+        mov ecx, 1
+        mov eax, 0x0b
+
+        cpuid
+                
+        mov edi, ebx
+        mov esi, ecx
+
+        cinvoke printf, "    CoreMaskWidth (bits to shift x2APIC_ID) %d; APIC_ID 0x%X %c", eax, edx, 10
+
+        and edi, 0x0000FFFF
+
+        cinvoke printf, "    Number of cores in a socket: %c", edi, 10
+
+.fin:   ret
+
+; ================================================================================================
+
+;leaf 0dh (ecx=0), data in eax, ebx, ecx
 ProcExtStateEnumMain:
 
         cmp [__MaxBasic], 0x0D
@@ -911,10 +1009,10 @@ ProcExtStateEnumMain:
         jnc .next
 
         push eax
-        cinvoke printf, "    %s %c", edi, 10
+        cinvoke printf, "    %02d::%s %c", esi, edi, 10
         pop eax
 
-.next:  add edi, 13             ; size of string data
+.next:  add edi, 10             ; size of string data
 
         inc esi
 
@@ -983,7 +1081,133 @@ ProcExtStateEnumSub1:
         cpuid   
 
 .fin:   ret
+
+; ================================================================================================
+
+; leaf 0dh
+AMDProcExtStateEnum:
+
+        cmp [__MaxBasic], 0x0d
+        jl .fin
                 
+        cinvoke printf, "  Processor Extended State Enumeration %c", 10
+                
+        mov ecx, 0
+        mov eax, 0x0d
+                
+        cpuid
+                
+        mov edi, ecx
+        mov esi, edx
+                
+        push ebx
+        cinvoke printf, "    XFeatureSupportedMask 0x%X %c", eax, 10
+        pop ebx
+                
+        cinvoke printf, "    XFeatureEnabledSizeMax 0x%X %c", ebx, 10
+                
+        cinvoke printf, "    Size XSAVE/XRSTOR area for all features that the logical processor supports: %d bytes %c", edi, 10
+                
+        cinvoke printf, "    XFeatureSupportedSizeMax 0x%X %c", esi, 10
+
+        mov ecx, 1
+        mov eax, 0x0d
+                
+        cpuid
+                
+        mov edi, eax
+        mov esi, ecx
+
+.01a0:  bt edi, 0
+        jnc .01a1
+
+        cinvoke printf, "    XSAVEOPT is available %c", 10
+
+.01a1:  bt edi, 1
+        jnc .01a2
+
+        cinvoke printf, "    XSAVEC and compact XRSTOR supported %c", 10
+
+.01a2:  bt edi, 2
+        jnc .01a3
+
+        cinvoke printf, "    XGETBV with ECX = 1 supported %c", 10
+
+.01a3:  bt edi, 3
+        jnc .01c11
+        
+        cinvoke printf, "    XSAVES, XRSTOR, and XSS are supported %c", 10
+
+.01c11: bt esi, 11
+        jnc .01c12
+
+        cinvoke printf, "    CET user state %c", 10
+                
+.01c12: bt esi, 12
+        jnc .func2
+
+        cinvoke printf, "    CET supervisor %c", 10
+                
+.func2: mov ecx, 2
+        mov eax, 0x0d
+                
+        cpuid
+                
+        mov edi, ebx
+
+        cinvoke printf, "    YMM register save area: %d bytes %c", eax, 10 
+
+        cinvoke printf, "    YMM state save offset : %d bytes %c", edi, 10 
+
+        mov ecx, 11
+        mov eax, 0x0d
+                
+        cpuid
+                
+        mov edi, ebx
+        mov esi, ecx
+                
+        cinvoke printf, "    CET user state save size: %d bytes %c", eax, 10 
+                
+        cinvoke printf, "    CET User state offset   : %d bytes %c", edi, 10 
+                
+        bt edi, 0
+        jnc .funcC
+
+        cinvoke printf, "    Supervisor state component %c", 10 
+
+.funcC: mov ecx, 12
+        mov eax, 0x0d
+                
+        cpuid
+                
+        mov edi, ebx
+        mov esi, ecx
+                
+        cinvoke printf, "    CET supervisor state save size: %d bytes %c", eax, 10 
+                
+        cinvoke printf, "    CET supervisor state offset   : %d bytes %c", edi, 10 
+                
+        bt edi, 0
+        jnc .func62
+
+        cinvoke printf, "    Supervisor state component %c", 10 
+
+.func62:
+
+        mov ecx, 62
+        mov eax, 0x0d
+                
+        cpuid
+                
+        mov edi, ebx
+                
+        cinvoke printf, "    LWP state save area size  : %d bytes %c", eax, 10 
+                
+        cinvoke printf, "    LWP state save byte offset: %d bytes %c", edi, 10 
+
+.fin:   ret
+
 ; ================================================================================================
 
 ; leaf 0fh, sub leaf 0 and 1
@@ -1413,6 +1637,7 @@ IntelProcessorTrace:
 ; ================================================================================================
 
 ; leaf 15h, data in eax, ebx, and ecx
+; intel only
 TimeStampCounter:
 
         cmp [__MaxBasic], 0x15
@@ -1545,8 +1770,100 @@ SoCVendor:
 
 ; ================================================================================================
 
+; leaf 18h, data in eax, ebx, ecx, and edx
+DATParameters:
+
+        cmp [__MaxBasic], 0x18
+        jl .fin
+
+        cinvoke printf, "  Deterministic Address Translation Parameters %c", 10  
+
+        mov esi, 0
+
+.loop:  mov ecx, esi
+        mov eax, 0x18
+
+        cpuid
+
+        mov edi, edx
+        and edi, 0x0000001F
+                
+        cmp edi, 0
+        je .fin
+                
+        mov eax, ebx
+                
+        shr eax, 16             ; ways of associativiy now stored in eax
+        and eax, 0x0000FFFF
+
+        and ebx, 0x0000000F     ; page size stored in ebx
+
+        mov edi, __DATCacheType
+
+        and edx, 0x0000001F
+
+.ctd:   cmp edx, 1
+        jne .cti
+
+        add edi, 13
+        jmp .bit0
+
+.cti:   cmp edx, 2
+        jne .ctu
+
+        add edi, 13*2
+        jmp .bit0
+
+.ctu:   cmp edx, 3
+        jne .ctlo
+
+        add edi, 13*3
+        jmp .bit0
+
+.ctlo:  cmp edx, 4
+        jne .ctsol
+
+        add edi, 13*4
+        jmp .bit0
+
+.ctsol: cmp edx, 5
+        jne .bit0
+
+        add edi, 13*5
+
+.bit0:  bt ebx, 0
+        jnc .bit1
+
+        cinvoke printf, "    %s 4K page size, %d ways of associativity, %d sets %c", edi, eax, ecx, 10
+
+.bit1:  bt ebx, 1
+        jnc .bit2
+                
+        cinvoke printf, "    %s 2MB page size, %d ways of associativity, %d sets %c", edi, eax, ecx, 10
+
+.bit2:  bt ebx, 2
+        jnc .bit3
+
+        cinvoke printf, "    %s 4MB page size, %d ways of associativity, %d sets %c", edi, eax, ecx, 10
+
+.bit3:  bt ebx, 3
+        jnc .next
+                
+        cinvoke printf, "    %s 1GB page size, %d ways of associativity, %d sets %c", eax, ecx, 10
+
+.next:  inc esi
+
+        jmp .loop
+
+.fin:   ret
+
+; ================================================================================================
+
 ; leaf 19h, data in eax, ebx, and ecx
 KeyLocker:
+
+        cmp [__MaxBasic], 0x19
+        jl .fin
 
         cinvoke printf, "  Key Locker Leaf %c", 10
                 
@@ -1813,6 +2130,35 @@ TMULInformation:
 
 ; ================================================================================================
 
+; leaf 20h, data in eax and ebx
+; intel only
+ProcessorHistoryReset:
+
+        cmp [__MaxBasic], 0x20
+        jl .fin
+
+        cinvoke printf, "  Processor History Reset %c", 10
+
+        mov eax, 0x20
+
+        cpuid
+                
+        mov edi, ebx
+
+        cinvoke printf, "    Sub-leafs supported: %d %c", eax, 10
+                
+        cinvoke printf, "    IA32_HRESET_ENABLE MSR bits: 0x%X %c", edi, 10
+                
+        bt edi, 0
+                jnc .fin
+
+        cinvoke printf, "      support for both HRESET’s EAX[0] parameter, and IA32_HRESET_ENABLE[0] %c", 10
+        cinvoke printf, "      OS to enable reset of Intel® Thread Director history %c", 10
+
+.fin:   ret
+
+; ================================================================================================
+
 ; extended leaf 80000001h
 ExtendedFeatures:
 
@@ -1919,7 +2265,7 @@ ExtendedFeatures:
 
         push ecx
         push edx
-        cinvoke printf, "    %s %c", edi, 10
+        cinvoke printf, "    %02d::%s %c", esi, edi, 10
         push edx
         pop ecx
 
@@ -1940,7 +2286,7 @@ ExtendedFeatures:
         jnc .nxtd
 
         push edx
-        cinvoke printf, "    %s %c", edi, 10
+        cinvoke printf, "    %02d::%s %c", esi, edi, 10
         push edx
 
 .nxtd:  add edi, 14             ; size of text in bytes
@@ -1988,6 +2334,391 @@ BrandString:
         cinvoke printf, "    %s %c", __BrandString, 10
                 
         ret
+
+; ================================================================================================
+
+; extended leaf 80000005h
+; AMD only
+AMDCacheTLBLevelOne:
+
+        mov eax, dword [__MaxExtended]
+
+        cmp eax, 0x80000005
+        jl .notsupported
+
+        cinvoke printf, "  L1 Cache and TLB Information %c", 10
+
+        mov eax, 0x80000005
+
+        cpuid
+                
+        mov edi, eax
+                
+        and eax, 0x000000FF
+
+        cinvoke printf, "    L1 instruction TLB, entries for 2MB/4MB pages: %d %c", eax, 10
+
+        mov eax, edi
+        shr eax, 8
+        and eax, 0x000000FF
+                
+        call AMDCacheTLBLevelOneFromTable
+
+        mov eax, edi
+
+        shr eax, 16
+        and eax, 0x000000FF
+
+        cinvoke printf, "    L1 data TLB, entries for 2MB/4MB pages: %d %c", eax, 10
+
+        mov eax, edi
+        shr eax, 24
+        and eax, 0x000000FF
+                
+        call AMDCacheTLBLevelOneFromTable
+
+        mov eax, 0x80000005     ; pass 2
+
+        cpuid
+                
+        mov edi, ebx
+                
+        mov eax, ebx
+                
+        and eax, 0x000000FF
+                
+        cinvoke printf, "    Instruction TLB number of entries for 4KB pages: %d %c", eax, 10
+                
+        mov eax, edi
+        shr eax, 8
+        and eax, 0x000000FF
+                
+        call AMDCacheTLBLevelOneFromTable
+                
+        mov eax, edi
+        shr eax, 16
+        and eax, 0x000000FF
+                
+        cinvoke printf, "    Data TLB number of entries for 4KB pages: %d %c", eax, 10
+                
+        mov eax, edi
+        shr eax, 24
+        and eax, 0x000000FF
+                
+        call AMDCacheTLBLevelOneFromTable
+                
+        mov eax, 0x80000005     ; pass 3
+
+        cpuid
+                
+        mov edi, ecx
+        mov eax, ecx
+                
+        and eax, 0x000000FF
+                
+        cinvoke printf, "    L1 data cache line size    : %d bytes %c", eax, 10
+                
+        mov eax, edi
+        shr eax, 8
+        and eax, 0x000000FF
+                
+        cinvoke printf, "    L1 data cache lines per tag: %d %c", eax, 10
+                
+        mov eax, edi
+        shr eax, 16
+        and eax, 0x000000FF
+                
+        call AMDCacheTLBLevelOneFromTable
+                
+        mov eax, edi
+        shr eax, 24
+        and eax, 0x000000FF
+                
+        cinvoke printf, "    L1 data cache size               : %d KB %c", eax, 10
+                
+        mov eax, 0x80000005     ; pass 4
+                
+        cpuid
+                
+        mov edi, edx
+         mov eax, edx
+                
+        and eax, 0x000000FF
+                
+        cinvoke printf, "    L1 instruction cache line size   : %d bytes %c", eax, 10
+                
+        mov eax, edi
+                
+        shr eax, 8
+        and eax, 0x000000FF
+                
+        cinvoke printf, "    L1 instruction cache line per tag: %d %c", eax, 10
+                
+        mov eax, edi
+                
+        shr eax, 16
+        and eax, 0x000000FF
+                
+        call AMDCacheTLBLevelOneFromTable
+                
+        mov eax, edi
+                
+        shr eax, 24
+        and eax, 0x000000FF
+
+        cinvoke printf, "    L1 instruction cache size        : %d KB %c", eax, 10
+
+.notsupported:
+
+        ret
+        
+
+AMDCacheTLBLevelOneFromTable:
+
+        cmp eax, 0
+        je .reserved
+                
+        cmp eax, 1
+        je .oneway
+                
+        cmp eax, 255
+        je .fully
+                
+        cinvoke printf, "    %d-way associative %c", eax, 10
+                
+        ret
+                
+.fully: cinvoke printf, "    Fully associative %c", 10
+
+        ret
+                
+.oneway:
+
+        cinvoke printf, "    1 way (direct mapped) %c", 10
+
+        ret
+
+.reserved:
+
+        cinvoke printf, "    Reserved %c", 10
+
+        ret
+                
+; ================================================================================================
+          
+; extended leaf 80000006h
+; Intel only
+IntelCacheInformation:
+
+        mov eax, dword [__MaxExtended]
+
+        cmp eax, 0x80000006
+        jl .notsupported
+                
+        cinvoke printf, "  Cache Information %c", 10
+                
+        mov eax, 0x80000006
+                
+        cpuid
+                
+        mov edi, ecx
+                
+        and ecx, 0x000000FF
+
+        cinvoke printf, "    Cache line size: %d bytes %c", ecx, 10
+                
+        mov ecx, edi
+                
+        shr ecx, 12
+        and ecx, 0x0000000F
+                
+        mov esi, __IntelLevelTwoCache
+                
+        imul ecx, 18
+        add esi, ecx
+
+        cinvoke printf, "    %s %c", esi, 10
+                
+        mov ecx, edi
+                
+        shr ecx, 16
+        and ecx, 0x0000FFFF
+                
+        cinvoke printf, "    Cache size in 1K units: %d %c", ecx, 10
+
+.notsupported:
+
+.fin:   ret
+                  
+; ================================================================================================
+
+; extended leaf 80000006h
+; AMD only
+AMDCacheTLBLevelThreeCache:
+
+        mov eax, dword [__MaxExtended]
+
+        cmp eax, 0x80000006
+        jl .notsupported
+                
+        cinvoke printf, "  L2 Cache and TLB and L3 Cache Information %c", 10
+
+        mov eax, 0x80000006
+
+        cpuid
+
+        mov edi, eax
+                
+        and eax, 0x00000FFF
+
+        cinvoke printf, "    L2 instruction TLB, entries for 2MB/4MB pages: %d %c", eax, 10
+                
+        mov eax, edi
+                
+        shr eax, 12
+        and eax, 0x0000000F
+                
+        mov edx, __AMDLevelTwoTLB
+        imul eax, 31
+        add edx, eax
+
+        cinvoke printf, "    %s %c", edx, 10
+                
+        mov eax, edi
+                
+        shr eax, 16
+        and eax, 0x00000FFF
+                
+        cinvoke printf, "    L2 data TLB, entries for 2MB/4MB pages: %d %c", eax, 10
+                
+        mov eax, edi
+                
+        shr eax, 28
+        and eax, 0x0000000F
+                
+        mov esi, __AMDLevelTwoTLB
+        imul eax, 31
+        add esi, eax
+                
+        cinvoke printf, "    %s %c", esi, 10
+                
+        mov eax, 0x80000006
+
+        cpuid                   ; 2nd pass for data in ebx
+
+        mov edi, ebx
+                
+        and ebx, 0x00000FFF
+
+        cinvoke printf, "    L2 instruction TLB, entries for 2KB/4KB pages: %d %c", eax, 10
+                
+        mov eax, edi
+                
+        shr eax, 12
+        and eax, 0x0000000F
+                
+        mov esi, __AMDLevelTwoTLB
+        imul eax, 31
+        add esi, eax
+                
+        cinvoke printf, "    %s %c", esi, 10
+                
+        mov eax, edi
+                
+        shr eax, 16
+        and eax, 0x00000FFF
+                
+        cinvoke printf, "    L2 data TLB, entries for 2KB/4KB pages: %d %c", eax, 10
+                
+        mov eax, edi
+                
+        shr eax, 28
+        and eax, 0x0000000F
+                
+        mov esi, __AMDLevelTwoTLB
+        imul eax, 31
+        add esi, eax
+                
+        cinvoke printf, "    %s %c", esi, 10
+                
+        mov eax, 0x80000006
+
+        cpuid                   ; 3rd pass for data in ecx
+                
+        mov edi, ecx
+                
+        and ecx, 0x000000FF
+                
+        cinvoke printf, "    L2 cache line size    : %d bytes %c", ecx, 10
+                
+        mov ecx, edi
+                
+        shr ecx, 8
+        and ecx, 0x0000000F
+                
+        cinvoke printf, "    L2 cache lines per tag: %d %c", ecx, 10
+
+        mov ecx, edi
+                
+        shr ecx, 12
+        and ecx, 0x0000000F
+                
+        mov esi, __AMDLevelTwoTLB
+        imul ecx, 31
+        add esi, ecx
+                
+        cinvoke printf, "    %s %c", esi, 10
+                
+        mov ecx, edi
+                
+        shr ecx, 16
+        and ecx, 0x0000FFFF
+                
+        cinvoke printf, "    L2 cache size        g: %d KB %c", ecx, 10
+                
+        mov eax, 0x80000006
+
+        cpuid                   ; 4th pass for data in edx
+
+        mov edi, edx
+                
+        and edx, 0x0000000F
+                
+        cinvoke printf, "    L3 cache line size    : %d bytes %c", edx, 10
+                
+        mov edx, edi
+                
+        shr edx, 8
+        and edx, 0x0000000F
+                
+        cinvoke printf, "    L2 cache lines per tag: %d %c", edx, 10
+                
+        mov edx, edi
+                
+        shr edx, 12
+        and edx, 0x0000000F
+                
+        mov esi, __AMDLevelTwoTLB
+        imul edx, 31
+        add esi, edx
+                
+        cinvoke printf, "    %s %c", esi, 10
+                
+        mov esi, edi
+                
+        shr edi, 18
+        and edi, 0x00003FFF
+                
+        imul edi, 512
+                
+        inc esi
+        imul esi, 512
+
+        cinvoke printf, "    L3 cache size range %d KB -> %d KB %c", edi, esi, 10
+
+.notsupported:
+
+.fin:   ret
 
 ; ================================================================================================
 
@@ -2083,7 +2814,7 @@ PPMandRAS:
         jnc .nxtd
 
         push edx
-        cinvoke printf, "    %s %c", edi, 10
+        cinvoke printf, "    %02d::%s %c", esi, edi, 10
         push edx
 
 .nxtd:  add edi, 29             ; size of text in bytes
@@ -2184,7 +2915,7 @@ ProcessorCapacityParameters:
         jnc .nxtd
 
         push ebx
-        cinvoke printf, "    %s %c", edi, 10
+        cinvoke printf, "    %02d::%s %c", esi, edi, 10
         push ebx
 
 .nxtd:  add edi, 24             ; size of text in bytes
@@ -2248,7 +2979,7 @@ AMDSVM:
         jnc .next
 
         push eax
-        cinvoke printf, "    %s %c", edi, 10
+        cinvoke printf, "    %02d::%s %c", esi, edi, 10
         pop eax
 
 .next:  add edi, 21             ; size of string data
@@ -2322,7 +3053,7 @@ AMDIBS: mov eax, dword [__MaxExtended]
         jnc .next
 
         push eax
-        cinvoke printf, "    %s %c", edi, 10
+        cinvoke printf, "    %02d::%s %c", esi, edi, 10
         pop eax
 
 .next:  add edi, 19             ; size of string data
@@ -2509,7 +3240,7 @@ AMDEMS: mov eax, dword [__MaxExtended]
         jnc .next
 
         push eax
-        cinvoke printf, "    %s %c", edi, 10
+        cinvoke printf, "    %02d::%s %c", esi, edi, 10
         pop eax
 
 .next:  add edi, 21             ; size of string data
@@ -2606,7 +3337,7 @@ AMDEFI2:
         jnc .next
 
         push eax
-        cinvoke printf, "    %s %c", edi, 10
+        cinvoke printf, "    %02d::%s %c", esi, edi, 10
         pop eax
 
 .next:  add edi, 24             ; size of string data
@@ -2737,7 +3468,7 @@ AMDExtendedCPUTop:
                 
         dec edi
 
-        lea edi, [edx + edi*4]
+        lea edi, [edx + edi*8]
                 
         push eax
         cinvoke printf, "    LevelType: %s %c", edi, 10
@@ -2801,8 +3532,8 @@ section '.data' data readable writeable
 
 __BrandIndex    db 0
 
-__MaxBasic      dw 0
-__MaxExtended   dw 0
+__MaxBasic      dd 0
+__MaxExtended   dd 0
 
 __VendorID      db "            ",0
 __BrandString   db "                                                ",0
@@ -3176,25 +3907,33 @@ __StructuredExtendedFeatureFlags3:
 
 ; 0Dh, bits in eax
 
-__ProcExtStateEnumMain          db "00:X87      ", 0
-                                db "01:SSE      ", 0
-                                db "02:ACX      ", 0
-                                db "03:BNDREG   ", 0
-                                db "04:BNDCSR   ", 0
-                                db "05:opmask   ", 0
-                                db "06:ZMM_hi256", 0
-                                db "07:Hi16_ZMM ", 0
-                                db "08:IA32_XSS.", 0
-                                db "09:PKRU     ", 0
-                                db "0A:ENQCMD   ", 0
-                                db "0B:CETU     ", 0
-                                db "0C:CETS     ", 0
-                                db "0D:HDC      ", 0
-                                db "0E:UINTR    ", 0
-                                db "0F:ALBR     ", 0
-                                db "10:HWP      ", 0
-                                db "11:TILECFG  ", 0
-                                db "12:TILEDATA ", 0
+__ProcExtStateEnumMain          db "X87      ", 0
+                                db "SSE      ", 0
+                                db "ACX      ", 0
+                                db "BNDREG   ", 0
+                                db "BNDCSR   ", 0
+                                db "opmask   ", 0
+                                db "ZMM_hi256", 0
+                                db "Hi16_ZMM ", 0
+                                db "IA32_XSS.", 0
+                                db "PKRU     ", 0
+                                db "ENQCMD   ", 0
+                                db "CETU     ", 0
+                                db "CETS     ", 0
+                                db "HDC      ", 0
+                                db "UINTR    ", 0
+                                db "ALBR     ", 0
+                                db "HWP      ", 0
+                                db "TILECFG  ", 0
+                                db "TILEDATA ", 0
+
+; 18h, bits from edx
+__DATCacheType:                 db "Unknown    :", 0
+                                db "Data       :", 0
+                                db "Instruction:", 0
+                                db "Unified    :", 0
+                                db "Load Only  :", 0
+                                db "Store Only :", 0
                                                                 
 ; AMD: 80000001_ECX
 __AMDFeatureIdentifiers1:       db "LahfSahf          ", 0
@@ -3263,7 +4002,43 @@ __AMDFeatureIdentifiers2:       db "FPU x87      ", 0
                                 db "LM           ", 0
                                 db "3DNowExt     ", 0
                                 db "3DNow        ", 0
-                                                           
+
+; Intel 0x80000006; ecx, bits 12-15
+__IntelLevelTwoCache:           db "Disabled         ", 0
+                                db "1 way (direct map", 0
+                                db "2 ways           ", 0
+                                db "Reserved         ", 0
+                                db "4 ways           ", 0
+                                db "Reserved         ", 0
+                                db "8 ways           ", 0
+                                db "See leaf 04h     ", 0 
+                                db "16 ways          ", 0
+                                db "Reserved         ", 0
+                                db "32 ways          ", 0
+                                db "48 ways          ", 0
+                                db "64 ways          ", 0
+                                db "96 ways          ", 0
+                                db "128 ways         ", 0
+                                db "Fully associative", 0
+
+; AMD; 80000006
+__AMDLevelTwoTLB:               db "L2/L3 cache or TLB is disabled", 0
+                                db "Direct mapped                 ", 0
+                                db "2-way associative             ", 0
+                                db "3-way associative             ", 0
+                                db "4 to 5-way associative        ", 0
+                                db "6 to 7-way associative        ", 0
+                                db "8 to 15-way associative       ", 0
+                                db "Permanently reserved          ", 0
+                                db "16 to 31-way associative      ", 0
+                                db "Determined from Fn8000_001D   ", 0
+                                db "32 to 47-way associative      ", 0
+                                db "48 to 63-way associative      ", 0
+                                db "64 to 95-way associative      ", 0
+                                db "96 to 127-way associative     ", 0
+                                db ">128-way not fully associative", 0
+                                db "Fully associative             ", 0
+
 ; AMD; 80000007_EDX
 __AMDAPMFeatures:               db "TS, Temperature sensor      ", 0
                                 db "FID, Frequency ID control   ", 0
