@@ -1,7 +1,7 @@
 ; ================================================================================================
 ;
 ; (c) Paul Alan Freshney 2023
-; v0.2, January 13th 2023
+; v0.3, January 15th 2023
 ;
 ; Source code:
 ;   https://github.com/MaximumOctopus/CPUIDx
@@ -127,12 +127,14 @@ start:  call About
 
         call PowerManagementRelated             ; 06h
                 
+        call AMDStructuredExtendedFeatureIDs    ; 07h
+
         call AMDProcExtTopologyEnum             ; 0bh
-                
+
         call AMDProcExtStateEnum                ; 0dh
 
         call ExtendedFeatures                   ; 0x80000001
-                
+
         call AMDCacheTLBLevelOne                ; 0x80000005
 
         call AMDCacheTLBLevelThreeCache         ; 0x80000006
@@ -142,21 +144,25 @@ start:  call About
         call ProcessorCapacityParameters        ; 0x80000008
 
         call AMDSVM                             ; 0x8000000A
-                
+
+        call AMDTLBCharacteristics              ; 0x80000019
+
         call AMDPerformanceOptimisation         ; 0x8000001A
-                
+
         call AMDIBS                             ; 0x8000001B
-                
+
+        call AMDLightweightProfiling            ; 0x8000001C
+
         call AMDCache                           ; 0x8000001D
-                
+
         call AMDEMS                             ; 0x8000001F
-                
+
         call AMDQOS                             ; 0x80000020
-                
+
         call AMDEFI2                            ; 0x80000021
-                
+
         call AMDExtPMandD                       ; 0x80000022
-                
+
         call AMDMultiKeyEMC                     ; 0x80000023
 
         call AMDExtendedCPUTop                  ; 0x80000026
@@ -168,7 +174,7 @@ start:  call About
 
 ; ================================================================================================
 
-About:  cinvoke printf, "%c    CPUidX v0.2 :: January 13th 2023 :: Paul A Freshney %c", 10, 10
+About:  cinvoke printf, "%c    CPUidX v0.3 :: January 15th 2023 :: Paul A Freshney %c", 10, 10
 
         cinvoke printf, "      https://github.com/MaximumOctopus/CPUIDx %c %c", 10, 10
 
@@ -306,15 +312,8 @@ CoreCount:
         bt eax, 28
         jnc .singlecore
 
-        mov eax, 0x01
-
-        cpuid
-
-        shr eax, 16
-        and eax, 0x000000FF
-
-        cinvoke printf, "    Cores: %d %c", eax, 10
-                
+        ; to-do, intel makes this non-trivial :(
+               
         ret
 
 .singlecore:
@@ -339,7 +338,7 @@ CacheTlb:
         cinvoke printf, "  Cache List: %c", 10
 
         mov ecx, 0x00
-                mov eax, 0x04
+        mov eax, 0x04
 
         cpuid
 
@@ -869,6 +868,64 @@ showd:  mov esi, 0
                 
 ; ================================================================================================
 
+; 07h leaf, flags in ebx, ecx, and edx
+; amd only
+AMDStructuredExtendedFeatureIDs:
+
+        mov ecx, 0
+        mov eax, 0x07           ; first pass
+
+        cinvoke printf, "  Structured Extended Feature Identifiers %c", 10
+
+        cpuid
+
+        mov edi, __AMDStructuredExtendedFeatureIDs1
+
+        mov esi, 0
+
+.lf1:   bt  ebx, esi
+        jnc .nextb
+
+        push ebx
+        cinvoke printf, "    %02d::%s %c", esi, edi, 10
+        pop ebx
+
+.nextb: add edi, 30
+
+        inc esi
+
+        cmp esi, 32
+
+        jne .lf1
+
+        mov ecx, 0
+        mov eax, 0x07           ; first pass
+
+        cpuid
+
+        mov edi, __AMDStructuredExtendedFeatureIDs2
+
+        mov esi, 0
+
+.lf2:   bt  ecx, esi
+        jnc .nextc
+
+        push ecx
+        cinvoke printf, "    %02d::%s %c", esi, edi, 10
+        pop ecx
+
+.nextc: add edi, 30
+
+        inc esi
+
+        cmp esi, 32
+
+        jne .lf2
+
+.fin:   ret
+
+; ================================================================================================
+
 ; leaf 09h
 ; Intel only, not supported by AMD
 DirectCacheAccessInfo:
@@ -880,7 +937,7 @@ DirectCacheAccessInfo:
                 
         cpuid
                 
-        cinvoke printf, "  Value of IA32_PLATFORM_DCA_CAP MSR (0x1F8): 0x%X %c", eax, 10
+        cinvoke printf, "  Value of IA32_PLATFORM_DCA_CAP MSR (@ 0x1F8): 0x%X %c", eax, 10
 
 .fin:
         ret
@@ -1271,7 +1328,7 @@ IntelRDTMonitoring:
 
 ; ================================================================================================              
 
-; leaf 10h, leaf 0 (data in ebx only)
+; leaf 10h, sub-leaf 0 (data in ebx only)
 IntelRDTAllocEnum:
 
         cmp [__MaxBasic], 0x10
@@ -1346,7 +1403,7 @@ IntelRDTAllocEnum:
                 
         cinvoke printf, "    Highest COS number supported for ResID1: %d %c", esi, 10
 
-; leaf 10h, leaf 2 (data in eax, ebx, ecx, and edx)
+; leaf 10h, sub-leaf 2 (data in eax, ebx, ecx, and edx)
 
 .subleaf2:
 
@@ -1391,7 +1448,7 @@ IntelRDTAllocEnum:
                 
         cinvoke printf, "    Highest COS number supported for ResID 2: %d %c", esi, 10
 
-; leaf 10h, leaf 3 (data in eax, ecx, and edx)
+; leaf 10h, sub-leaf 3 (data in eax, ecx, and edx)
 
 .subleaf3:
 
@@ -1968,6 +2025,7 @@ NativeModelIDEnumeration:
 ; ================================================================================================
 
 ; leaf 1ch, data in eax, ebx, and ecx
+; intel only
 LastBranchRecords:
 
         cinvoke printf, "  Last Branch Records Information %c", 10
@@ -2042,6 +2100,165 @@ LastBranchRecords:
 
 .fin:   ret
 
+; ================================================================================================
+
+; leaf 1ch, data in eax, ebx, and ecx
+; intel only
+AMDLightweightProfiling:
+
+        mov eax, 0x80000001
+
+        cpuid
+
+        bt ecx, 15              ; LWP bit
+        jc .cont
+
+        ret
+
+.cont:  cinvoke printf, "  Lightweight Profiling Capabilities %c", 10
+
+        mov eax, 0x8000001C
+
+        cpuid                   ; pass 1 for eax
+
+        mov edi, dword __AMDLWPEAX
+  
+        push eax
+        cinvoke printf, "    Lightweight Profiling Capabilities 0 (eax) (0x%X) %c", eax, 10
+        pop eax
+
+showa:  mov esi, 0
+
+.lfa:   bt  eax, esi
+        jnc .nexta
+
+        push eax
+        cinvoke printf, "    %02d::%s %c", esi, edi, 10
+        pop eax
+
+.nexta: add edi, 54
+
+        inc esi
+
+        cmp esi, 32
+
+        jne .lfa
+                
+        mov eax, 0x8000001C
+
+        cpuid                   ; pass 2 for ecx
+                
+        mov edi, ebx
+                
+        cinvoke printf, "    Lightweight Profiling Capabilities 0 (ebx) (0x%X) %c", edi, 10
+                
+        mov eax, edi
+        and eax, 0x000000FF
+                
+        cinvoke printf, "    LwpCbSize, Control block size (quadwords) of the LWPCB                    : %d %c", eax, 10
+                
+        mov eax, edi
+        shr eax, 8
+        and eax, 0x000000FF
+                
+        cinvoke printf, "    LwpEventSize, Event record size (bytes) event record LWP event ring buffer: %d %c", eax, 10
+                
+        mov eax, edi
+        shr eax, 16
+        and eax, 0x000000FF
+                
+        cinvoke printf, "    LwpMaxEvents, Maximum EventId value supported                             : %d %c", eax, 10
+                
+        mov eax, edi
+        shr eax, 24
+        and eax, 0x000000FF
+                
+        cinvoke printf, "    LwpEventOffset, Offset (bytes) from the start of LWPCB to EventInterval1 : %d %c", eax, 10
+
+        mov eax, 0x8000001C
+
+        cpuid                   ; pass 3 for ecx
+                
+        mov edi, ecx
+                
+        cinvoke printf, "    Lightweight Profiling Capabilities 0 (ecx) (0x%X) %c", edi, 10
+
+        mov eax, edi
+        and eax, 0x0000001F
+        
+        cinvoke printf, "    LwpLatencyMax, Latency counter size (bits) of the cache latency counters: %d %c", eax, 10
+        
+        bt edi, 5
+        jnc .LRnd
+
+        cinvoke printf, "    LwpDataAddress, Data cache miss address valid. Address is valid for cache miss event records %c", 10
+                
+.LRnd:  mov eax, edi 
+        shr eax, 6
+        and eax, 0x00000007
+                
+        cinvoke printf, "    LwpLatencyRnd, Amount by which cache latency is rounded: %d %c", eax, 10
+                
+        mov eax, edi
+        shr eax, 9
+        and eax, 0x0000007F
+                
+        cinvoke printf, "    LwpVersion, Version of LWP implementation: %d %c", eax, 10
+
+        mov eax, edi
+        shr eax, 16
+        and eax, 0x000000FF
+
+        cinvoke printf, "    LwpMinBufferSize, Minimum size of the LWP event ring buffer, in units of 32 event records: %d %c", eax, 10
+                
+        bt edi, 28
+        jnc .LpF
+                
+        cinvoke printf, "    Branch prediction filtering supported. Branches Retired events can be filtered based on whether the branch was predicted properly. %c", 10
+                
+.LpF:   bt edi, 29
+        jnc .Lvls
+                
+        cinvoke printf, "    IP filtering supported. %c", 10
+                
+.Lvls:  bt edi, 30
+        jnc .Lncy
+                
+        cinvoke printf, "    Cache level filtering supported. Cache-related events can be filtered by the cache level that returned the data. %c", 10
+                
+.Lncy:  bt edi, 31
+        jnc .fin
+                
+        cinvoke printf, "    Cache latency filtering supported. Cache-related events can be filtered by latency. %c", 10
+
+        mov eax, 0x8000001C
+
+        cpuid                   ; pass 4 for edx
+
+        mov edi, dword __AMDLWPEDX
+  
+        push edx
+        cinvoke printf, "    Lightweight Profiling Capabilities 0 (edx) (0x%X) %c", edx, 10
+        pop edx
+
+        mov esi, 0
+
+.lfd:   bt  edx, esi
+        jnc .nextd
+
+        push edx
+        cinvoke printf, "    %02d::%s %c", esi, edi, 10
+        pop edx
+
+.nextd: add edi, 55
+
+        inc esi
+
+        cmp esi, 32
+
+        jne .lfd
+
+.fin:   ret
 
 ; ================================================================================================
 
@@ -2102,6 +2319,7 @@ TileInformation:
 ; ================================================================================================
 
 ; leaf 1eh, data in ebx
+; intel only
 TMULInformation:
 
         cmp [__MaxBasic], 0x1e
@@ -2251,7 +2469,7 @@ ExtendedFeatures:
                 
         push ecx
         push edx
-                cinvoke printf, "  Extended CPU Features (0x%X 0x%X) %c", ecx, edx, 10
+        cinvoke printf, "  Extended CPU Features (0x%X 0x%X) %c", ecx, edx, 10
         push edx
         push ecx        
 
@@ -2441,7 +2659,7 @@ AMDCacheTLBLevelOne:
         cpuid
                 
         mov edi, edx
-         mov eax, edx
+        mov eax, edx
                 
         and eax, 0x000000FF
                 
@@ -2506,7 +2724,7 @@ AMDCacheTLBLevelOneFromTable:
                 
 ; ================================================================================================
           
-; extended leaf 80000006h
+; extended leaf 80000006h, data in ecx
 ; Intel only
 IntelCacheInformation:
 
@@ -2853,7 +3071,7 @@ AddressBits:
 
         mov edi, ebx
                 
-        cinvoke printf, "    Physical Address Bits: %d, Linear Address Bits: %d %c", eax, edx, 10
+        cinvoke printf, "    Physical Address Bits: %d; Linear Address Bits: %d %c", eax, edx, 10
                 
         bt edi, 9
         jnc .notsupported
@@ -2947,6 +3165,7 @@ ProcessorCapacityParameters:
 
 ; ================================================================================================
 
+; leaf 8000000Ah
 ; AMD only, data in eax, ebx, and edx
 AMDSVM: 
 
@@ -2994,6 +3213,108 @@ AMDSVM:
 
 ; ================================================================================================
 
+; extended leaf 800000019h, data in eax and ebx
+; AMD only
+AMDTLBCharacteristics:
+
+        mov eax, dword [__MaxExtended]
+
+        cmp eax, 0x80000019
+        jl .notsupported
+
+        cinvoke printf, "  TLB Characteristics for 1GB pages %c", 10
+
+        mov eax, 0x80000019
+                
+        cpuid
+
+        mov edi, eax
+        mov esi, ebx
+
+        and eax, 0x00000FFF
+
+        cinvoke printf, "    L1 instruction TLB entries for 1 GB pages: %c", eax, 10
+                
+        mov eax, edi
+                
+        shr eax, 12
+        and eax, 0x0000000F
+                
+        imul eax, 31
+                
+        mov ebx, __AMDLevelTwoTLB
+                
+        add ebx, eax
+
+        cinvoke printf, "    %s %c", ebx, 10
+                
+        mov eax, edi
+                
+        shr  eax, 16
+        and eax, 0x00000FFF
+                
+        cinvoke printf, "    L1 data TLB entries for 1 GB pages: %c", eax, 10
+
+        mov eax, edi
+                
+        shr eax, 28
+        and eax, 0x0000000F
+                
+        imul eax, 31
+                
+        mov ebx, __AMDLevelTwoTLB
+                
+        add ebx, eax
+
+        cinvoke printf, "    %s %c", ebx, 10
+                
+; data from ebx
+                
+        mov eax, esi
+                
+        and eax, 0x00000FFF
+
+        cinvoke printf, "    L2 instruction TLB entries for 1 GB pages: %c", eax, 10
+                
+        mov eax, esi
+                
+        shr eax, 12
+        and eax, 0x0000000F
+                
+        imul eax, 31
+                
+        mov ebx, __AMDLevelTwoTLB
+                
+        add ebx, eax
+
+        cinvoke printf, "    %s %c", ebx, 10
+                
+        mov eax, esi
+                
+        shr eax, 16
+        and eax, 0x00000FFF
+                
+        cinvoke printf, "    L2 data TLB entries for 1 GB pages: %c", eax, 10
+
+        mov eax, esi
+                
+        shr eax, 28
+        and eax, 0x0000000F
+                
+        imul eax, 31
+                
+        mov ebx, __AMDLevelTwoTLB
+                
+        add ebx, eax
+
+        cinvoke printf, "    %s %c", ebx, 10            
+
+.notsupported:
+
+.fin:   ret
+
+; ================================================================================================
+
 ; extended leaf 80000001Ah, data in eax
 ; AMD only
 AMDPerformanceOptimisation:
@@ -3034,6 +3355,7 @@ AMDPerformanceOptimisation:
 
 ; ================================================================================================
 
+; extended leaf 80000001Bh, data in eax
 ; AMD only, data in eax
 AMDIBS: mov eax, dword [__MaxExtended]
 
@@ -3069,7 +3391,7 @@ AMDIBS: mov eax, dword [__MaxExtended]
 
 ; ================================================================================================
 
-; leaf 8000001fd, data in eax, ebx, ecx, and edx
+; leaf 8000001dh, data in eax, ebx, ecx, and edx
 ; AMD only, data in eax
 AMDCache:
 
@@ -3218,6 +3540,60 @@ AMDCache:
 
 .fin:   ret
 
+; ================================================================================================
+
+; leaf 1eh, data in eax, ebx, and ecx
+; AMD only
+AMDProcTopology:
+
+        mov eax, dword [__MaxExtended]
+
+        cmp eax, 0x8000001E
+        jl .fin
+
+        mov eax, 0x80000001
+                
+        cpuid
+                
+        bt ecx, 22              ; topology extensions
+        jnc .fin
+                
+        cinvoke printf, "  Processor Topology Information %c", 10
+
+        mov eax, 0x8000001E
+
+        cpuid
+                
+        mov edi, ebx
+        mov esi, ecx
+                
+        cinvoke printf, "    Extended APIC ID 0x%X %c", eax, 10
+
+        mov eax, edi
+                
+        and eax, 0x000000FF
+
+        cinvoke printf, "    ComputeUnitId         0x%X %c", eax, 10
+                
+        mov eax, edi
+        shr eax, 8
+        and eax, 0x000000FF
+                
+        cinvoke printf, "    ThreadsPerComputeUnit 0x%X %c", eax, 10
+                
+        mov eax, esi
+        and eax, 0x000000FF
+                
+        cinvoke printf, "    NodeId                0x%X %c", eax, 10
+                
+        mov eax, esi
+        shr eax, 8
+        and eax, 0x00000007
+                
+        cinvoke printf, "    NodesPerProcessor     %d %c", eax, 10
+
+.fin:   ret
+
 ; ================================================================================================              
 
 ; leaf 8000001fh
@@ -3227,7 +3603,7 @@ AMDEMS: mov eax, dword [__MaxExtended]
         cmp eax, 0x8000001F
         jl .fin
 
-        cinvoke printf, "  AMD Encrypted Memory Capabilities %c", 10
+        cinvoke printf, "  Encrypted Memory Capabilities %c", 10
 
         mov eax, 0x8000001F
 
@@ -3622,7 +3998,7 @@ __FeatureString2                db "FPU-x87   ",0
                                 db "Reserved  ",0
                                 db "PBE       ",0
 
-; 02h leaf                                                                                                 
+; 02h leaf, data stored in eax, ebx, ecx, and edx
 __CacheTlbValueTable            db 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E
                                 db 0x1D 
                                 db 0x21, 0x22, 0x23, 0x24, 0x25, 0x29, 0x2C
@@ -3655,6 +4031,7 @@ __CacheTlbAddressTable          dd __S01, __S02, __S03, __S04, __S05, __S06, __S
                                 dd __SE2, __SE3, __SE4, __SEA, __SEB, __SEC
                                 dd __SF0, __SF1         
 
+; 02h leaf text table
 __S01                           db "TLB: 4 KByte pages, 4-way set associative, 32 entries", 0
 __S02                           db "TLB: 4 MByte pages, fully associative, 2 entries", 0
 __S03                           db "TLB: 4 KByte pages, 4-way set associative, 64 entries", 0
@@ -3800,7 +4177,7 @@ __ThermalPower1                 db "Digital temperature sensor supported        
                                 db "Reserved.                                    ", 0
                                 db "Reserved.                                    ", 0
                                                    
-; 07h leaf, bits in ebx
+; 07h leaf (intel), bits in ebx
 __StructuredExtendedFeatureFlags1:
                                 db "FSGSBASE                     ", 0
                                 db "IA32_TSC_ADJUST              ", 0
@@ -3835,7 +4212,7 @@ __StructuredExtendedFeatureFlags1:
                                 db "AVX512BW                     ", 0
                                 db "AVX512VL                     ", 0
 
-; 07h leaf, bits in ecx
+; 07h leaf (intel), bits in ecx
 __StructuredExtendedFeatureFlags2:
                                 db "PREFETCHWT1. Intel Xeon Phi only      ", 0
                                 db "AVX512_VBMI                           ", 0
@@ -3905,9 +4282,79 @@ __StructuredExtendedFeatureFlags3:
                                 db "IA32_CORE_CAPABILITIES MSR        ", 0
                                 db "SSBD. IA32_SPEC_CTRL MSR          ", 0
 
+; 07h leaf (amd), bits in ebx
+__AMDStructuredExtendedFeatureIDs1:
+                                db "FSGSBASE  ", 0
+                                db "Reserved  ", 0
+                                db "Reserved  ", 0
+                                db "BMI1      ", 0
+                                db "Reserved  ", 0
+                                db "AVX2      ", 0
+                                db "Reserved  ", 0
+                                db "SMEP      ", 0
+                                db "BMI2      ", 0
+                                db "Reserved  ", 0
+                                db "INVPCID   ", 0
+                                db "Reserved  ", 0
+                                db "PQM       ", 0 
+                                db "Reserved  ", 0
+                                db "Reserved  ", 0
+                                db "PQE       ", 0
+                                db "Reserved  ", 0
+                                db "Reserved  ", 0
+                                db "RDSEED    ", 0
+                                db "ADCX/ADOX ", 0
+                                db "SMAP      ", 0
+                                db "Reserved  ", 0
+                                db "RDPID     ", 0
+                                db "CLFLUSHOPT", 0
+                                db "CLWB      ", 0
+                                db "Reserved  ", 0
+                                db "Reserved  ", 0
+                                db "Reserved  ", 0
+                                db "Reserved  ", 0
+                                db "SHA       ", 0
+                                db "Reserved  ", 0
+                                db "Reserved  ", 0
+
+; 07h leaf (amd), bits in ecx
+__AMDStructuredExtendedFeatureIDs2:
+                                db "Reserved ", 0
+                                db "Reserved ", 0
+                                db "UMIP     ", 0
+                                db "PKU      ", 0
+                                db "OSPKE    ", 0
+                                db "Reserved ", 0
+                                db "Reserved ", 0
+                                db "CET_SS   ", 0
+                                db "Reserved ", 0
+                                db "VAES     ", 0
+                                db "VPCMULQDQ", 0
+                                db "Reserved ", 0
+                                db "Reserved ", 0
+                                db "Reserved ", 0
+                                db "Reserved ", 0
+                                db "Reserved ", 0
+                                db "LA57     ", 0
+                                db "Reserved ", 0
+                                db "Reserved ", 0
+                                db "Reserved ", 0
+                                db "Reserved ", 0
+                                db "Reserved ", 0
+                                db "Reserved ", 0
+                                db "Reserved ", 0
+                                db "Reserved ", 0
+                                db "Reserved ", 0
+                                db "Reserved ", 0
+                                db "Reserved ", 0
+                                db "Reserved ", 0
+                                db "Reserved ", 0
+                                db "Reserved ", 0
+                                db "Reserved ", 0
+
 ; 0Dh, bits in eax
 
-__ProcExtStateEnumMain          db "X87      ", 0
+__ProcExtStateEnumMain:         db "X87      ", 0
                                 db "SSE      ", 0
                                 db "ACX      ", 0
                                 db "BNDREG   ", 0
@@ -4136,6 +4583,74 @@ __IBSFeatures:                  db "IBSFFV            ", 0
                                 db "Reserved          ", 0
                                 db "IbsL3MissFiltering", 0
                                                                 
+; AMD; 8000001C_EAX             
+__AMDLWPEAX:                    db "LwpAvail. The LWP feature is                           ", 0
+                                db "LwpVAL. LWPVAL instruction                             ", 0
+                                db "LwpIRE. Instructions retired event                     ", 0
+                                db "LwpBRE. Branch retired event                           ", 0
+                                db "LwpDME. DC miss event                                  ", 0
+                                db "LwpCNH. Core clocks not halted event                   ", 0
+                                db "LwpRNH. Core reference clocks not halted event         ", 0
+                                db "Reserved                                               ", 0
+                                db "Reserved                                               ", 0
+                                db "Reserved                                               ", 0
+                                db "Reserved                                               ", 0
+                                db "Reserved                                               ", 0
+                                db "Reserved                                               ", 0
+                                db "Reserved                                               ", 0
+                                db "Reserved                                               ", 0
+                                db "Reserved                                               ", 0
+                                db "Reserved                                               ", 0
+                                db "Reserved                                               ", 0
+                                db "Reserved                                               ", 0
+                                db "Reserved                                               ", 0
+                                db "Reserved                                               ", 0
+                                db "Reserved                                               ", 0
+                                db "Reserved                                               ", 0
+                                db "Reserved                                               ", 0
+                                db "Reserved                                               ", 0
+                                db "Reserved                                               ", 0
+                                db "Reserved                                               ", 0
+                                db "Reserved                                               ", 0
+                                db "Reserved                                               ", 0
+                                db "LwpCont. Sampling in continuous mode                   ", 0
+                                db "LwpPTSC. Performance time stamp counter in event record", 0
+                                db "LwpInt. Interrupt on threshold overflow                ", 0
+
+; AMD; 8000001C_EDX
+__AMDLWPEDX:                    db "LwpAvail Lightweight profiling                        ", 0
+                                db "LwpVAL LWPVAL instruction                             ", 0
+                                db "LwpIRE Instructions retired event                     ", 0
+                                db "LwpBRE Branch retired event                           ", 0
+                                db "LwpDME DC miss event                                  ", 0
+                                db "LwpCNH Core clocks not halted event is supported      ", 0
+                                db "LwpRNH Core reference clocks not halted event         ", 0
+                                db "Reserved                                              ", 0
+                                db "Reserved                                              ", 0
+                                db "Reserved                                              ", 0
+                                db "Reserved                                              ", 0
+                                db "Reserved                                              ", 0
+                                db "Reserved                                              ", 0
+                                db "Reserved                                              ", 0
+                                db "Reserved                                              ", 0
+                                db "Reserved                                              ", 0
+                                db "Reserved                                              ", 0
+                                db "Reserved                                              ", 0
+                                db "Reserved                                              ", 0
+                                db "Reserved                                              ", 0
+                                db "Reserved                                              ", 0
+                                db "Reserved                                              ", 0
+                                db "Reserved                                              ", 0
+                                db "Reserved                                              ", 0
+                                db "Reserved                                              ", 0
+                                db "Reserved                                              ", 0
+                                db "Reserved                                              ", 0
+                                db "Reserved                                              ", 0
+                                db "Reserved                                              ", 0
+                                db "LwpCont Sampling in continuous mode                   ", 0
+                                db "LwpPTSC Performance time stamp counter in event record", 0
+                                db "LwpInt Interrupt on threshold overflow                ", 0
+
 ; AMD; 8000001F_EAX
 __AMDSecureEncryption:          db "SME                 ", 0
                                 db "SEV                 ", 0
@@ -4196,7 +4711,6 @@ __AMDLevelType                  db "Core   ", 0
                                 db "Complex", 0
                                 db "Die    ", 0
                                 db "Socket ", 0
-
 
 ; ================================================================================================
 section '.idata' import data readable

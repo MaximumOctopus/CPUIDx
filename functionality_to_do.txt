@@ -57,7 +57,7 @@
     800000003h - Done                                     800000003h - Done
     800000004h - Done                                     800000004h - Done
 	800000005h - Reserved                                 800000005h - Testing
-    800000006h - To do                                    800000006h - Testing
+    800000006h - Done                                     800000006h - Testing
     800000007h - Done                                     800000007h - Done
     800000008h - Done                                     800000008h - Done
 
@@ -77,12 +77,12 @@
 		                                                  800000016h - Reserved
 		                                                  800000016h - Reserved
 		                                                  800000017h - Reserved
-		                                                  800000019h - To do
+		                                                  800000019h - Testing
 		                                                  80000001Ah - Testing
 		                                                  80000001Bh - Testing
-		                                                  80000001Ch - To do
+		                                                  80000001Ch - Testing
 		                                                  80000001Dh - Testing
-		                                                  80000001Eh - To do
+		                                                  80000001Eh - Testing
 		                                                  80000001Fh - Testing
 		                                                  800000020h - Testing
 		                                                  800000021h - Testing

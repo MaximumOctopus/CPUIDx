@@ -1,14 +1,15 @@
 ============================================================================================================================
-CPUidX 0.2
-(c) Paul Alan Freshney 2022-2023
 
-paul@freshney.org
+  CPUidX 0.3
+  (c) Paul Alan Freshney 2022-2023
 
-Source code and executable
-  https://github.com/MaximumOctopus/CPUIDx
+  paul@freshney.org
+
+  Source code and executable
+    https://github.com/MaximumOctopus/CPUIDx
   
-Assembled using "Flat Assembler"
-  https://flatassembler.net/
+  Assembled using "Flat Assembler"
+    https://flatassembler.net/
   
 ============================================================================================================================
 
@@ -32,6 +33,11 @@ All of my software is free and open source; please consider donating to a local 
 ============================================================================================================================
 
 Release History
+
+0.3 / January 15th 2023
+
+Added more leafs
+Minor tweaks
 
 0.2 / January 13th 2023
 
