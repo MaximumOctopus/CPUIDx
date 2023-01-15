@@ -10,6 +10,10 @@
   
   Assembled using "Flat Assembler"
     https://flatassembler.net/
+	
+  References
+    AMD64 Architecture Programmer’s Manual Volume 3: General-Purpose and System Instructions (October 2022)
+    Intel® 64 and IA-32 Architectures Software Developer's Manual Volume 2 (December 2022)
   
 ============================================================================================================================
 
