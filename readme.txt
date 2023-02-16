@@ -1,6 +1,6 @@
 ============================================================================================================================
 
-  CPUidX 0.3
+  CPUidX 0.4
   (c) Paul Alan Freshney 2022-2023
 
   paul@freshney.org
@@ -37,6 +37,11 @@ All of my software is free and open source; please consider donating to a local 
 ============================================================================================================================
 
 Release History
+
+0.4 / February 16th 2023
+
+Added descriptions to many of the feature bits.
+Added the remaining to-do leafs.
 
 0.3 / January 15th 2023
 
