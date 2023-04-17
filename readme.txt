@@ -1,6 +1,6 @@
 ============================================================================================================================
 
-  CPUidX 0.4
+  CPUidX 0.5
   (c) Paul Alan Freshney 2022-2023
 
   paul@freshney.org
@@ -14,6 +14,7 @@
   References
     AMD64 Architecture Programmer’s Manual Volume 3: General-Purpose and System Instructions (October 2022)
     Intel® 64 and IA-32 Architectures Software Developer's Manual Volume 2 (December 2022)
+    Intel® 64 and IA-32 Architectures Software Developer's Manual Volume 2 (March 2023)	
   
 ============================================================================================================================
 
@@ -21,7 +22,7 @@ Run it from a command prompt.
 
 Known issues:
   Lack of support for earlier Intel and AMD CPUs.
-  AMD support and testing is lacking
+  AMD testing is lacking
 
 ============================================================================================================================
 
@@ -37,6 +38,11 @@ All of my software is free and open source; please consider donating to a local 
 ============================================================================================================================
 
 Release History
+
+0.5 / April 17th 2023
+
+A few minor modifications based on the latest Intel developer manual.
+Fixed a few printf issues.
 
 0.4 / February 16th 2023
 

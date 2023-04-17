@@ -1,7 +1,8 @@
-; ================================================================================================
+; ===================================================================================
+; ===================================================================================
 ;
 ; (c) Paul Alan Freshney 2023
-; v0.4, February 16th 2023
+; v0.5, April 17th 2023
 ;
 ; Source code:
 ;   https://github.com/MaximumOctopus/CPUIDx
@@ -12,15 +13,17 @@
 ; Resources used:
 ;   AMD64 Architecture Programmer’s Manual Volume 3: General-Purpose and System Instructions (October 2022)
 ;   Intel® 64 and IA-32 Architectures Software Developer's Manual Volume 2 (December 2022)
+;   Intel® 64 and IA-32 Architectures Software Developer's Manual Volume 2 (March 2023)
 ;
-; ================================================================================================
+; ===================================================================================
+; ===================================================================================
 
 format PE console
 include 'win32ax.inc'
 
-; ================================================================================================
+; ===================================================================================
 section '.code' code readable executable
-; ================================================================================================
+; ===================================================================================
 
 start:  call About
 
@@ -59,8 +62,8 @@ start:  call About
 
         cmp dword [__VendorID + 8], 0x6c65746e
         jne .AMDoptions
-		
-		cinvoke printf, "%c      Intel-specific %c %c", 10, 10, 10
+                
+        cinvoke printf, "%c      Intel-specific %c %c", 10, 10, 10
 
         call ProcessorSerialNumber              ; 03h
 
@@ -132,8 +135,8 @@ start:  call About
 
         cmp dword [__VendorID + 8], 0x444d4163
         jne .finish
-		
-		cinvoke printf, "%c      AMD-specific %c %c", 10, 10, 10
+                
+        cinvoke printf, "%c      AMD-specific %c %c", 10, 10, 10
                 
         call MonitorMWait                       ; 05h
 
@@ -184,15 +187,15 @@ start:  call About
         xor eax, eax
         ret
 
-; ================================================================================================
+; ===================================================================================
 
-About:  cinvoke printf, "%c    CPUidX v0.4 :: February 16th 2023 :: Paul A Freshney %c", 10, 10
+About:  cinvoke printf, "%c    CPUidX v0.5 :: April 17th 2023 :: Paul A Freshney %c", 10, 10
 
         cinvoke printf, "       https://github.com/MaximumOctopus/CPUIDx %c %c", 10, 10
 
         ret
 
-; ================================================================================================
+; ===================================================================================
 
 FamilyModel:
 
@@ -228,7 +231,7 @@ FamilyModel:
                 
         ret
 
-; ================================================================================================
+; ===================================================================================
 
 ShowFamilyModel:
 
@@ -271,7 +274,7 @@ ShowFamilyModel:
 
         ret
 
-; ================================================================================================
+; ===================================================================================
 
 ShowFeatures1:
 
@@ -312,7 +315,7 @@ lf1:    bt  eax, esi
 
         ret
 
-; ================================================================================================
+; ===================================================================================
 
 CoreCount:
 
@@ -338,7 +341,7 @@ CoreCount:
                 
         ret
 
-; ================================================================================================
+; ===================================================================================
 
 ; leaf 04, data returned in eax, ebx, and ecx
 ; Intel only, not supported by AMD
@@ -376,7 +379,7 @@ CacheTlb:
 
         ret
 
-; ================================================================================================
+; ===================================================================================
 
 ; from volume 2A of the cpuid docs
 ; eax contains cache level and type
@@ -458,7 +461,7 @@ ShowCache:
                 
 .next:  ret
                 
-; ================================================================================================
+; ===================================================================================
 
 ; leaf 02h, returns data (as bytes, max of 4 per register) in eax, ebc, ecx, and edx
 ; Intel only, not supported by AMD
@@ -587,7 +590,7 @@ GetStringAddress:
 
         ret
                 
-; ================================================================================================
+; ===================================================================================
 
 ; leaf 03h, data in ecx, and edx
 ProcessorSerialNumber:
@@ -603,7 +606,7 @@ ProcessorSerialNumber:
 
 .fin:   ret
 
-; ================================================================================================
+; ===================================================================================
 
 ; leaf 05h, data in eax, ebx, ecx, edx
 MonitorMWait:
@@ -662,7 +665,7 @@ MonitorMWait:
 
         ret
 
-; ================================================================================================
+; ===================================================================================
 
 ; 06h leaf, data in eax
 ; Intel only
@@ -696,7 +699,7 @@ ThermalPower:
 
         ret             
                 
-; ================================================================================================
+; ===================================================================================
 
 ; 06h leaf, data in eax and ecx
 ; AMD only
@@ -722,7 +725,7 @@ PowerManagementRelated:
 
         ret
 
-; ================================================================================================
+; ===================================================================================
 
 ; 07h leaf, flags in ebx, ecx, and edx
 StructuredExtendedFeatureFlags:
@@ -930,7 +933,7 @@ showd:  mov esi, 0
 .fin:
         ret
                 
-; ================================================================================================
+; ===================================================================================
 
 ; 07h leaf, flags in ebx, ecx, and edx
 ; amd only
@@ -988,7 +991,7 @@ AMDStructuredExtendedFeatureIDs:
 
 .fin:   ret
 
-; ================================================================================================
+; ===================================================================================
 
 ; leaf 09h
 ; Intel only, not supported by AMD
@@ -1006,7 +1009,7 @@ DirectCacheAccessInfo:
 .fin:
         ret
 
-; ================================================================================================
+; ===================================================================================
 
 ; leaf 0ah
 ArchitecturalPerfMon:
@@ -1065,7 +1068,7 @@ ArchitecturalPerfMon:
 
 .fin:   ret
 
-; ================================================================================================
+; ===================================================================================
 
 ; leaf 0bh, data in eax, ebx, ecx, and edx
 ; intel only
@@ -1090,7 +1093,7 @@ ExtendedTopology:
                 
         mov esi, 0                      ; sub-leaf index
 
-        cinvoke printf, "%c", edx, 10
+        cinvoke printf, "%c", 10
 
         mov ecx, 0
 .loop:  mov eax, 0x1f
@@ -1132,7 +1135,7 @@ ExtendedTopology:
 
 .fin:   ret
 
-; ================================================================================================
+; ===================================================================================
 
 ;leaf 0bh, data in eax, ebx, ecx, and edx
 ; AMD only
@@ -1155,7 +1158,7 @@ AMDProcExtTopologyEnum:
 
         and edi, 0x0000FFFF
 
-        cinvoke printf, "    Number of threads in a core: %c", edi, 10
+        cinvoke printf, "    Number of threads in a core: %d %c", edi, 10
 
         mov ecx, 1
         mov eax, 0x0b
@@ -1169,11 +1172,11 @@ AMDProcExtTopologyEnum:
 
         and edi, 0x0000FFFF
 
-        cinvoke printf, "    Number of cores in a socket: %c", edi, 10
+        cinvoke printf, "    Number of cores in a socket: %d %c", edi, 10
 
 .fin:   ret
 
-; ================================================================================================
+; ===================================================================================
 
 ;leaf 0dh (ecx=0), data in eax, ebx, ecx
 ProcExtStateEnumMain:
@@ -1270,7 +1273,7 @@ ProcExtStateEnumSub1:
 
 .fin:   ret
 
-; ================================================================================================
+; ===================================================================================
 
 ; leaf 0dh
 AMDProcExtStateEnum:
@@ -1396,7 +1399,7 @@ AMDProcExtStateEnum:
 
 .fin:   ret
 
-; ================================================================================================
+; ===================================================================================
 
 ; leaf 0fh, sub leaf 0 and 1
 IntelRDTMonitoring:
@@ -1457,7 +1460,7 @@ IntelRDTMonitoring:
 
 .fin:   ret
 
-; ================================================================================================              
+; ===================================================================================              
 
 ; leaf 10h, sub-leaf 0 (data in ebx only)
 IntelRDTAllocEnum:
@@ -1615,7 +1618,7 @@ IntelRDTAllocEnum:
 
         ret
 
-; ================================================================================================
+; ===================================================================================
 
 ; leaf 12h, ecx = 1, data in eax, ebx, and edx
 IntelSGXCapability:
@@ -1663,11 +1666,32 @@ IntelSGXCapability:
         pop eax
 
 .bit6:  bt eax, 6
-        jnc .ebx
+        jnc .bit7
                 
         push eax
         cinvoke printf, "    Intel SGX supports ENCLS instructions (ETRACKC, ERDINFO, ELDBC, and ELDUC) %c", 10
         pop eax
+                
+.bit7:  bt eax, 7
+        jnc .bit10
+                
+        push eax
+        cinvoke printf, "    Intel SGX supports ENCLU instruction leaf EVERIFYREPORT2 %c", 10
+        pop eax
+
+.bit10:  bt eax, 10
+        jnc .bit11
+                
+        push eax
+        cinvoke printf, "    Intel SGX supports ENCLS instruction leaf EUPDATESVN %c", 10
+        pop eax
+
+.bit11: bt eax, 11
+        jnc .ebx
+                
+        push eax
+        cinvoke printf, "    Intel SGX supports ENCLU instruction leaf EDECCSSA %c", 10
+        pop eax         
                 
 .ebx:   cinvoke printf, "    MISCSELECT, supported extended SGX features: %d %c", edi, 10
                 
@@ -1731,7 +1755,7 @@ IntelSGXCapability:
                 
         jne .ecx
                 
-.ecx10: cinvoke printf, "    This section has confidentiality protection only %c", ebx, 10
+.ecx10: cinvoke printf, "    This section has confidentiality protection only %c", 10
 
 .ecx:   shr edi, 12
         and edi, 0x000FFFFF
@@ -1748,7 +1772,7 @@ IntelSGXCapability:
 
         ret
 
-; ================================================================================================
+; ===================================================================================
 
 ; leaf 14h, data in eax, ebx, and ecx
 ; Intel only
@@ -1880,7 +1904,7 @@ IntelProcessorTrace:
 
 .fin:   ret
 
-; ================================================================================================
+; ===================================================================================
 
 ; leaf 15h, data in eax, ebx, and ecx
 ; intel only
@@ -1921,7 +1945,7 @@ TimeStampCounter:
 
 .fin:   ret
 
-; ================================================================================================
+; ===================================================================================
 
 ; leaf 16h, data in eax, ebx, and ecx
 ProcessorFreqInfo:
@@ -1971,7 +1995,7 @@ ProcessorFreqInfo:
 
 .fin:   ret
 
-; ================================================================================================
+; ===================================================================================
 
 ; leaf 17h, data in eax, ebx, ecx, and edx
 SoCVendor:
@@ -2014,7 +2038,7 @@ SoCVendor:
 
 .fin:   ret
 
-; ================================================================================================
+; ===================================================================================
 
 ; leaf 18h, data in eax, ebx, ecx, and edx
 DATParameters:
@@ -2095,7 +2119,7 @@ DATParameters:
 .bit3:  bt ebx, 3
         jnc .next
                 
-        cinvoke printf, "    %s 1GB page size, %d ways of associativity, %d sets %c", eax, ecx, 10
+        cinvoke printf, "    %s 1GB page size, %d ways of associativity, %d sets %c", edi, eax, ecx, 10
 
 .next:  inc esi
 
@@ -2103,7 +2127,7 @@ DATParameters:
 
 .fin:   ret
 
-; ================================================================================================
+; ===================================================================================
 
 ; leaf 19h, data in eax, ebx, and ecx
 KeyLocker:
@@ -2170,7 +2194,7 @@ KeyLocker:
 
 .fin:   ret
 
-; ================================================================================================
+; ===================================================================================
 
 ; leaf 1ah, data in eax
 NativeModelIDEnumeration:
@@ -2196,22 +2220,22 @@ NativeModelIDEnumeration:
         cmp eax, 0x20
         jne .core
                 
-        cinvoke printf, "    Core type      : Intel Atom %c", 10
+        cinvoke printf, "    Core type       : Intel Atom %c", 10
                 
 .core:  cmp eax, 0x40
         jne .id
                 
-        cinvoke printf, "    Core type      : Intel Core %c", 10
+        cinvoke printf, "    Core type       : Intel Core %c", 10
                 
 .id:    and edi, 0x00FFFFFF
 
-        cinvoke printf, "    Native Model ID: 0x%X %c", 10
+        cinvoke printf, "    Native Model ID : 0x%X %c", edi, 10
 
 .finish: 
 
         ret
 
-; ================================================================================================
+; ===================================================================================
 
 ; leaf 1bh, data in eax, ebx, ecx, and edx
 GetPCONFIG:
@@ -2233,7 +2257,7 @@ GetPCONFIG:
                 
 .fin:   ret
 
-; ================================================================================================
+; ===================================================================================
 
 ; leaf 1ch, data in eax, ebx, and ecx
 ; intel only
@@ -2311,7 +2335,7 @@ LastBranchRecords:
 
 .fin:   ret
 
-; ================================================================================================
+; ===================================================================================
 
 ; leaf 1ch, data in eax, ebx, and ecx
 ; intel only
@@ -2471,7 +2495,7 @@ showa:  mov esi, 0
 
 .fin:   ret
 
-; ================================================================================================
+; ===================================================================================
 
 ; leaf 1dh, data in eax and ebx
 TileInformation:
@@ -2527,7 +2551,7 @@ TileInformation:
 
 .fin:   ret
 
-; ================================================================================================
+; ===================================================================================
 
 ; leaf 1eh, data in ebx
 ; intel only
@@ -2557,7 +2581,7 @@ TMULInformation:
                 
 .fin:   ret
 
-; ================================================================================================
+; ===================================================================================
 
 ; leaf 1fh, data in eax, ebx, ecx, and edx
 ; intel only
@@ -2582,7 +2606,7 @@ V2ExtendedTopology:
                 
         mov esi, 0                      ; sub-leaf index
 
-        cinvoke printf, "%c", edx, 10
+        cinvoke printf, "%c", 10
 
         mov ecx, 0
 .loop:  mov eax, 0x1f
@@ -2597,13 +2621,13 @@ V2ExtendedTopology:
         
         cmp ecx, 0                      ; ecx[15:08] = 0 is invalid, exit
         je .fin
-		
+                
         imul ecx, 8
         add ecx, __LevelType
                 
         push eax
         push ebx
-        cinvoke printf, "    Level Type                                     : %s %c", ecx, 10
+        cinvoke printf, "    Domain Type                                    : %s %c", ecx, 10
         pop ebx
         pop eax
                 
@@ -2624,7 +2648,7 @@ V2ExtendedTopology:
 
 .fin:   ret
 
-; ================================================================================================
+; ===================================================================================
 
 ; leaf 20h, data in eax and ebx
 ; intel only
@@ -2653,7 +2677,7 @@ ProcessorHistoryReset:
 
 .fin:   ret
 
-; ================================================================================================
+; ===================================================================================
 
 ; extended leaf 80000001h
 ExtendedFeatures:
@@ -2795,7 +2819,7 @@ ExtendedFeatures:
 
 .fin:   ret
 
-; ================================================================================================
+; ===================================================================================
 
 ; extended leaf 80000002h, data in eax, ebx, ecx, and edx
 BrandString:
@@ -2831,7 +2855,7 @@ BrandString:
                 
         ret
 
-; ================================================================================================
+; ===================================================================================
 
 ; extended leaf 80000005h
 ; AMD only
@@ -3000,7 +3024,7 @@ AMDCacheTLBLevelOneFromTable:
 
         ret
                 
-; ================================================================================================
+; ===================================================================================
           
 ; extended leaf 80000006h, data in ecx
 ; Intel only
@@ -3046,7 +3070,7 @@ IntelCacheInformation:
 
 .fin:   ret
                   
-; ================================================================================================
+; ===================================================================================
 
 ; extended leaf 80000006h
 ; AMD only
@@ -3216,7 +3240,7 @@ AMDCacheTLBLevelThreeCache:
 
 .fin:   ret
 
-; ================================================================================================
+; ===================================================================================
 
 ; extended leaf 80000007h, data in edx
 ; Intel only
@@ -3246,7 +3270,7 @@ InvariantTSC:
 
         ret
 
-; ================================================================================================
+; ===================================================================================
 
 ; extended lead 80000007h, data in ebx, ecx, and edx
 ; AMD only
@@ -3325,7 +3349,7 @@ PPMandRAS:
 
         ret
 
-; ================================================================================================
+; ===================================================================================
 
 ; extended leaf 80000008h, data in eax and ebx
 ; intel only
@@ -3364,7 +3388,7 @@ AddressBits:
 
         ret
                 
-; ================================================================================================
+; ===================================================================================
 
 ; extended leaf 80000008h, data in eax, ebx, ecx, and edx
 ; AMD only
@@ -3441,7 +3465,7 @@ ProcessorCapacityParameters:
 
         ret
 
-; ================================================================================================
+; ===================================================================================
 
 ; leaf 8000000Ah
 ; AMD only, data in eax, ebx, and edx
@@ -3489,7 +3513,7 @@ AMDSVM:
 
 .fin:   ret
 
-; ================================================================================================
+; ===================================================================================
 
 ; extended leaf 800000019h, data in eax and ebx
 ; AMD only
@@ -3511,7 +3535,7 @@ AMDTLBCharacteristics:
 
         and eax, 0x00000FFF
 
-        cinvoke printf, "    L1 instruction TLB entries for 1 GB pages: %c", eax, 10
+        cinvoke printf, "    L1 instruction TLB entries for 1 GB pages: %d %c", eax, 10
                 
         mov eax, edi
                 
@@ -3531,7 +3555,7 @@ AMDTLBCharacteristics:
         shr  eax, 16
         and eax, 0x00000FFF
                 
-        cinvoke printf, "    L1 data TLB entries for 1 GB pages: %c", eax, 10
+        cinvoke printf, "    L1 data TLB entries for 1 GB pages: %d %c", eax, 10
 
         mov eax, edi
                 
@@ -3552,7 +3576,7 @@ AMDTLBCharacteristics:
                 
         and eax, 0x00000FFF
 
-        cinvoke printf, "    L2 instruction TLB entries for 1 GB pages: %c", eax, 10
+        cinvoke printf, "    L2 instruction TLB entries for 1 GB pages: %d %c", eax, 10
                 
         mov eax, esi
                 
@@ -3572,7 +3596,7 @@ AMDTLBCharacteristics:
         shr eax, 16
         and eax, 0x00000FFF
                 
-        cinvoke printf, "    L2 data TLB entries for 1 GB pages: %c", eax, 10
+        cinvoke printf, "    L2 data TLB entries for 1 GB pages: %d %c", eax, 10
 
         mov eax, esi
                 
@@ -3591,7 +3615,7 @@ AMDTLBCharacteristics:
 
 .fin:   ret
 
-; ================================================================================================
+; ===================================================================================
 
 ; extended leaf 80000001Ah, data in eax
 ; AMD only
@@ -3631,7 +3655,7 @@ AMDPerformanceOptimisation:
 
 .fin:   ret
 
-; ================================================================================================
+; ===================================================================================
 
 ; extended leaf 80000001Bh, data in eax
 ; AMD only, data in eax
@@ -3667,7 +3691,7 @@ AMDIBS: mov eax, dword [__MaxExtended]
 .fin:   ret
             
 
-; ================================================================================================
+; ===================================================================================
 
 ; leaf 8000001dh, data in eax, ebx, ecx, and edx
 ; AMD only, data in eax
@@ -3818,7 +3842,7 @@ AMDCache:
 
 .fin:   ret
 
-; ================================================================================================
+; ===================================================================================
 
 ; leaf 1eh, data in eax, ebx, and ecx
 ; AMD only
@@ -3872,7 +3896,7 @@ AMDProcTopology:
 
 .fin:   ret
 
-; ================================================================================================              
+; ===================================================================================              
 
 ; leaf 8000001fh
 ; AMD only, data in eax
@@ -3943,7 +3967,7 @@ AMDEMS: mov eax, dword [__MaxExtended]
 
 .fin:   ret
 
-; ================================================================================================              
+; ===================================================================================              
 
 ; AMD only, data in ebx
 AMDQOS: mov eax, dword [__MaxExtended]
@@ -3968,7 +3992,7 @@ AMDQOS: mov eax, dword [__MaxExtended]
 
 .fin:   ret
 
-; ================================================================================================
+; ===================================================================================
 
 ; AMD only, data in eax and ebx
 AMDEFI2: 
@@ -4004,7 +4028,7 @@ AMDEFI2:
 
 .fin:   ret
 
-; ================================================================================================
+; ===================================================================================
 
 ; AMD only, data in eax and ebx
 AMDExtPMandD:
@@ -4056,7 +4080,7 @@ AMDExtPMandD:
                 
 .fin:   ret
                 
-; ================================================================================================
+; ===================================================================================
 
 ; AMD only, data in eax and ebx
 AMDMultiKeyEMC:
@@ -4086,7 +4110,7 @@ AMDMultiKeyEMC:
                 
 .fin:   ret
 
-; ================================================================================================
+; ===================================================================================
 
 ; AMD only, data in eax and ebx
 AMDExtendedCPUTop:
@@ -4180,9 +4204,9 @@ AMDExtendedCPUTop:
 
 .fin:   ret
 
-; ================================================================================================
+; ===================================================================================
 section '.data' data readable writeable
-; ================================================================================================
+; ===================================================================================
 
 __BrandIndex    db 0
 
@@ -4206,9 +4230,9 @@ __Features1     dd 0
 __Features2     dd 0
 
 
-; ================================================================================================
+; ===================================================================================
 section '.data2' data readable
-; ================================================================================================
+; ===================================================================================
 
 ; 01h leaf, bits in ecx
 __FeatureString1                db "SSE3       (Streaming SIMD Extensions 3)                  ",0
@@ -4518,7 +4542,7 @@ __StructuredExtendedFeatureFlags2:
                                 db "                                                 ", 0
                                 db "RDPID and IA32_TSC_AUX                           ", 0
                                 db "KL (Key Locker)                                  ", 0
-                                db "Reserved.                                        ", 0
+                                db "BUS_LOCK_DETECT, supports OS bus-lock detection  ", 0
                                 db "CLDEMOTE (Supports cache line demote)            ", 0
                                 db "Reserved                                         ", 0
                                 db "MOVDIRI                                          ", 0
@@ -4526,7 +4550,7 @@ __StructuredExtendedFeatureFlags2:
                                 db "ENQCMD (Enqueue Stores)                          ", 0
                                 db "SGX_LC (SGX Launch Configuration)                ", 0
                                 db "PKS (protection keys for supervisor-mode pages)  ", 0
-								
+                                                                
 ; 07h leaf, bits in edx
 __StructuredExtendedFeatureFlags3:
                                 db "Reserved                          ", 0
@@ -4663,11 +4687,12 @@ __DATCacheType:                 db "Unknown    :", 0
 
 ; 1fh, ecx[15:08]
 __LevelType:                    db "Invalid", 0
-                                db "SMT    ", 0
+                                db "Logical", 0
                                 db "Core   ", 0
                                 db "Module ", 0
                                 db "Tile   ", 0
                                 db "Die    ", 0
+                                                                db "Die/Grp", 0
                                                                 
 ; AMD: 80000001_ECX
 __AMDFeatureIdentifiers1:       db "LahfSahf           (LAHF/SAHF instruction support in 64-bit mode)    ", 0
@@ -4999,11 +5024,11 @@ __AMDLevelType                  db "Core   ", 0
                                 db "Die    ", 0
                                 db "Socket ", 0
 
-; ================================================================================================
+; ===================================================================================
 section '.idata' import data readable
-; ================================================================================================
+; ===================================================================================
 
 library msvcrt,'msvcrt.dll',kernal32,'kernal.dll'
 import msvcrt,printf,'printf'
 
-; ================================================================================================
+; ===================================================================================
