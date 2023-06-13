@@ -190,7 +190,7 @@ start:  call Arguments
 
 ; ===================================================================================
 
-About:  cinvoke printf, "%c    CPUidx v0.5 :: April 17th 2023 :: Paul A Freshney %c", 10, 10
+About:  cinvoke printf, "%c    CPUidx v0.6 :: June 13th 2023 :: Paul A Freshney %c", 10, 10
 
         cinvoke printf, "       https://github.com/MaximumOctopus/CPUIDx %c %c", 10, 10
 
