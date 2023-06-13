@@ -1,6 +1,6 @@
 ============================================================================================================================
 
-  CPUidX 0.5
+  CPUidX 0.6
   (c) Paul Alan Freshney 2022-2023
 
   paul@freshney.org
@@ -22,7 +22,7 @@ Run it from a command prompt.
 
 Known issues:
   Lack of support for earlier Intel and AMD CPUs.
-  AMD testing is lacking
+  AMD testing is lacking (I only have Intel CPUs to hand)
 
 ============================================================================================================================
 
@@ -38,6 +38,11 @@ All of my software is free and open source; please consider donating to a local 
 ============================================================================================================================
 
 Release History
+
+0.6 / June 13th 2023
+
+Fixed a couple of bugs with CPU features.
+Added raw register data to all parameters.
 
 0.5 / April 17th 2023
 

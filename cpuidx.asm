@@ -2,7 +2,7 @@
 ; ===================================================================================
 ;
 ; (c) Paul Alan Freshney 2023
-; v0.5, April 17th 2023
+; v0.6, June 13th 2023
 ;
 ; Source code:
 ;   https://github.com/MaximumOctopus/CPUIDx
@@ -25,7 +25,8 @@ include 'win32ax.inc'
 section '.code' code readable executable
 ; ===================================================================================
 
-start:  call About
+start:  call Arguments
+        call About
 
         xor eax, eax
         
@@ -189,9 +190,26 @@ start:  call About
 
 ; ===================================================================================
 
-About:  cinvoke printf, "%c    CPUidX v0.5 :: April 17th 2023 :: Paul A Freshney %c", 10, 10
+About:  cinvoke printf, "%c    CPUidx v0.5 :: April 17th 2023 :: Paul A Freshney %c", 10, 10
 
         cinvoke printf, "       https://github.com/MaximumOctopus/CPUIDx %c %c", 10, 10
+
+        ret
+
+; ===================================================================================
+
+Arguments:
+
+        cinvoke __getmainargs, __argc, __argv, __env, 0, NULL
+
+        mov eax, [__argc]
+
+        cmp eax, 0x01                   ; value in eax (argument count) is 1 if no command-line parameters
+        jle .finish                     ; if <=1 then exit (should never be zero. probably)
+                
+        mov [__ShowDetail], al          ; set flag
+
+.finish:
 
         ret
 
@@ -238,7 +256,7 @@ ShowFamilyModel:
         mov eax, dword [__MaxBasic]
         mov ebx, dword [__MaxExtended]
 
-        cinvoke printf, "  Max Leaf 0x%X, Max Extended Leaf 0x%X %c", eax, ebx, 10
+        cinvoke printf, "    Max Leaf 0x%X, Max Extended Leaf 0x%X %c", eax, ebx, 10
 
         movzx edi, byte [__Family]
 
@@ -270,7 +288,7 @@ ShowFamilyModel:
 
 .show:  movzx edx, byte [__SteppingID]
 
-        cinvoke printf, "  Family 0x%x, Model 0x%X, Stepping 0x%X %c", edi, esi, edx, 10
+        cinvoke printf, "    Family 0x%x, Model 0x%X, Stepping 0x%X %c", edi, esi, edx, 10
 
         ret
 
@@ -281,7 +299,7 @@ ShowFeatures1:
         mov eax, [__Features1]
         mov edi, dword __FeatureString1
 
-        push eax
+        push eax        
         cinvoke printf, "  CPU Features #1 (0x%X) %c", eax, 10
         pop eax
                 
@@ -305,7 +323,7 @@ lf1:    bt  eax, esi
         cinvoke printf, "    %02d::%s %c", esi, edi, 10
         pop eax
 
-.next:  add edi, 59
+.next:  add edi, __FeatureStringSize
 
         inc esi
 
@@ -350,14 +368,12 @@ CacheTlb:
         cmp dword [__VendorID + 8], 0x6c65746e
         jne .finish
 
-        cinvoke printf, "  Cache List: %c", 10
-
         mov ecx, 0x00
         mov eax, 0x04
 
         cpuid
 
-        cinvoke printf, "    0x%X 0x%x 0x%x 0x%x %c", eax, ebx, ecx, edx, 10
+        cinvoke printf, "  Cache List (0x%X 0x%x 0x%x 0x%x) %c", eax, ebx, ecx, edx, 10
 
         mov ecx, 0x00
         mov edi, 0x00
@@ -611,10 +627,12 @@ ProcessorSerialNumber:
 ; leaf 05h, data in eax, ebx, ecx, edx
 MonitorMWait:
 
-        cinvoke printf, "  Monitor / MWAIT %c", 10
+        mov eax, 0x05                
+        cpuid
 
-        mov eax, 0x05
-                
+        cinvoke printf, "  Monitor / MWAIT (0x%X 0x%X 0x%X 0x%x) %c", eax, ebx, ecx, edx, 10
+
+        mov eax, 0x05                
         cpuid
                 
         mov edi, ecx            ; make a backup 
@@ -689,7 +707,7 @@ ThermalPower:
         cinvoke printf, "    %02d::%s %c", esi, edi, 10
         pop eax
 
-.tnext: add edi, 46
+.tnext: add edi, __ThermalPower1Size
 
         inc esi
 
@@ -757,7 +775,7 @@ showb:  mov esi, 0
         cinvoke printf, "    %02d::%s %c", esi, edi, 10
         pop ebx
 
-.nextb: add edi, 44
+.nextb: add edi, __StructuredExtendedFeatureFlags1Size
 
         inc esi
 
@@ -794,7 +812,7 @@ showc:  mov esi, 0
         cinvoke printf, "    %02d::%s %c", esi, edi, 10
         pop ecx
 
-.nextc: add edi, 49
+.nextc: add edi, __StructuredExtendedFeatureFlags2Size
 
         inc esi
 
@@ -822,7 +840,7 @@ showd:  mov esi, 0
         cinvoke printf, "    %02d::%s %c", esi, edi, 10
         pop edx
 
-.nextd: add edi, 35
+.nextd: add edi, __StructuredExtendedFeatureFlags3Size
 
         inc esi
 
@@ -957,7 +975,7 @@ AMDStructuredExtendedFeatureIDs:
         cinvoke printf, "    %02d::%s %c", esi, edi, 10
         pop ebx
 
-.nextb: add edi, 30
+.nextb: add edi, __AMDStructuredExtendedFeatureIDs1Size
 
         inc esi
 
@@ -981,7 +999,7 @@ AMDStructuredExtendedFeatureIDs:
         cinvoke printf, "    %02d::%s %c", esi, edi, 10
         pop ecx
 
-.nextc: add edi, 30
+.nextc: add edi, __AMDStructuredExtendedFeatureIDs2Size
 
         inc esi
 
@@ -1017,15 +1035,16 @@ ArchitecturalPerfMon:
         cmp [__MaxBasic], 0x0A
         jl .fin
 
-        cinvoke printf, "  Architectural Performance Monitoring %c", 10
-
         mov eax, 0x0A
 
         cpuid
 
         mov edi, eax
         mov esi, edx
+                
+                cinvoke printf, "  Architectural Performance Monitoring (0x%X 0x%X) %c", edi, esi, 10
 
+                mov eax, edi
         and eax, 0x000000FF
                 
         cinvoke printf, "    Version ID of APM                 : %d %c", eax, 10
@@ -1076,8 +1095,13 @@ ExtendedTopology:
 
         cmp [__MaxBasic], 0x1f                  ; 0x1f is the preferred topology leaf, if it's valid on this CPU, ignore 0bh
         jge .fin
+                
+                mov ecx, 0
+        mov eax, 0x1f
+                
+        cpuid              
 
-        cinvoke printf, "  Extended Topology Enumeration %c", 10
+        cinvoke printf, "  Extended Topology Enumeration (0x%X 0x%X 0x%X 0x%X) %c", eax, ebx, ecx, edx, 10
 
         mov ecx, 0
         mov eax, 0x1f
@@ -1109,7 +1133,7 @@ ExtendedTopology:
         cmp ecx, 0                      ; ecx[15:08] = 0 is invalid, exit
         je .fin
                 
-        imul ecx, 8
+        imul ecx, __LevelTypeSize
         add ecx, __LevelType
                 
         push eax
@@ -1203,7 +1227,7 @@ ProcExtStateEnumMain:
         cinvoke printf, "    %02d::%s %c", esi, edi, 10
         pop eax
 
-.next:  add edi, 10             ; size of string data
+.next:  add edi, __ProcExtStateEnumMainSize
 
         inc esi
 
@@ -1381,7 +1405,7 @@ AMDProcExtStateEnum:
                 
         bt edi, 0
         jnc .func62
-
+        
         cinvoke printf, "    Supervisor state component %c", 10 
 
 .func62:
@@ -1406,8 +1430,13 @@ IntelRDTMonitoring:
 
         cmp [__MaxBasic], 0x0F
         jl .fin
+                
+        mov ecx, 0
+        mov eax, 0x0F
 
-        cinvoke printf, "  Intel Resource Director Technology %c", 10
+        cpuid           
+
+        cinvoke printf, "  Intel Resource Director Technology (0x%X 0x%X) %c", eax, edx, 10
 
         mov ecx, 0
         mov eax, 0x0F
@@ -1427,7 +1456,12 @@ IntelRDTMonitoring:
                 
 .subleaf:
 
-        cinvoke printf, "  L3 Cache Intel RDT Monitoring Capability %c", 10
+                mov ecx, 1
+        mov eax, 0x0F
+                
+        cpuid
+
+        cinvoke printf, "  L3 Cache Intel RDT Monitoring Capability (0x%X 0x%X 0x%X) %c", ebx, ecx, edx, 10
 
         mov ecx, 1
         mov eax, 0x0F
@@ -1468,14 +1502,14 @@ IntelRDTAllocEnum:
         cmp [__MaxBasic], 0x10
         jl .fin
 
-        cinvoke printf, "  Intel Resource Director Technology Allocation Enumeration %c", 10
-
         mov ecx, 0
         mov eax, 0x10
 
         cpuid
                 
         mov edi, ebx
+                
+                cinvoke printf, "  Intel Resource Director Technology Allocation Enumeration (0x%X) %c", edi, 10
                 
 .bit1:  bt edi, 1
         jnc .bit2
@@ -1496,7 +1530,12 @@ IntelRDTAllocEnum:
 
 .subleaf1:
 
-        cinvoke printf, "  L3 Cache Allocation Technology Enumeration %c", 10
+                mov ecx, 1
+        mov eax, 0x10
+                
+        cpuid
+
+        cinvoke printf, "  L3 Cache Allocation Technology Enumeration (0x%X 0x%X 0x%X 0x%X) %c", eax, ebx, ecx, edx, 10
                 
         mov ecx, 1
         mov eax, 0x10
@@ -1541,7 +1580,12 @@ IntelRDTAllocEnum:
 
 .subleaf2:
 
-        cinvoke printf, "  L2 Cache Allocation Technology Enumeration %c", 10
+        mov ecx, 2
+        mov eax, 0x10
+                
+        cpuid
+
+        cinvoke printf, "  L2 Cache Allocation Technology Enumeration (0x%X 0x%X 0x%X 0x%X) %c", eax, ebx, ecx, edx, 10
                 
         mov ecx, 2
         mov eax, 0x10
@@ -1586,7 +1630,12 @@ IntelRDTAllocEnum:
 
 .subleaf3:
 
-        cinvoke printf, "  Memory Bandwidth Allocation Enumeration %c", 10
+        mov ecx, 3
+        mov eax, 0x10
+                
+        cpuid
+
+        cinvoke printf, "  Memory Bandwidth Allocation Enumeration (0x%X 0x%X 0x%X) %c", eax, ecx, edx, 10
                 
         mov ecx, 3
         mov eax, 0x10
@@ -1625,8 +1674,13 @@ IntelSGXCapability:
 
         cmp [__MaxBasic], 0x12
         jl .fin
+                
+        mov ecx, 0
+        mov eax, 0x07           ;
+                
+        cpuid           
 
-        cinvoke printf, "  Intel SGX Capability Enumeration %c", 10
+        cinvoke printf, "  Intel SGX Capability Enumeration (0x%X 0x%X 0x%X) %c", eax, ebx, edx, 10
                 
         mov ecx, 0
         mov eax, 0x07           ;
@@ -1780,8 +1834,13 @@ IntelProcessorTrace:
 
         cmp [__MaxBasic], 0x14
         jl .fin
+                
+                mov ecx, 0
+        mov eax, 0x14
 
-        cinvoke printf, "  Intel Processor Trace Enumeration %c", 10
+        cpuid
+
+        cinvoke printf, "  Intel Processor Trace Enumeration (0x%X 0x%X 0x%X) %c", eax, ebx, ecx, 10
 
         mov ecx, 0
         mov eax, 0x14
@@ -1912,8 +1971,12 @@ TimeStampCounter:
 
         cmp [__MaxBasic], 0x15
         jl .fin
-
-        cinvoke printf, "  Time Stamp Counter and Core Crystal Clock %c", 10
+                
+                mov eax, 0x15
+                
+        cpuid
+ 
+        cinvoke printf, "  Time Stamp Counter and Core Crystal Clock (0x%X 0x%X 0x%X) %c", eax, ebx, ecx, 10
 
         mov eax, 0x15
                 
@@ -1953,8 +2016,6 @@ ProcessorFreqInfo:
         cmp [__MaxBasic], 0x16
         jl .fin
 
-        cinvoke printf, "  Processor Frequency Information %c", 10
-
         mov eax, 0x16
 
         cpuid
@@ -1965,6 +2026,10 @@ ProcessorFreqInfo:
 
         mov edi, ebx
         mov esi, ecx
+                
+                push eax
+                cinvoke printf, "  Processor Frequency Information (0x%X 0x%X 0x%X) %c", eax, edi, esi, 10
+                pop eax
 
 .bf:    cmp eax, 0
         je .bfns
@@ -2135,7 +2200,10 @@ KeyLocker:
         cmp [__MaxBasic], 0x19
         jl .fin
 
-        cinvoke printf, "  Key Locker Leaf %c", 10
+                mov eax, 0x19
+        cpuid
+
+        cinvoke printf, "  Key Locker Leaf (0x%X 0x%X 0x%X) %c", eax, ebx, ecx, 10
                 
         mov eax, 0x19
 
@@ -2263,7 +2331,11 @@ GetPCONFIG:
 ; intel only
 LastBranchRecords:
 
-        cinvoke printf, "  Last Branch Records Information %c", 10
+        mov eax, 0x1C
+                
+        cpuid
+
+        cinvoke printf, "  Last Branch Records Information (0x%X 0x%X 0x%X) %c", eax, ebx, ecx, 10
 
         mov eax, 0x1C
                 
@@ -2371,7 +2443,7 @@ showa:  mov esi, 0
         cinvoke printf, "    %02d::%s %c", esi, edi, 10
         pop eax
 
-.nexta: add edi, 54
+.nexta: add edi, __AMDLWPEAXSize
 
         inc esi
 
@@ -2485,7 +2557,7 @@ showa:  mov esi, 0
         cinvoke printf, "    %02d::%s %c", esi, edi, 10
         pop edx
 
-.nextd: add edi, 55
+.nextd: add edi, __AMDLWPEDXSize
 
         inc esi
 
@@ -2622,7 +2694,7 @@ V2ExtendedTopology:
         cmp ecx, 0                      ; ecx[15:08] = 0 is invalid, exit
         je .fin
                 
-        imul ecx, 8
+        imul ecx, __LevelTypeSize
         add ecx, __LevelType
                 
         push eax
@@ -2789,7 +2861,7 @@ ExtendedFeatures:
         push edx
         pop ecx
 
-.nxtc:  add edi, 69             ; size of text in bytes
+.nxtc:  add edi, __AMDFeatureIdentifiers1Size
 
         inc esi
 
@@ -2809,7 +2881,7 @@ ExtendedFeatures:
         cinvoke printf, "    %02d::%s %c", esi, edi, 10
         push edx
 
-.nxtd:  add edi, 63             ; size of text in bytes
+.nxtd:  add edi, __AMDFeatureIdentifiers2Size
 
         inc esi
 
@@ -3035,13 +3107,15 @@ IntelCacheInformation:
         cmp eax, 0x80000006
         jl .notsupported
                 
-        cinvoke printf, "  Cache Information %c", 10
-                
-        mov eax, 0x80000006
-                
+        mov eax, 0x80000006                
         cpuid
                 
-        mov edi, ecx
+                mov esi, ecx
+                
+                cinvoke printf, "  Cache Information (0x%X) %c", esi, 10
+                
+                mov ecx, esi
+        mov edi, esi
                 
         and ecx, 0x000000FF
 
@@ -3054,7 +3128,7 @@ IntelCacheInformation:
                 
         mov esi, __IntelLevelTwoCache
                 
-        imul ecx, 18
+        imul ecx, __IntelLevelTwoCacheSize
         add esi, ecx
 
         cinvoke printf, "    %s %c", esi, 10
@@ -3099,7 +3173,7 @@ AMDCacheTLBLevelThreeCache:
         and eax, 0x0000000F
                 
         mov edx, __AMDLevelTwoTLB
-        imul eax, 31
+        imul eax, __AMDLevelTwoTLBSize
         add edx, eax
 
         cinvoke printf, "    %s %c", edx, 10
@@ -3117,7 +3191,7 @@ AMDCacheTLBLevelThreeCache:
         and eax, 0x0000000F
                 
         mov esi, __AMDLevelTwoTLB
-        imul eax, 31
+        imul eax, __AMDLevelTwoTLBSize
         add esi, eax
                 
         cinvoke printf, "    %s %c", esi, 10
@@ -3138,7 +3212,7 @@ AMDCacheTLBLevelThreeCache:
         and eax, 0x0000000F
                 
         mov esi, __AMDLevelTwoTLB
-        imul eax, 31
+        imul eax, __AMDLevelTwoTLBSize
         add esi, eax
                 
         cinvoke printf, "    %s %c", esi, 10
@@ -3156,7 +3230,7 @@ AMDCacheTLBLevelThreeCache:
         and eax, 0x0000000F
                 
         mov esi, __AMDLevelTwoTLB
-        imul eax, 31
+        imul eax, __AMDLevelTwoTLBSize
         add esi, eax
                 
         cinvoke printf, "    %s %c", esi, 10
@@ -3184,7 +3258,7 @@ AMDCacheTLBLevelThreeCache:
         and ecx, 0x0000000F
                 
         mov esi, __AMDLevelTwoTLB
-        imul ecx, 31
+        imul ecx, __AMDLevelTwoTLBSize
         add esi, ecx
                 
         cinvoke printf, "    %s %c", esi, 10
@@ -3219,7 +3293,7 @@ AMDCacheTLBLevelThreeCache:
         and edx, 0x0000000F
                 
         mov esi, __AMDLevelTwoTLB
-        imul edx, 31
+        imul edx, __AMDLevelTwoTLBSize
         add esi, edx
                 
         cinvoke printf, "    %s %c", esi, 10
@@ -3337,7 +3411,7 @@ PPMandRAS:
         cinvoke printf, "    %02d::%s %c", esi, edi, 10
         push edx
 
-.nxtd:  add edi, 29             ; size of text in bytes
+.nxtd:  add edi, __AMDAPMFeaturesSize
 
         inc esi
 
@@ -3438,7 +3512,7 @@ ProcessorCapacityParameters:
         cinvoke printf, "    %02d::%s %c", esi, edi, 10
         push ebx
 
-.nxtd:  add edi, 24             ; size of text in bytes
+.nxtd:  add edi, __AMDExtendedFeatureIDSize
 
         inc esi
 
@@ -3503,7 +3577,7 @@ AMDSVM:
         cinvoke printf, "    %02d::%s %c", esi, edi, 10
         pop eax
 
-.next:  add edi, 21             ; size of string data
+.next:  add edi, __SVMFeatureInformationSize
 
         inc esi
 
@@ -3542,8 +3616,7 @@ AMDTLBCharacteristics:
         shr eax, 12
         and eax, 0x0000000F
                 
-        imul eax, 31
-                
+        imul eax, __AMDLevelTwoTLBSize                
         mov ebx, __AMDLevelTwoTLB
                 
         add ebx, eax
@@ -3562,8 +3635,7 @@ AMDTLBCharacteristics:
         shr eax, 28
         and eax, 0x0000000F
                 
-        imul eax, 31
-                
+        imul eax, __AMDLevelTwoTLBSize                
         mov ebx, __AMDLevelTwoTLB
                 
         add ebx, eax
@@ -3583,8 +3655,7 @@ AMDTLBCharacteristics:
         shr eax, 12
         and eax, 0x0000000F
                 
-        imul eax, 31
-                
+        imul eax, __AMDLevelTwoTLBSize                
         mov ebx, __AMDLevelTwoTLB
                 
         add ebx, eax
@@ -3603,8 +3674,7 @@ AMDTLBCharacteristics:
         shr eax, 28
         and eax, 0x0000000F
                 
-        imul eax, 31
-                
+        imul eax, __AMDLevelTwoTLBSize                
         mov ebx, __AMDLevelTwoTLB
                 
         add ebx, eax
@@ -3680,7 +3750,7 @@ AMDIBS: mov eax, dword [__MaxExtended]
         cinvoke printf, "    %02d::%s %c", esi, edi, 10
         pop eax
 
-.next:  add edi, 19             ; size of string data
+.next:  add edi, __IBSFeaturesSize
 
         inc esi
 
@@ -3921,7 +3991,7 @@ AMDEMS: mov eax, dword [__MaxExtended]
         cinvoke printf, "    %02d::%s %c", esi, edi, 10
         pop eax
 
-.next:  add edi, 21             ; size of string data
+.next:  add edi, __AMDSecureEncryptionSize
 
         inc esi
 
@@ -4018,7 +4088,7 @@ AMDEFI2:
         cinvoke printf, "    %02d::%s %c", esi, edi, 10
         pop eax
 
-.next:  add edi, 24             ; size of string data
+.next:  add edi, __AMDExtendedFeatureIdentifiers2Size
 
         inc esi
 
@@ -4208,6 +4278,8 @@ AMDExtendedCPUTop:
 section '.data' data readable writeable
 ; ===================================================================================
 
+__ShowDetail    db 0
+
 __BrandIndex    db 0
 
 __MaxBasic      dd 0
@@ -4229,13 +4301,18 @@ __System        dd 0
 __Features1     dd 0
 __Features2     dd 0
 
+__argc dd ?
+__argv dd ?
+__env dd ?
+
 
 ; ===================================================================================
 section '.data2' data readable
 ; ===================================================================================
 
 ; 01h leaf, bits in ecx
-__FeatureString1                db "SSE3       (Streaming SIMD Extensions 3)                  ",0
+__FeatureStringSize = 59                        ; 58 + null terminator
+__FeatureString1:               db "SSE3       (Streaming SIMD Extensions 3)                  ",0
                                 db "PCLMULQDQ  (PCLMULQDQ instruction)                        ",0
                                 db "DTES64     (64-bit DS Area)                               ",0
                                 db "MONITOR    (MONITOR/MWAIT)                                ",0
@@ -4269,7 +4346,7 @@ __FeatureString1                db "SSE3       (Streaming SIMD Extensions 3)    
                                 db "Not used                                                  ",0
 
 ; 01h leaf, bits in edx
-__FeatureString2                db "FPU-x87    (Floating-Point Unit On-Chip)                  ",0
+__FeatureString2:               db "FPU-x87    (Floating-Point Unit On-Chip)                  ",0
                                 db "VME        (Virtual 8086 Mode Enhancements)               ",0
                                 db "DE         (Debugging Extensions)                         ",0
                                 db "PSE        (Page Size Extension)                          ",0
@@ -4448,7 +4525,8 @@ __SF0                           db "64-Byte prefetching", 0
 __SF1                           db "Prefetch 128-Byte prefetching", 0                                                           
 
 ; 06h leaf, bits in eax
-__ThermalPower1                 db "Digital temperature sensor supported         ", 0
+__ThermalPower1Size = 46                        ; 45 + null terminator
+__ThermalPower1:                db "Digital temperature sensor supported         ", 0
                                 db "Intel Turbo Boost Technology                 ", 0
                                 db "ARAT. APIC-Timer-always-running              ", 0
                                 db "Reserved.                                    ", 0
@@ -4482,6 +4560,7 @@ __ThermalPower1                 db "Digital temperature sensor supported        
                                 db "Reserved.                                    ", 0
                                                    
 ; 07h leaf (intel), bits in ebx
+__StructuredExtendedFeatureFlags1Size = 45      ; 44 + null terminator
 __StructuredExtendedFeatureFlags1:
                                 db "FSGSBASE                                    ", 0
                                 db "IA32_TSC_ADJUST                             ", 0
@@ -4490,7 +4569,7 @@ __StructuredExtendedFeatureFlags1:
                                 db "HLE                                         ", 0
                                 db "AVX2 (Intel Advanced Vector Extensions 2)   ", 0
                                 db "FDP_EXCPTN_ONLY                             ", 0
-                                db "SMEP (Supervisor-Mode Execution Prevention )", 0 
+                                db "SMEP (Supervisor-Mode Execution Prevention) ", 0 
                                 db "BMI2                                        ", 0
                                 db "Enhanced REP MOVSB/STOSB                    ", 0
                                 db "INVPCID instruction                         ", 0  
@@ -4517,6 +4596,7 @@ __StructuredExtendedFeatureFlags1:
                                 db "AVX512VL                                    ", 0
 
 ; 07h leaf (intel), bits in ecx
+__StructuredExtendedFeatureFlags2Size = 50      ; 49 + null terminator
 __StructuredExtendedFeatureFlags2:
                                 db "PREFETCHWT1. Intel Xeon Phi only                 ", 0
                                 db "AVX512_VBMI                                      ", 0
@@ -4552,6 +4632,7 @@ __StructuredExtendedFeatureFlags2:
                                 db "PKS (protection keys for supervisor-mode pages)  ", 0
                                                                 
 ; 07h leaf, bits in edx
+__StructuredExtendedFeatureFlags3Size = 35      ; 34 + null terminator
 __StructuredExtendedFeatureFlags3:
                                 db "Reserved                          ", 0
                                 db "SGX-KEYS                          ", 0
@@ -4587,6 +4668,7 @@ __StructuredExtendedFeatureFlags3:
                                 db "SSBD. IA32_SPEC_CTRL MSR          ", 0
 
 ; 07h leaf (amd), bits in ebx
+__AMDStructuredExtendedFeatureIDs1Size = 11     ;    10 + null terminator
 __AMDStructuredExtendedFeatureIDs1:
                                 db "FSGSBASE  ", 0
                                 db "Reserved  ", 0
@@ -4622,6 +4704,7 @@ __AMDStructuredExtendedFeatureIDs1:
                                 db "Reserved  ", 0
 
 ; 07h leaf (amd), bits in ecx
+__AMDStructuredExtendedFeatureIDs2Size = 10     ; 9 + null terminator
 __AMDStructuredExtendedFeatureIDs2:
                                 db "Reserved ", 0
                                 db "Reserved ", 0
@@ -4657,6 +4740,7 @@ __AMDStructuredExtendedFeatureIDs2:
                                 db "Reserved ", 0
 
 ; 0dh, eax[18:00]
+__ProcExtStateEnumMainSize = 10                 ; 9 + null terminator
 __ProcExtStateEnumMain:         db "X87      ", 0
                                 db "SSE      ", 0
                                 db "ACX      ", 0
@@ -4686,15 +4770,18 @@ __DATCacheType:                 db "Unknown    :", 0
                                 db "Store Only :", 0
 
 ; 1fh, ecx[15:08]
-__LevelType:                    db "Invalid", 0
+__LevelTypeSize = 8                             ; 7 + null terminator
+__LevelType:                    
+                                db "Invalid", 0
                                 db "Logical", 0
                                 db "Core   ", 0
                                 db "Module ", 0
                                 db "Tile   ", 0
                                 db "Die    ", 0
-                                                                db "Die/Grp", 0
+                                db "Die/Grp", 0
                                                                 
 ; AMD: 80000001_ECX
+__AMDFeatureIdentifiers1Size = 70               ; 68 + null terminator
 __AMDFeatureIdentifiers1:       db "LahfSahf           (LAHF/SAHF instruction support in 64-bit mode)    ", 0
                                 db "CmpLegacy          (Core multi-processing legacy mode)               ", 0
                                 db "SVM                (Secure virtual machine)                          ", 0
@@ -4729,6 +4816,7 @@ __AMDFeatureIdentifiers1:       db "LahfSahf           (LAHF/SAHF instruction su
                                 db "Reserved                                                             ", 0
 
 ; AMD: 80000001_EDX
+__AMDFeatureIdentifiers2Size = 64               ; 63 + null terminator
 __AMDFeatureIdentifiers2:       db "FPU x87            (x87 floating-point unit on-chip)           ", 0
                                 db "VME                (Virtual-mode enhancements)                 ", 0
                                 db "DE                 (Debugging extensions)                      ", 0
@@ -4763,24 +4851,26 @@ __AMDFeatureIdentifiers2:       db "FPU x87            (x87 floating-point unit 
                                 db "3DNow              (3DNow!(TM) instructions)                   ", 0
 
 ; Intel 0x80000006; ecx, bits 12-15
-__IntelLevelTwoCache:           db "Disabled         ", 0
-                                db "1 way (direct map", 0
-                                db "2 ways           ", 0
-                                db "Reserved         ", 0
-                                db "4 ways           ", 0
-                                db "Reserved         ", 0
-                                db "8 ways           ", 0
-                                db "See leaf 04h     ", 0 
-                                db "16 ways          ", 0
-                                db "Reserved         ", 0
-                                db "32 ways          ", 0
-                                db "48 ways          ", 0
-                                db "64 ways          ", 0
-                                db "96 ways          ", 0
-                                db "128 ways         ", 0
-                                db "Fully associative", 0
+__IntelLevelTwoCacheSize = 19                   ; 18 + null terminator
+__IntelLevelTwoCache:           db "Disabled          ", 0
+                                db "1 way (direct map)", 0
+                                db "2 ways            ", 0
+                                db "Reserved          ", 0
+                                db "4 ways            ", 0
+                                db "Reserved          ", 0
+                                db "8 ways            ", 0
+                                db "See leaf 04h      ", 0 
+                                db "16 ways           ", 0
+                                db "Reserved          ", 0
+                                db "32 ways           ", 0
+                                db "48 ways           ", 0
+                                db "64 ways           ", 0
+                                db "96 ways           ", 0
+                                db "128 ways          ", 0
+                                db "Fully associative ", 0
 
 ; AMD; 80000006
+__AMDLevelTwoTLBSize = 31                       ; 30 + null terminator
 __AMDLevelTwoTLB:               db "L2/L3 cache or TLB is disabled", 0
                                 db "Direct mapped                 ", 0
                                 db "2-way associative             ", 0
@@ -4799,6 +4889,7 @@ __AMDLevelTwoTLB:               db "L2/L3 cache or TLB is disabled", 0
                                 db "Fully associative             ", 0
 
 ; AMD; 80000007_EDX
+__AMDAPMFeaturesSize = 29                       ; 28 + null terminator
 __AMDAPMFeatures:               db "TS, Temperature sensor      ", 0
                                 db "FID, Frequency ID control   ", 0
                                 db "VID, Voltage ID control     ", 0
@@ -4814,6 +4905,7 @@ __AMDAPMFeatures:               db "TS, Temperature sensor      ", 0
                                 db "ProcPowerReporting          ", 0
                                                                 
 ; AMD; 80000008_EBX
+__AMDExtendedFeatureIDSize = 24                 ; 23 + null terminator
 __AMDExtendedFeatureID:         db "CLZERO                 ", 0
                                 db "InstRetCntMsr          ", 0
                                 db "RstrFpErrPtrs          ", 0
@@ -4848,6 +4940,7 @@ __AMDExtendedFeatureID:         db "CLZERO                 ", 0
                                 db "Reserved               ", 0
                                                                                                                    
 ; AMD; 8000000A_EDX
+__SVMFeatureInformationSize = 21                ; 20 + null terminator
 __SVMFeatureInformation:        db "NP                  ", 0
                                 db "LbrVirt             ", 0
                                 db "SVML                ", 0
@@ -4882,6 +4975,7 @@ __SVMFeatureInformation:        db "NP                  ", 0
                                 db "Reserved            ", 0
 
 ; AMD; 8000001B_EAX
+__IBSFeaturesSize = 19                          ; 18 + null terminator
 __IBSFeatures:                  db "IBSFFV            ", 0
                                 db "FetchSam          ", 0
                                 db "OpSam             ", 0
@@ -4896,6 +4990,7 @@ __IBSFeatures:                  db "IBSFFV            ", 0
                                 db "IbsL3MissFiltering", 0
                                                                 
 ; AMD; 8000001C_EAX             
+__AMDLWPEAXSize = 56                            ; 55 + null terminator
 __AMDLWPEAX:                    db "LwpAvail. The LWP feature is                           ", 0
                                 db "LwpVAL. LWPVAL instruction                             ", 0
                                 db "LwpIRE. Instructions retired event                     ", 0
@@ -4930,6 +5025,7 @@ __AMDLWPEAX:                    db "LwpAvail. The LWP feature is                
                                 db "LwpInt. Interrupt on threshold overflow                ", 0
 
 ; AMD; 8000001C_EDX
+__AMDLWPEDXSize = 55                            ; 54 + null terminator                    
 __AMDLWPEDX:                    db "LwpAvail Lightweight profiling                        ", 0
                                 db "LwpVAL LWPVAL instruction                             ", 0
                                 db "LwpIRE Instructions retired event                     ", 0
@@ -4964,6 +5060,7 @@ __AMDLWPEDX:                    db "LwpAvail Lightweight profiling              
                                 db "LwpInt Interrupt on threshold overflow                ", 0
 
 ; AMD; 8000001F_EAX
+__AMDSecureEncryptionSize = 21                  ; 20 + null terminator
 __AMDSecureEncryption:          db "SME                 ", 0
                                 db "SEV                 ", 0
                                 db "PageFlushMsr        ", 0
@@ -4998,6 +5095,7 @@ __AMDSecureEncryption:          db "SME                 ", 0
                                 db "Reserved            ", 0
 
 ; AMD; 80000021_EAX
+__AMDExtendedFeatureIdentifiers2Size = 24       ; 23 + null terminator
 __AMDExtendedFeatureIdentifiers2:
                                 db "NoNestedDataBp         ", 0
                                 db "Reserved               ", 0
@@ -5019,7 +5117,7 @@ __AMDExtendedFeatureIdentifiers2:
                                 db "CpuidUserDis           ", 0
                                                                 
 ; AMD; 80000026_ECX
-__AMDLevelType                  db "Core   ", 0
+__AMDLevelType:                 db "Core   ", 0
                                 db "Complex", 0
                                 db "Die    ", 0
                                 db "Socket ", 0
@@ -5029,6 +5127,6 @@ section '.idata' import data readable
 ; ===================================================================================
 
 library msvcrt,'msvcrt.dll',kernal32,'kernal.dll'
-import msvcrt,printf,'printf'
+import msvcrt,printf,'printf', __getmainargs,'__getmainargs'
 
 ; ===================================================================================
