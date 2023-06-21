@@ -2,7 +2,7 @@
 ; ===================================================================================
 ;
 ; (c) Paul Alan Freshney 2023
-; v0.6, June 13th 2023
+; v0.7, June 21st 2023
 ;
 ; Source code:
 ;   https://github.com/MaximumOctopus/CPUIDx
@@ -64,7 +64,7 @@ start:  call Arguments
         cmp dword [__VendorID + 8], 0x6c65746e
         jne .AMDoptions
                 
-        cinvoke printf, "%c      Intel-specific %c %c", 10, 10, 10
+        cinvoke printf, "%c      == Intel-specific ======================== %c %c", 10, 10, 10
 
         call ProcessorSerialNumber              ; 03h
 
@@ -119,6 +119,15 @@ start:  call Arguments
         call V2ExtendedTopology                 ; 1fh
                 
         call ProcessorHistoryReset              ; 20h
+                
+; =============================================================================================
+                
+        mov [__MaxExtended], eax
+        cmp eax, 0x80000000
+
+        jl .finish
+                
+        cinvoke printf, "%c      == Extended Leafs ======================== %c %c", 10, 10, 10
 
         call ExtendedFeatures                   ; 0x80000001
                 
@@ -130,14 +139,14 @@ start:  call Arguments
 
         jmp .finish
 
-; AMD
+; == AMD ======================================================================================
 
 .AMDoptions:
 
         cmp dword [__VendorID + 8], 0x444d4163
         jne .finish
-                
-        cinvoke printf, "%c      AMD-specific %c %c", 10, 10, 10
+
+        cinvoke printf, "%c      == AMD-specific ========================== %c %c", 10, 10, 10
                 
         call MonitorMWait                       ; 05h
 
@@ -148,6 +157,15 @@ start:  call Arguments
         call AMDProcExtTopologyEnum             ; 0bh
 
         call AMDProcExtStateEnum                ; 0dh
+                
+; =============================================================================================
+                
+        mov [__MaxExtended], eax
+        cmp eax, 0x80000000
+
+        jl .finish              
+                
+        cinvoke printf, "%c      == Extended Leafs ======================== %c %c", 10, 10, 10
 
         call ExtendedFeatures                   ; 0x80000001
 
@@ -188,15 +206,16 @@ start:  call Arguments
         xor eax, eax
         ret
 
-; ===================================================================================
+; =============================================================================================
+; =============================================================================================
 
-About:  cinvoke printf, "%c    CPUidx v0.6 :: June 13th 2023 :: Paul A Freshney %c", 10, 10
+About:  cinvoke printf, "%c    CPUidx v0.7 :: June 21st 2023 :: Paul A Freshney %c", 10, 10
 
         cinvoke printf, "       https://github.com/MaximumOctopus/CPUIDx %c %c", 10, 10
 
         ret
 
-; ===================================================================================
+; =============================================================================================
 
 Arguments:
 
@@ -207,13 +226,32 @@ Arguments:
         cmp eax, 0x01                   ; value in eax (argument count) is 1 if no command-line parameters
         jle .finish                     ; if <=1 then exit (should never be zero. probably)
                 
-        mov [__ShowDetail], al          ; set flag
+        mov [__ShowDetail], 1           ; set flag
+                
+        cinvoke printf, " FISHY %c", 10
 
 .finish:
 
         ret
 
-; ===================================================================================
+; =============================================================================================
+
+; requires string pointer in esi
+; does not preserve eax, ebx, ecx, or edx
+ShowLeafInformation:
+
+        mov al, [__ShowDetail]
+        cmp al, 1
+        jne .finish
+
+        cinvoke printf, "(%s) %c", esi, 10
+                
+.finish:
+
+        ret
+
+; =============================================================================================
+; =============================================================================================
 
 FamilyModel:
 
@@ -249,7 +287,7 @@ FamilyModel:
                 
         ret
 
-; ===================================================================================
+; =============================================================================================
 
 ShowFamilyModel:
 
@@ -292,9 +330,12 @@ ShowFamilyModel:
 
         ret
 
-; ===================================================================================
+; =============================================================================================
 
 ShowFeatures1:
+
+		mov esi, dword __Leaf01ECX
+        call ShowLeafInformation
 
         mov eax, [__Features1]
         mov edi, dword __FeatureString1
@@ -306,6 +347,9 @@ ShowFeatures1:
         jmp showf
                 
 ShowFeatures2:
+
+        mov esi, dword __Leaf01EDX
+        call ShowLeafInformation
 
         mov eax, [__Features2]
         mov edi, dword __FeatureString2
@@ -333,7 +377,7 @@ lf1:    bt  eax, esi
 
         ret
 
-; ===================================================================================
+; =============================================================================================
 
 CoreCount:
 
@@ -359,7 +403,7 @@ CoreCount:
                 
         ret
 
-; ===================================================================================
+; =============================================================================================
 
 ; leaf 04, data returned in eax, ebx, and ecx
 ; Intel only, not supported by AMD
@@ -367,6 +411,9 @@ CacheTlb:
 
         cmp dword [__VendorID + 8], 0x6c65746e
         jne .finish
+                
+        mov esi, dword __Leaf0400
+        call ShowLeafInformation
 
         mov ecx, 0x00
         mov eax, 0x04
@@ -395,7 +442,7 @@ CacheTlb:
 
         ret
 
-; ===================================================================================
+; =============================================================================================
 
 ; from volume 2A of the cpuid docs
 ; eax contains cache level and type
@@ -477,7 +524,7 @@ ShowCache:
                 
 .next:  ret
                 
-; ===================================================================================
+; =============================================================================================
 
 ; leaf 02h, returns data (as bytes, max of 4 per register) in eax, ebc, ecx, and edx
 ; Intel only, not supported by AMD
@@ -486,8 +533,10 @@ InternalCache:
         cmp dword [__VendorID + 8], 0x6c65746e
         jne .fin
 
-        mov eax, 0x02
+        mov esi, __Leaf02
+        call ShowLeafInformation
 
+        mov eax, 0x02
         cpuid
 
         push eax
@@ -606,7 +655,7 @@ GetStringAddress:
 
         ret
                 
-; ===================================================================================
+; =============================================================================================
 
 ; leaf 03h, data in ecx, and edx
 ProcessorSerialNumber:
@@ -622,10 +671,13 @@ ProcessorSerialNumber:
 
 .fin:   ret
 
-; ===================================================================================
+; =============================================================================================
 
 ; leaf 05h, data in eax, ebx, ecx, edx
 MonitorMWait:
+
+        mov esi, dword __Leaf05
+        call ShowLeafInformation
 
         mov eax, 0x05                
         cpuid
@@ -683,11 +735,14 @@ MonitorMWait:
 
         ret
 
-; ===================================================================================
+; =============================================================================================
 
 ; 06h leaf, data in eax
 ; Intel only
 ThermalPower:
+
+        mov esi, dword __Leaf06
+        call ShowLeafInformation
 
         mov eax, 0x06
         mov edi, dword __ThermalPower1
@@ -717,11 +772,14 @@ ThermalPower:
 
         ret             
                 
-; ===================================================================================
+; =============================================================================================
 
 ; 06h leaf, data in eax and ecx
 ; AMD only
 PowerManagementRelated:
+
+        mov esi, dword __Leaf06
+        call ShowLeafInformation
 
         cinvoke printf, "  Power Management Related Features %c", 10
 
@@ -743,10 +801,13 @@ PowerManagementRelated:
 
         ret
 
-; ===================================================================================
+; =============================================================================================
 
 ; 07h leaf, flags in ebx, ecx, and edx
 StructuredExtendedFeatureFlags:
+
+        mov esi, dword __Leaf0700
+        call ShowLeafInformation
 
         mov ecx, 0
         mov eax, 0x07           ; first pass
@@ -951,11 +1012,14 @@ showd:  mov esi, 0
 .fin:
         ret
                 
-; ===================================================================================
+; =============================================================================================
 
 ; 07h leaf, flags in ebx, ecx, and edx
 ; amd only
 AMDStructuredExtendedFeatureIDs:
+
+        mov esi, dword __Leaf0700
+        call ShowLeafInformation
 
         mov ecx, 0
         mov eax, 0x07           ; first pass
@@ -1009,7 +1073,7 @@ AMDStructuredExtendedFeatureIDs:
 
 .fin:   ret
 
-; ===================================================================================
+; =============================================================================================
 
 ; leaf 09h
 ; Intel only, not supported by AMD
@@ -1018,8 +1082,10 @@ DirectCacheAccessInfo:
         cmp dword [__VendorID + 8], 0x6c65746e
         jne .fin
 
-        mov eax, 0x09
-                
+        mov esi, dword __Leaf09
+        call ShowLeafInformation
+
+        mov eax, 0x09                
         cpuid
                 
         cinvoke printf, "  Value of IA32_PLATFORM_DCA_CAP MSR (@ 0x1F8): 0x%X %c", eax, 10
@@ -1027,24 +1093,26 @@ DirectCacheAccessInfo:
 .fin:
         ret
 
-; ===================================================================================
+; =============================================================================================
 
 ; leaf 0ah
 ArchitecturalPerfMon:
 
         cmp [__MaxBasic], 0x0A
         jl .fin
+                
+        mov esi, dword __Leaf0A
+        call ShowLeafInformation
 
         mov eax, 0x0A
-
         cpuid
 
         mov edi, eax
         mov esi, edx
                 
-                cinvoke printf, "  Architectural Performance Monitoring (0x%X 0x%X) %c", edi, esi, 10
+        cinvoke printf, "  Architectural Performance Monitoring (0x%X 0x%X) %c", edi, esi, 10
 
-                mov eax, edi
+        mov eax, edi
         and eax, 0x000000FF
                 
         cinvoke printf, "    Version ID of APM                 : %d %c", eax, 10
@@ -1087,7 +1155,7 @@ ArchitecturalPerfMon:
 
 .fin:   ret
 
-; ===================================================================================
+; =============================================================================================
 
 ; leaf 0bh, data in eax, ebx, ecx, and edx
 ; intel only
@@ -1096,9 +1164,11 @@ ExtendedTopology:
         cmp [__MaxBasic], 0x1f                  ; 0x1f is the preferred topology leaf, if it's valid on this CPU, ignore 0bh
         jge .fin
                 
-                mov ecx, 0
-        mov eax, 0x1f
+        mov esi, dword __Leaf1F00
+        call ShowLeafInformation
                 
+        mov ecx, 0
+        mov eax, 0x1f                
         cpuid              
 
         cinvoke printf, "  Extended Topology Enumeration (0x%X 0x%X 0x%X 0x%X) %c", eax, ebx, ecx, edx, 10
@@ -1159,7 +1229,7 @@ ExtendedTopology:
 
 .fin:   ret
 
-; ===================================================================================
+; =============================================================================================
 
 ;leaf 0bh, data in eax, ebx, ecx, and edx
 ; AMD only
@@ -1167,6 +1237,9 @@ AMDProcExtTopologyEnum:
 
         cmp [__MaxBasic], 0x0b
         jl .fin
+                
+        mov esi, dword __Leaf1B00
+        call ShowLeafInformation
 
         cinvoke printf, "  Extended Topology Enumeration %c", 10
 
@@ -1200,13 +1273,16 @@ AMDProcExtTopologyEnum:
 
 .fin:   ret
 
-; ===================================================================================
+; =============================================================================================
 
 ;leaf 0dh (ecx=0), data in eax, ebx, ecx
 ProcExtStateEnumMain:
 
         cmp [__MaxBasic], 0x0D
         jl .fin
+                
+        mov esi, dword __Leaf0D00
+        call ShowLeafInformation
 
         mov ecx, 0x00
         mov eax, 0x0D
@@ -1254,6 +1330,9 @@ ProcExtStateEnumSub1:
 
         cmp [__MaxBasic], 0x0D
         jl .fin
+                
+        mov esi, dword __Leaf0D01
+        call ShowLeafInformation
 
         mov ecx, 0x01
         mov eax, 0x0D
@@ -1297,13 +1376,16 @@ ProcExtStateEnumSub1:
 
 .fin:   ret
 
-; ===================================================================================
+; =============================================================================================
 
 ; leaf 0dh
 AMDProcExtStateEnum:
 
         cmp [__MaxBasic], 0x0d
         jl .fin
+                
+        mov esi, dword __Leaf0D00
+        call ShowLeafInformation
                 
         cinvoke printf, "  Processor Extended State Enumeration %c", 10
                 
@@ -1423,7 +1505,7 @@ AMDProcExtStateEnum:
 
 .fin:   ret
 
-; ===================================================================================
+; =============================================================================================
 
 ; leaf 0fh, sub leaf 0 and 1
 IntelRDTMonitoring:
@@ -1431,9 +1513,11 @@ IntelRDTMonitoring:
         cmp [__MaxBasic], 0x0F
         jl .fin
                 
+        mov esi, dword __Leaf0F00
+        call ShowLeafInformation
+                
         mov ecx, 0
         mov eax, 0x0F
-
         cpuid           
 
         cinvoke printf, "  Intel Resource Director Technology (0x%X 0x%X) %c", eax, edx, 10
@@ -1456,16 +1540,17 @@ IntelRDTMonitoring:
                 
 .subleaf:
 
-                mov ecx, 1
-        mov eax, 0x0F
-                
+        mov esi, dword __Leaf0F01
+        call ShowLeafInformation
+
+        mov ecx, 1
+        mov eax, 0x0F                
         cpuid
 
         cinvoke printf, "  L3 Cache Intel RDT Monitoring Capability (0x%X 0x%X 0x%X) %c", ebx, ecx, edx, 10
 
         mov ecx, 1
-        mov eax, 0x0F
-                
+        mov eax, 0x0F                
         cpuid
                 
         inc ecx
@@ -1494,22 +1579,24 @@ IntelRDTMonitoring:
 
 .fin:   ret
 
-; ===================================================================================              
+; =============================================================================================            
 
 ; leaf 10h, sub-leaf 0 (data in ebx only)
 IntelRDTAllocEnum:
 
         cmp [__MaxBasic], 0x10
         jl .fin
+                
+        mov esi, dword __Leaf1000
+        call ShowLeafInformation
 
         mov ecx, 0
         mov eax, 0x10
-
         cpuid
                 
         mov edi, ebx
                 
-                cinvoke printf, "  Intel Resource Director Technology Allocation Enumeration (0x%X) %c", edi, 10
+        cinvoke printf, "  Intel Resource Director Technology Allocation Enumeration (0x%X) %c", edi, 10
                 
 .bit1:  bt edi, 1
         jnc .bit2
@@ -1530,9 +1617,11 @@ IntelRDTAllocEnum:
 
 .subleaf1:
 
-                mov ecx, 1
-        mov eax, 0x10
-                
+        mov esi, dword __Leaf1001
+        call ShowLeafInformation
+
+        mov ecx, 1
+        mov eax, 0x10                
         cpuid
 
         cinvoke printf, "  L3 Cache Allocation Technology Enumeration (0x%X 0x%X 0x%X 0x%X) %c", eax, ebx, ecx, edx, 10
@@ -1580,9 +1669,11 @@ IntelRDTAllocEnum:
 
 .subleaf2:
 
+        mov esi, dword __Leaf1002
+        call ShowLeafInformation
+
         mov ecx, 2
-        mov eax, 0x10
-                
+        mov eax, 0x10                
         cpuid
 
         cinvoke printf, "  L2 Cache Allocation Technology Enumeration (0x%X 0x%X 0x%X 0x%X) %c", eax, ebx, ecx, edx, 10
@@ -1630,9 +1721,11 @@ IntelRDTAllocEnum:
 
 .subleaf3:
 
+        mov esi, dword __Leaf1003
+        call ShowLeafInformation
+
         mov ecx, 3
-        mov eax, 0x10
-                
+        mov eax, 0x10                
         cpuid
 
         cinvoke printf, "  Memory Bandwidth Allocation Enumeration (0x%X 0x%X 0x%X) %c", eax, ecx, edx, 10
@@ -1667,13 +1760,16 @@ IntelRDTAllocEnum:
 
         ret
 
-; ===================================================================================
+; =============================================================================================
 
 ; leaf 12h, ecx = 1, data in eax, ebx, and edx
 IntelSGXCapability:
 
         cmp [__MaxBasic], 0x12
         jl .fin
+                
+        mov esi, dword __Leaf0700
+        call ShowLeafInformation
                 
         mov ecx, 0
         mov eax, 0x07           ;
@@ -1826,7 +1922,7 @@ IntelSGXCapability:
 
         ret
 
-; ===================================================================================
+; =============================================================================================
 
 ; leaf 14h, data in eax, ebx, and ecx
 ; Intel only
@@ -1835,9 +1931,11 @@ IntelProcessorTrace:
         cmp [__MaxBasic], 0x14
         jl .fin
                 
-                mov ecx, 0
+        mov esi, dword __Leaf1400
+        call ShowLeafInformation
+                                
+        mov ecx, 0
         mov eax, 0x14
-
         cpuid
 
         cinvoke printf, "  Intel Processor Trace Enumeration (0x%X 0x%X 0x%X) %c", eax, ebx, ecx, 10
@@ -1963,7 +2061,7 @@ IntelProcessorTrace:
 
 .fin:   ret
 
-; ===================================================================================
+; =============================================================================================
 
 ; leaf 15h, data in eax, ebx, and ecx
 ; intel only
@@ -1972,8 +2070,10 @@ TimeStampCounter:
         cmp [__MaxBasic], 0x15
         jl .fin
                 
-                mov eax, 0x15
-                
+        mov esi, dword __Leaf15
+        call ShowLeafInformation
+                                
+        mov eax, 0x15                
         cpuid
  
         cinvoke printf, "  Time Stamp Counter and Core Crystal Clock (0x%X 0x%X 0x%X) %c", eax, ebx, ecx, 10
@@ -2008,7 +2108,7 @@ TimeStampCounter:
 
 .fin:   ret
 
-; ===================================================================================
+; =============================================================================================
 
 ; leaf 16h, data in eax, ebx, and ecx
 ProcessorFreqInfo:
@@ -2016,8 +2116,10 @@ ProcessorFreqInfo:
         cmp [__MaxBasic], 0x16
         jl .fin
 
-        mov eax, 0x16
+        mov esi, dword __Leaf16
+        call ShowLeafInformation
 
+        mov eax, 0x16
         cpuid
 
         and eax, 0x0000FFFF     ; bits 16-31 are reserved, so let's mask them out
@@ -2027,9 +2129,9 @@ ProcessorFreqInfo:
         mov edi, ebx
         mov esi, ecx
                 
-                push eax
-                cinvoke printf, "  Processor Frequency Information (0x%X 0x%X 0x%X) %c", eax, edi, esi, 10
-                pop eax
+        push eax
+        cinvoke printf, "  Processor Frequency Information (0x%X 0x%X 0x%X) %c", eax, edi, esi, 10
+        pop eax
 
 .bf:    cmp eax, 0
         je .bfns
@@ -2060,13 +2162,16 @@ ProcessorFreqInfo:
 
 .fin:   ret
 
-; ===================================================================================
+; =============================================================================================
 
 ; leaf 17h, data in eax, ebx, ecx, and edx
 SoCVendor:
 
         cmp [__MaxBasic], 0x17
         jl .fin
+
+        mov esi, dword __Leaf1700
+        call ShowLeafInformation
 
         mov ecx, 0
         mov eax, 0x17
@@ -2103,13 +2208,16 @@ SoCVendor:
 
 .fin:   ret
 
-; ===================================================================================
+; =============================================================================================
 
 ; leaf 18h, data in eax, ebx, ecx, and edx
 DATParameters:
 
         cmp [__MaxBasic], 0x18
         jl .fin
+                
+        mov esi, dword __Leaf18
+        call ShowLeafInformation
 
         cinvoke printf, "  Deterministic Address Translation Parameters %c", 10  
 
@@ -2192,7 +2300,7 @@ DATParameters:
 
 .fin:   ret
 
-; ===================================================================================
+; =============================================================================================
 
 ; leaf 19h, data in eax, ebx, and ecx
 KeyLocker:
@@ -2200,7 +2308,10 @@ KeyLocker:
         cmp [__MaxBasic], 0x19
         jl .fin
 
-                mov eax, 0x19
+        mov esi, dword __Leaf19
+        call ShowLeafInformation
+
+        mov eax, 0x19
         cpuid
 
         cinvoke printf, "  Key Locker Leaf (0x%X 0x%X 0x%X) %c", eax, ebx, ecx, 10
@@ -2262,13 +2373,16 @@ KeyLocker:
 
 .fin:   ret
 
-; ===================================================================================
+; =============================================================================================
 
 ; leaf 1ah, data in eax
 NativeModelIDEnumeration:
 
         cmp [__MaxBasic], 0x1a
         jl .finish
+                
+        mov esi, dword __Leaf1A00
+        call ShowLeafInformation
 
         cinvoke printf, "  Native Model ID Enumeration %c", 10
 
@@ -2303,14 +2417,16 @@ NativeModelIDEnumeration:
 
         ret
 
-; ===================================================================================
+; =============================================================================================
 
 ; leaf 1bh, data in eax, ebx, ecx, and edx
 GetPCONFIG:
 
+        mov esi, dword __Leaf1B00
+        call ShowLeafInformation
+
         mov ecx, 0
-        mov eax, 0x1b
-                
+        mov eax, 0x1b                
         cpuid
                 
         cmp eax, 0                              ; value of 0 in eax indicates no support
@@ -2325,14 +2441,16 @@ GetPCONFIG:
                 
 .fin:   ret
 
-; ===================================================================================
+; =============================================================================================
 
 ; leaf 1ch, data in eax, ebx, and ecx
 ; intel only
 LastBranchRecords:
 
-        mov eax, 0x1C
-                
+        mov esi, dword __Leaf1C00
+        call ShowLeafInformation
+
+        mov eax, 0x1C                
         cpuid
 
         cinvoke printf, "  Last Branch Records Information (0x%X 0x%X 0x%X) %c", eax, ebx, ecx, 10
@@ -2407,14 +2525,16 @@ LastBranchRecords:
 
 .fin:   ret
 
-; ===================================================================================
+; =============================================================================================
 
 ; leaf 1ch, data in eax, ebx, and ecx
 ; intel only
 AMDLightweightProfiling:
 
-        mov eax, 0x80000001
+        mov esi, dword __Leaf80__01
+        call ShowLeafInformation
 
+        mov eax, 0x80000001
         cpuid
 
         bt ecx, 15              ; LWP bit
@@ -2422,10 +2542,12 @@ AMDLightweightProfiling:
 
         ret
 
-.cont:  cinvoke printf, "  Lightweight Profiling Capabilities %c", 10
+.cont:  mov esi, dword __Leaf80__1C
+        call ShowLeafInformation
+
+        cinvoke printf, "  Lightweight Profiling Capabilities %c", 10
 
         mov eax, 0x8000001C
-
         cpuid                   ; pass 1 for eax
 
         mov edi, dword __AMDLWPEAX
@@ -2567,13 +2689,16 @@ showa:  mov esi, 0
 
 .fin:   ret
 
-; ===================================================================================
+; =============================================================================================
 
 ; leaf 1dh, data in eax and ebx
 TileInformation:
 
         cmp [__MaxBasic], 0x1d
         jl .fin
+
+        mov esi, dword __Leaf1D00
+        call ShowLeafInformation
 
         cinvoke printf, "  Tile Information %c", 10
 
@@ -2623,7 +2748,7 @@ TileInformation:
 
 .fin:   ret
 
-; ===================================================================================
+; =============================================================================================
 
 ; leaf 1eh, data in ebx
 ; intel only
@@ -2631,6 +2756,9 @@ TMULInformation:
 
         cmp [__MaxBasic], 0x1e
         jl .fin
+                
+        mov esi, dword __Leaf1E00
+        call ShowLeafInformation
 
         cinvoke printf, "  Branch Type Field Supported %c", 10
 
@@ -2653,7 +2781,7 @@ TMULInformation:
                 
 .fin:   ret
 
-; ===================================================================================
+; =============================================================================================
 
 ; leaf 1fh, data in eax, ebx, ecx, and edx
 ; intel only
@@ -2661,6 +2789,9 @@ V2ExtendedTopology:
 
         cmp [__MaxBasic], 0x1f
         jl .fin
+
+        mov esi, dword __Leaf1F00
+        call ShowLeafInformation
 
         cinvoke printf, "  V2 Extended Topology Enumeration %c", 10
 
@@ -2720,7 +2851,7 @@ V2ExtendedTopology:
 
 .fin:   ret
 
-; ===================================================================================
+; =============================================================================================
 
 ; leaf 20h, data in eax and ebx
 ; intel only
@@ -2729,10 +2860,12 @@ ProcessorHistoryReset:
         cmp [__MaxBasic], 0x20
         jl .fin
 
+        mov esi, dword __Leaf20
+        call ShowLeafInformation
+
         cinvoke printf, "  Processor History Reset %c", 10
 
         mov eax, 0x20
-
         cpuid
                 
         mov edi, ebx
@@ -2749,7 +2882,7 @@ ProcessorHistoryReset:
 
 .fin:   ret
 
-; ===================================================================================
+; =============================================================================================
 
 ; extended leaf 80000001h
 ExtendedFeatures:
@@ -2763,8 +2896,10 @@ ExtendedFeatures:
 .intel: cmp dword [__VendorID + 8], 0x6c65746e
         jne .amd
 
-        mov eax, 0x80000001
+        mov esi, dword __Leaf80__01
+        call ShowLeafInformation
 
+        mov eax, 0x80000001
         cpuid
 
         mov edi, ecx
@@ -2891,13 +3026,12 @@ ExtendedFeatures:
 
 .fin:   ret
 
-; ===================================================================================
+; =============================================================================================
 
 ; extended leaf 80000002h, data in eax, ebx, ecx, and edx
 BrandString:
 
-        mov eax, 0x80000002
-                
+        mov eax, 0x80000002                
         cpuid
                 
         mov dword [__BrandString], eax
@@ -2927,7 +3061,7 @@ BrandString:
                 
         ret
 
-; ===================================================================================
+; =============================================================================================
 
 ; extended leaf 80000005h
 ; AMD only
@@ -2937,6 +3071,9 @@ AMDCacheTLBLevelOne:
 
         cmp eax, 0x80000005
         jl .notsupported
+                
+        mov esi, dword __Leaf80__05
+        call ShowLeafInformation
 
         cinvoke printf, "  L1 Cache and TLB Information %c", 10
 
@@ -3096,7 +3233,7 @@ AMDCacheTLBLevelOneFromTable:
 
         ret
                 
-; ===================================================================================
+; =============================================================================================
           
 ; extended leaf 80000006h, data in ecx
 ; Intel only
@@ -3106,15 +3243,18 @@ IntelCacheInformation:
 
         cmp eax, 0x80000006
         jl .notsupported
-                
+        
+        mov esi, dword __Leaf80__06
+        call ShowLeafInformation
+        
         mov eax, 0x80000006                
         cpuid
                 
-                mov esi, ecx
+        mov esi, ecx
                 
-                cinvoke printf, "  Cache Information (0x%X) %c", esi, 10
+        cinvoke printf, "  Cache Information (0x%X) %c", esi, 10
                 
-                mov ecx, esi
+        mov ecx, esi
         mov edi, esi
                 
         and ecx, 0x000000FF
@@ -3144,7 +3284,7 @@ IntelCacheInformation:
 
 .fin:   ret
                   
-; ===================================================================================
+; =============================================================================================
 
 ; extended leaf 80000006h
 ; AMD only
@@ -3154,6 +3294,9 @@ AMDCacheTLBLevelThreeCache:
 
         cmp eax, 0x80000006
         jl .notsupported
+                
+        mov esi, dword __Leaf80__06
+        call ShowLeafInformation
                 
         cinvoke printf, "  L2 Cache and TLB and L3 Cache Information %c", 10
 
@@ -3314,7 +3457,7 @@ AMDCacheTLBLevelThreeCache:
 
 .fin:   ret
 
-; ===================================================================================
+; =============================================================================================
 
 ; extended leaf 80000007h, data in edx
 ; Intel only
@@ -3325,8 +3468,10 @@ InvariantTSC:
         cmp eax, 0x80000007
         jl .notsupported
 
-        mov eax, 0x80000007
+        mov esi, dword __Leaf80__07
+        call ShowLeafInformation
 
+        mov eax, 0x80000007
         cpuid
                 
         bt edx, 8
@@ -3344,7 +3489,7 @@ InvariantTSC:
 
         ret
 
-; ===================================================================================
+; =============================================================================================
 
 ; extended lead 80000007h, data in ebx, ecx, and edx
 ; AMD only
@@ -3355,10 +3500,12 @@ PPMandRAS:
         cmp eax, 0x80000007
         jl .notsupported
 
+        mov esi, dword __Leaf80__07
+        call ShowLeafInformation
+
         cinvoke printf, "  Processor Power Management and RAS Capabilities %c", 10
 
         mov eax, 0x80000007
-
         cpuid
                 
         mov edi, ecx
@@ -3423,7 +3570,7 @@ PPMandRAS:
 
         ret
 
-; ===================================================================================
+; =============================================================================================
 
 ; extended leaf 80000008h, data in eax and ebx
 ; intel only
@@ -3434,8 +3581,10 @@ AddressBits:
         cmp eax, 0x80000008
         jl .notsupported
 
-        mov eax, 0x80000008
+        mov esi, dword __Leaf80__08
+        call ShowLeafInformation
 
+        mov eax, 0x80000008
         cpuid
 
         mov edx, eax
@@ -3462,7 +3611,7 @@ AddressBits:
 
         ret
                 
-; ===================================================================================
+; =============================================================================================
 
 ; extended leaf 80000008h, data in eax, ebx, ecx, and edx
 ; AMD only
@@ -3473,10 +3622,12 @@ ProcessorCapacityParameters:
         cmp eax, 0x80000008
         jl .notsupported
                 
+        mov esi, dword __Leaf80__08
+        call ShowLeafInformation
+                                
         cinvoke printf, "    %c", 10
 
         mov eax, 0x80000008
-
         cpuid
                 
         mov edi, eax
@@ -3539,7 +3690,7 @@ ProcessorCapacityParameters:
 
         ret
 
-; ===================================================================================
+; =============================================================================================
 
 ; leaf 8000000Ah
 ; AMD only, data in eax, ebx, and edx
@@ -3550,10 +3701,12 @@ AMDSVM:
         cmp eax, 0x8000000A
         jl .fin
 
+        mov esi, dword __Leaf80__0A
+        call ShowLeafInformation
+
         cinvoke printf, "  AMD Secure Virtual Machine Architecture (SVM) %c", 10
                 
         mov eax, 0x8000000A
-
         cpuid
                 
         mov edi, ebx
@@ -3587,7 +3740,7 @@ AMDSVM:
 
 .fin:   ret
 
-; ===================================================================================
+; =============================================================================================
 
 ; extended leaf 800000019h, data in eax and ebx
 ; AMD only
@@ -3597,6 +3750,9 @@ AMDTLBCharacteristics:
 
         cmp eax, 0x80000019
         jl .notsupported
+
+        mov esi, dword __Leaf80__19
+        call ShowLeafInformation
 
         cinvoke printf, "  TLB Characteristics for 1GB pages %c", 10
 
@@ -3685,7 +3841,7 @@ AMDTLBCharacteristics:
 
 .fin:   ret
 
-; ===================================================================================
+; =============================================================================================
 
 ; extended leaf 80000001Ah, data in eax
 ; AMD only
@@ -3696,6 +3852,9 @@ AMDPerformanceOptimisation:
         cmp eax, 0x8000001A
         jl .notsupported
                 
+        mov esi, dword __Leaf80__1A
+        call ShowLeafInformation
+                                
         cinvoke printf, "  Performance Optimization %c", 10
 
         mov eax, 0x8000001A
@@ -3725,7 +3884,7 @@ AMDPerformanceOptimisation:
 
 .fin:   ret
 
-; ===================================================================================
+; =============================================================================================
 
 ; extended leaf 80000001Bh, data in eax
 ; AMD only, data in eax
@@ -3733,6 +3892,9 @@ AMDIBS: mov eax, dword [__MaxExtended]
 
         cmp eax, 0x8000001B
         jl .fin
+
+        mov esi, dword __Leaf80__1B
+        call ShowLeafInformation
 
         cinvoke printf, "  AMD Instruction-Based Sampling (IBS) %c", 10
 
@@ -3761,7 +3923,7 @@ AMDIBS: mov eax, dword [__MaxExtended]
 .fin:   ret
             
 
-; ===================================================================================
+; =============================================================================================
 
 ; leaf 8000001dh, data in eax, ebx, ecx, and edx
 ; AMD only, data in eax
@@ -3771,6 +3933,9 @@ AMDCache:
 
         cmp eax, 0x8000001D
         jl .fin
+                
+        mov esi, dword __Leaf80__1D
+        call ShowLeafInformation
 
         cinvoke printf, "  Cache Properties %c", 10
 
@@ -3912,7 +4077,7 @@ AMDCache:
 
 .fin:   ret
 
-; ===================================================================================
+; =============================================================================================
 
 ; leaf 1eh, data in eax, ebx, and ecx
 ; AMD only
@@ -3923,17 +4088,18 @@ AMDProcTopology:
         cmp eax, 0x8000001E
         jl .fin
 
-        mov eax, 0x80000001
-                
+        mov eax, 0x80000001                
         cpuid
                 
         bt ecx, 22              ; topology extensions
         jnc .fin
                 
+        mov esi, dword __Leaf80__1E
+        call ShowLeafInformation
+                                
         cinvoke printf, "  Processor Topology Information %c", 10
 
         mov eax, 0x8000001E
-
         cpuid
                 
         mov edi, ebx
@@ -3966,7 +4132,7 @@ AMDProcTopology:
 
 .fin:   ret
 
-; ===================================================================================              
+; =============================================================================================             
 
 ; leaf 8000001fh
 ; AMD only, data in eax
@@ -3975,10 +4141,12 @@ AMDEMS: mov eax, dword [__MaxExtended]
         cmp eax, 0x8000001F
         jl .fin
 
+        mov esi, dword __Leaf80__1F
+        call ShowLeafInformation
+
         cinvoke printf, "  Encrypted Memory Capabilities %c", 10
 
         mov eax, 0x8000001F
-
         cpuid
 
         mov esi, 0
@@ -4037,13 +4205,16 @@ AMDEMS: mov eax, dword [__MaxExtended]
 
 .fin:   ret
 
-; ===================================================================================              
+; =============================================================================================            
 
 ; AMD only, data in ebx
 AMDQOS: mov eax, dword [__MaxExtended]
 
         cmp eax, 0x80000020
         jl .fin
+
+        mov esi, dword __Leaf80__20
+        call ShowLeafInformation
 
         cinvoke printf, "  QoS Extended Features %c", 10
 
@@ -4062,7 +4233,7 @@ AMDQOS: mov eax, dword [__MaxExtended]
 
 .fin:   ret
 
-; ===================================================================================
+; =============================================================================================
 
 ; AMD only, data in eax and ebx
 AMDEFI2: 
@@ -4071,6 +4242,9 @@ AMDEFI2:
 
         cmp eax, 0x80000021
         jl .fin
+                
+        mov esi, dword __Leaf80__21
+        call ShowLeafInformation
 
         cinvoke printf, "  Extended Feature Identification 2 %c", 10
                 
@@ -4098,7 +4272,7 @@ AMDEFI2:
 
 .fin:   ret
 
-; ===================================================================================
+; =============================================================================================
 
 ; AMD only, data in eax and ebx
 AMDExtPMandD:
@@ -4107,6 +4281,9 @@ AMDExtPMandD:
 
         cmp eax, 0x80000022
         jl .fin
+
+        mov esi, dword __Leaf80__22
+        call ShowLeafInformation
 
         cinvoke printf, "  Extended Performance Monitoring and Debug %c", 10
                 
@@ -4150,7 +4327,7 @@ AMDExtPMandD:
                 
 .fin:   ret
                 
-; ===================================================================================
+; =============================================================================================
 
 ; AMD only, data in eax and ebx
 AMDMultiKeyEMC:
@@ -4159,6 +4336,9 @@ AMDMultiKeyEMC:
 
         cmp eax, 0x80000023
         jl .fin
+
+        mov esi, dword __Leaf80__23
+        call ShowLeafInformation
 
         cinvoke printf, "  Extended Performance Monitoring and Debug %c", 10
                 
@@ -4180,7 +4360,7 @@ AMDMultiKeyEMC:
                 
 .fin:   ret
 
-; ===================================================================================
+; =============================================================================================
 
 ; AMD only, data in eax and ebx
 AMDExtendedCPUTop:
@@ -4189,6 +4369,9 @@ AMDExtendedCPUTop:
 
         cmp eax, 0x80000026
         jl .fin
+                
+        mov esi, dword __Leaf80__26
+        call ShowLeafInformation
 
         cinvoke printf, "  Extended CPU Topology %c", 10
 
@@ -4274,9 +4457,9 @@ AMDExtendedCPUTop:
 
 .fin:   ret
 
-; ===================================================================================
+; =============================================================================================
 section '.data' data readable writeable
-; ===================================================================================
+; =============================================================================================
 
 __ShowDetail    db 0
 
@@ -4306,9 +4489,9 @@ __argv dd ?
 __env dd ?
 
 
-; ===================================================================================
+; =============================================================================================
 section '.data2' data readable
-; ===================================================================================
+; =============================================================================================
 
 ; 01h leaf, bits in ecx
 __FeatureStringSize = 59                        ; 58 + null terminator
@@ -4762,6 +4945,7 @@ __ProcExtStateEnumMain:         db "X87      ", 0
                                 db "TILEDATA ", 0
 
 ; 18h, edx[04:00]
+__DATCacheTypeSize = 13
 __DATCacheType:                 db "Unknown    :", 0
                                 db "Data       :", 0
                                 db "Instruction:", 0
@@ -5117,16 +5301,80 @@ __AMDExtendedFeatureIdentifiers2:
                                 db "CpuidUserDis           ", 0
                                                                 
 ; AMD; 80000026_ECX
+__AMDLevelTypeSize = 8
 __AMDLevelType:                 db "Core   ", 0
                                 db "Complex", 0
                                 db "Die    ", 0
                                 db "Socket ", 0
 
-; ===================================================================================
+; =============================================================================================
+
+__Leaf01ECX:                    db "Leaf 0x01h (from ecx)", 0
+__Leaf01EDX:                    db "Leaf 0x01h (from edx)", 0
+__Leaf02:                       db "Leaf 0x02h", 0
+__Leaf0400:                     db "Leaf 0x04h, ecx = 0x00", 0
+__Leaf05:                       db "Leaf 0x05h", 0
+__Leaf06:                       db "Leaf 0x06h", 0
+__Leaf0700:                     db "Leaf 0x07h, ecx = 0x00", 0
+__Leaf0701:                     db "Leaf 0x07h, ecx = 0x01", 0
+__Leaf09:                       db "Leaf 0x09h", 0
+__Leaf0A:                       db "Leaf 0x0Ah", 0
+__Leaf0B00:                     db "Leaf 0x0Bh, ecx = 0x00", 0
+__Leaf0D00:                     db "Leaf 0x0Dh, ecx = 0x00", 0
+__Leaf0D01:                     db "Leaf 0x0Dh, ecx = 0x01", 0
+__Leaf0D02:                     db "Leaf 0x0Dh, ecx = 0x02", 0
+__Leaf0D0B:                     db "Leaf 0x0Dh, ecx = 0x0b", 0
+__Leaf0D0C:                     db "Leaf 0x0Dh, ecx = 0x0c", 0
+__Leaf0D3E:                     db "Leaf 0x0Dh, ecx = 0x3e", 0
+__Leaf0F00:                     db "Leaf 0x0Fh, ecx = 0x00", 0
+__Leaf0F01:                     db "Leaf 0x0Fh, ecx = 0x01", 0
+__Leaf1000:                     db "Leaf 0x10h, ecx = 0x00", 0
+__Leaf1001:                     db "Leaf 0x10h, ecx = 0x01", 0
+__Leaf1002:                     db "Leaf 0x10h, ecx = 0x02", 0
+__Leaf1003:                     db "Leaf 0x10h, ecx = 0x03", 0
+__Leaf1200:                     db "Leaf 0x12h, ecx = 0x00", 0
+__Leaf1400:                     db "Leaf 0x14h, ecx = 0x00", 0
+__Leaf15:                       db "Leaf 0x15h", 0
+__Leaf16:                       db "Leaf 0x16h", 0
+__Leaf1700:                     db "Leaf 0x17h, ecx = 0x00", 0
+__Leaf18:                       db "Leaf 0x18h", 0
+__Leaf19:                       db "Leaf 0x19h", 0
+__Leaf1A00:                     db "Leaf 0x1Ah, ecx = 0x00", 0
+__Leaf1B00:                     db "Leaf 0x1Bh, ecx = 0x00", 0
+__Leaf1C00:                     db "Leaf 0x1Ch, ecx = 0x00", 0
+__Leaf1D00:                     db "Leaf 0x1Dh, ecx = 0x00", 0
+__Leaf1D01:                     db "Leaf 0x1Dh, ecx = 0x01", 0
+__Leaf1E00:                     db "Leaf 0x1Eh, ecx = 0x00", 0
+__Leaf1F00:                     db "Leaf 0x1Fh, ecx = 0x00", 0
+__Leaf20:                       db "Leaf 0x20h", 0
+__Leaf80__01:                   db "Leaf 0x80000001h", 0
+__Leaf80__02:                   db "Leaf 0x80000002h", 0
+__Leaf80__05:                   db "Leaf 0x80000005h", 0
+__Leaf80__06:                   db "Leaf 0x80000006h", 0
+__Leaf80__07:                   db "Leaf 0x80000007h", 0
+__Leaf80__08:                   db "Leaf 0x80000008h", 0
+__Leaf80__0A:                   db "Leaf 0x8000000Ah", 0
+__Leaf80__0F:                   db "Leaf 0x8000000Fh", 0
+__Leaf80__19:                   db "Leaf 0x80000019h", 0
+__Leaf80__1A:                   db "Leaf 0x8000001Ah", 0
+__Leaf80__1B:                   db "Leaf 0x8000001Bh", 0
+__Leaf80__1C:                   db "Leaf 0x8000001Ch", 0
+__Leaf80__1D:                   db "Leaf 0x8000001Dh", 0
+__Leaf80__1E:                   db "Leaf 0x8000001Eh", 0
+__Leaf80__1F:                   db "Leaf 0x8000001Fh", 0
+__Leaf80__20:                   db "Leaf 0x80000020h", 0
+__Leaf80__21:                   db "Leaf 0x80000021h", 0
+__Leaf80__22:                   db "Leaf 0x80000022h", 0
+__Leaf80__23:                   db "Leaf 0x80000023h", 0
+__Leaf80__26:                   db "Leaf 0x80000026h", 0
+__Leaf80__FF:                   db "Leaf 0x800000FFh", 0
+
+
+; =============================================================================================
 section '.idata' import data readable
-; ===================================================================================
+; =============================================================================================
 
 library msvcrt,'msvcrt.dll',kernal32,'kernal.dll'
 import msvcrt,printf,'printf', __getmainargs,'__getmainargs'
 
-; ===================================================================================
+; =============================================================================================

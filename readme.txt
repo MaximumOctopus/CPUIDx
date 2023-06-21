@@ -1,6 +1,6 @@
 ============================================================================================================================
 
-  CPUidX 0.6
+  CPUidX 0.7
   (c) Paul Alan Freshney 2022-2023
 
   paul@freshney.org
@@ -20,6 +20,9 @@
 
 Run it from a command prompt.
 
+To see which cpuid leaf each section comes from, run it:
+  cpuidx /x  
+
 Known issues:
   Lack of support for earlier Intel and AMD CPUs.
   AMD testing is lacking (I only have Intel CPUs to hand)
@@ -38,6 +41,10 @@ All of my software is free and open source; please consider donating to a local 
 ============================================================================================================================
 
 Release History
+
+0.7 / June 21st 2023
+
+Added detail option via the command-line (shows cpuid leaf information for each section)
 
 0.6 / June 13th 2023
 
