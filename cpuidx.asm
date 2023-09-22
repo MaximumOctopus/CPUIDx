@@ -2,7 +2,7 @@
 ; ===================================================================================
 ;
 ; (c) Paul Alan Freshney 2023
-; v0.8, July 20th 2023
+; v0.9, September 22nd 2023
 ;
 ; Source code:
 ;   https://github.com/MaximumOctopus/CPUIDx
@@ -29,8 +29,7 @@ section '.code' code readable executable
 start:  call Arguments
         call About
 
-        xor eax, eax
-        
+        xor eax, eax        
         cpuid
 
         mov [__MaxBasic], eax
@@ -65,7 +64,9 @@ start:  call Arguments
         jne .AMDoptions
                 
 ; =============================================================================================
+; =============================================================================================
 ; == Intel ====================================================================================
+; =============================================================================================
 ; =============================================================================================                         
                                 
         cinvoke printf, "%c      == Intel-specific ======================== %c %c", 10, 10, 10
@@ -144,7 +145,9 @@ start:  call Arguments
         jmp .finish
 
 ; =============================================================================================
+; =============================================================================================
 ; == AMD ======================================================================================
+; =============================================================================================
 ; =============================================================================================
 
 .AMDoptions:
@@ -219,7 +222,7 @@ start:  call Arguments
 ; =============================================================================================
 ; =============================================================================================
 
-About:  cinvoke printf, "%c    CPUidx v0.8 :: July 20th 2023 :: Paul A Freshney %c", 10, 10
+About:  cinvoke printf, "%c    CPUidx v0.9 :: September 22th 2023 :: Paul A Freshney %c", 10, 10
 
         cinvoke printf, "       https://github.com/MaximumOctopus/CPUIDx %c %c", 10, 10
 
@@ -392,24 +395,26 @@ CoreCount:
 
         cmp dword [__VendorID + 8], 0x6c65746e
         jne .AMD
-                
+
 .intel: mov eax, [__Features2]
-                
+
         bt eax, 28
         jnc .singlecore
 
-        ; to-do, intel makes this non-trivial :(
-               
+        invoke GetActiveProcessorCount, 0xffff	; all processor groups
+
+        cinvoke printf, "    Logical processors %d %c", eax, 10
+
         ret
 
 .singlecore:
 
         cinvoke printf, "    Single core CPU %c", 10
-                
+
         ret
-                
+
 .AMD:            
-                
+
         ret
 
 ; =============================================================================================
@@ -546,15 +551,10 @@ InternalCache:
         mov eax, 0x02
         cpuid
 
-        push eax
-        push ebx
-        push ecx
-        push edx
         cinvoke printf, "  TLB/Cache/Prefetch Information (0x%X 0x%X 0x%X 0x%x) %c", eax, ebx, ecx, edx, 10
-        pop edx
-        pop ecx
-        pop ebx
-        pop eax
+
+        mov eax, 0x02
+        cpuid
                 
         mov al, 0xFF            ; mask out eax's 0x01 after 04h leaf (simplifies code)
                 
@@ -798,7 +798,7 @@ ThermalPower:
         mov eax, 0x06
         cpuid
 
-                mov edi, dword __ThermalPower1                
+        mov edi, dword __ThermalPower1                
 
         push eax
         cinvoke printf, "  Thermal and Power Management (0x%X) %c", eax, 10
@@ -1335,7 +1335,7 @@ ProcExtStateEnumMain:
         mov eax, 0x0D
         cpuid
                 
-                mov edi, __ProcExtStateEnumMain
+        mov edi, __ProcExtStateEnumMain
 
         push eax
         cinvoke printf, "  Processor Extended State Enumeration (0x%X 0x%X 0x%X) %c", eax, ebx, ecx, 10
@@ -2863,7 +2863,7 @@ V2ExtendedTopology:
                         
         push ebx
         cinvoke printf, "    Bits to shift right on x2APIC                  : %d %c", eax, 10
-        ; to get a unique topology ID of the next level type
+        cinvoke printf, "      (to get a unique topology ID of the next level type) %c", eax, 10
         pop ebx
                         
         cinvoke printf, "    Number of logical processors at this level type: %d %c", ebx, 10
@@ -2942,14 +2942,14 @@ ExtendedFeatures:
         bt edi, 5
         jnc .prefetchw
 
-        cinvoke printf, "    LZCNT %c", 10
+        cinvoke printf, "    LZCNT (count the number of leading zero bits) %c", 10
 
 .prefetchw:
 
         bt edi, 8
         jnc .syscall
 
-        cinvoke printf, "    PREFETCHW %c", 10
+        cinvoke printf, "    PREFETCHW (software prefetches) %c", 10
 
 .syscall:
 
@@ -2974,17 +2974,17 @@ ExtendedFeatures:
 
 .rdtscp:
 
-        bt esi, 26
+        bt esi, 27
         jnc .i64arch
 
-        cinvoke printf, "    RDTSCP and IA32_TSC_AUX  %c", 10
+        cinvoke printf, "    RDTSCP and IA32_TSC_AUX available %c", 10
 
 .i64arch:
 
-        bt esi, 26
+        bt esi, 29
         jnc .fin
 
-        cinvoke printf, "    Intel(r) 64 Architecture %c", 10
+        cinvoke printf, "    Intel(r) 64 Architecture available %c", 10
 
         ret
 
@@ -3052,6 +3052,7 @@ ExtendedFeatures:
 ; =============================================================================================
 
 ; extended leaf 80000002h, data in eax, ebx, ecx, and edx
+; intel and amd
 BrandString:
 
         mov eax, 0x80000002                
@@ -3219,6 +3220,8 @@ AMDCacheTLBLevelOne:
         ret
         
 
+; expects cache tlb level in eax
+; does not preserve eax, ebx, ecx, or edx
 AMDCacheTLBLevelOneFromTable:
 
         cmp eax, 0
@@ -3240,7 +3243,7 @@ AMDCacheTLBLevelOneFromTable:
                 
 .oneway:
 
-        cinvoke printf, "    1 way (direct mapped) %c", 10
+        cinvoke printf, "    1-way (direct mapped) %c", 10
 
         ret
 
@@ -3684,17 +3687,40 @@ ProcessorCapacityParameters:
 
         jne .dx
 
-.edx:   mov eax, 0x80000008
+.ec:    mov eax, 0x80000008
+        cpuid
+
+        mov edi, ecx
+
+        mov esi, __AMDSizeIndentifiersDescription
+
+        shr ecx, 16
+                and ecx, 0x03           ; PerfTscSize
+                
+                imul ecx, __AMDSizeIndentifiersDescriptionSize
+
+                add esi, ecx
+
+        cinvoke printf, "    Size of performance time-standard counter: %s %c", esi, 10
+
+        mov eax, edi
+        and eax, 0x000000FF     ; NT - 1
+
+        add eax, 1
+
+        cinvoke printf, "    Number of physical threads: %d %c", eax, 10
+
+.ed:    mov eax, 0x80000008
         cpuid
 
         mov edi, edx
 
-        and edx, 0x000000FF
+        and edx, 0x0000FFFF     ; InvlpgbCountMax
 
         cinvoke printf, "    Maximum page count for INVLPGB: %d %c", edx, 10
 
         shr edi, 16
-        and edi, 0x000000FF
+        and edi, 0x0000FFFF     ; MaxRdpruID
 
         cinvoke printf, "    The maximum ECX value recognized by RDPRU: %d %c", edi, 10
 
@@ -3897,7 +3923,7 @@ AMDPerformanceOptimisation:
 ; =============================================================================================
 
 ; extended leaf 80000001Bh, data in eax
-; AMD only, data in eax
+; AMD only
 AMDIBS: mov eax, dword [__MaxExtended]
 
         cmp eax, 0x8000001B
@@ -4361,7 +4387,7 @@ AMDEMS: mov eax, dword [__MaxExtended]
         mov edi, esi
         shr edi, 6
         and edi, 0x3F
-
+ 
         cinvoke printf, "    Physical Address Bit Reducion             : %d %c", edi, 10
 
         mov edi, esi
@@ -5015,7 +5041,7 @@ __SEA                           db "3rd-level cache: 12MByte, 24-way set associa
 __SEB                           db "3rd-level cache: 18MByte, 24-way set associative, 64 byte line size", 0
 __SEC                           db "3rd-level cache: 24MByte, 24-way set associative, 64 byte line size", 0
 __SF0                           db "64-Byte prefetching", 0
-__SF1                           db "Prefetch 128-Byte prefetching", 0                                                           
+__SF1                           db "128-Byte prefetching", 0                                                           
 
 ; 06h leaf, bits in eax
 __ThermalPower1Size = 46                        ; 45 + null terminator
@@ -5108,11 +5134,11 @@ __StructuredExtendedFeatureFlags2:
                                 db "AVX512_VPOPCNTDQ                                 ", 0   
                                 db "Reserved.                                        ", 0
                                 db "LA57 (57-bit linear addresses and 5-level paging)", 0
-                                db "                                                 ", 0
-                                db "                                                 ", 0
-                                db "                                                 ", 0
-                                db "                                                 ", 0
-                                db "                                                 ", 0
+                                db "Reserved.                                        ", 0
+                                db "Reserved.                                        ", 0
+                                db "Reserved.                                        ", 0
+                                db "Reserved.                                        ", 0
+                                db "Reserved.                                        ", 0
                                 db "RDPID and IA32_TSC_AUX                           ", 0
                                 db "KL (Key Locker)                                  ", 0
                                 db "BUS_LOCK_DETECT, supports OS bus-lock detection  ", 0
@@ -5236,7 +5262,7 @@ __AMDStructuredExtendedFeatureIDs2:
 __ProcExtStateEnumMainSize = 10                 ; 9 + null terminator
 __ProcExtStateEnumMain:         db "X87      ", 0
                                 db "SSE      ", 0
-                                db "ACX      ", 0
+                                db "AVX      ", 0
                                 db "BNDREG   ", 0
                                 db "BNDCSR   ", 0
                                 db "opmask   ", 0
@@ -5432,7 +5458,15 @@ __AMDExtendedFeatureID:         db "CLZERO                 ", 0
                                 db "BTC_NO                 ", 0
                                 db "IBPB_RET               ", 0
                                 db "Reserved               ", 0
-                                                                                                                   
+                                                               
+; AMD; 80000008_ECX
+__AMDSizeIndentifiersDescriptionSize = 8        ; 7 + null terminator
+__AMDSizeIndentifiersDescription:
+                                db "40 bits", 0
+                                db "48 bits", 0
+                                db "56 bits", 0
+                                db "64 bits", 0
+                                                                                                                           
 ; AMD; 8000000A_EDX
 __SVMFeatureInformationSize = 22                ; 21 + null terminator
 __SVMFeatureInformation:        db "NP                   ", 0
@@ -5485,7 +5519,7 @@ __IBSFeatures:                  db "IBSFFV            ", 0
                                                                 
 ; AMD; 8000001C_EAX             
 __AMDLWPEAXSize = 56                            ; 55 + null terminator
-__AMDLWPEAX:                    db "LwpAvail. The LWP feature is                           ", 0
+__AMDLWPEAX:                    db "LwpAvail. The LWP feature is supported                 ", 0
                                 db "LwpVAL. LWPVAL instruction                             ", 0
                                 db "LwpIRE. Instructions retired event                     ", 0
                                 db "LwpBRE. Branch retired event                           ", 0
@@ -5713,7 +5747,8 @@ __Leaf80__FF:                   db "Leaf 0x800000FFh", 0
 section '.idata' import data readable
 ; =============================================================================================
 
-library msvcrt,'msvcrt.dll',kernal32,'kernal.dll'
+library msvcrt,'msvcrt.dll',kernel32,'KERNEL32.DLL'
 import msvcrt,printf,'printf', __getmainargs,'__getmainargs'
+import kernel32,GetActiveProcessorCount,'GetActiveProcessorCount'
 
 ; =============================================================================================
