@@ -47,6 +47,11 @@ All of my software is free and open source; please consider donating to a local 
 
 Release History
 
+0.10 / October 24th 2023
+
+A few modifications based on the latest Intel dev manual (Sept 20230).
+     Leafs 0Fh and 10h.
+
 0.9 / September 22nd 2023
 
 Added logical core count
