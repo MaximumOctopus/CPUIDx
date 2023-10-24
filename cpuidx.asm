@@ -2,7 +2,7 @@
 ; ===================================================================================
 ;
 ; (c) Paul Alan Freshney 2023
-; v0.9, September 22nd 2023
+; v0.10, October 24th 2023
 ;
 ; Source code:
 ;   https://github.com/MaximumOctopus/CPUIDx
@@ -15,6 +15,7 @@
 ;   AMD64 Architecture Programmer’s Manual Volume 3: General-Purpose and System Instructions (June 2023)
 ;   Intel® 64 and IA-32 Architectures Software Developer's Manual Volume 2 (December 2022)
 ;   Intel® 64 and IA-32 Architectures Software Developer's Manual Volume 2 (March 2023)
+;   Intel® 64 and IA-32 Architectures Software Developer's Manual Volume 2 (September 2023)
 ;
 ; ===================================================================================
 ; ===================================================================================
@@ -222,7 +223,7 @@ start:  call Arguments
 ; =============================================================================================
 ; =============================================================================================
 
-About:  cinvoke printf, "%c    CPUidx v0.9 :: September 22th 2023 :: Paul A Freshney %c", 10, 10
+About:  cinvoke printf, "%c    CPUidx v0.10 :: October 24th 2023 :: Paul A Freshney %c", 10, 10
 
         cinvoke printf, "       https://github.com/MaximumOctopus/CPUIDx %c %c", 10, 10
 
@@ -1605,18 +1606,45 @@ IntelRDTMonitoring:
         mov eax, 0x0F                
         cpuid
 
-        cinvoke printf, "  L3 Cache Intel RDT Monitoring Capability (0x%X 0x%X 0x%X) %c", ebx, ecx, edx, 10
+        cinvoke printf, "  L3 Cache Intel RDT Monitoring Capability (0x%X 0x%X 0x%X 0x%X) %c", eax, ebx, ecx, edx, 10
 
-        mov ecx, 1
+        mov ecx, 1				; eax and ebx
         mov eax, 0x0F                
         cpuid
-                
+
+		mov edi, eax
+		mov esi, ebx
+
+		and eax, 0xFF			; counter width is bits 0-7
+		add eax, 24				; counter width is encoded from an offset of 24
+
+		cinvoke printf, "    %d-bit counters are supported %c", eax, 10
+
+.bit8:	bt edi, 8
+		jnc .bit9
+		
+		cinvoke printf, "    Overflow bit in IA32_QM_CTR MSR bit 61 %c", 10
+		
+.bit9:	bt edi, 9
+		jnc .bita
+
+        cinvoke printf, "    Non-CPU agent Intel RDT CMT support %c", 10
+		
+.bita:	bt edi, 10
+		jnc .next		
+		
+        cinvoke printf, "    Non-CPU agent Intel RDT MBM support %c", 10
+
+.next:  cinvoke printf, "    IA32_QM_CTR conversion factor: 0x%X bytes %c", esi, 10
+				
+        mov ecx, 1				; ecx and edx			
+        mov eax, 0x0F                
+        cpuid				
+				
         inc ecx
                 
         mov edi, ecx
         mov esi, edx
-                
-        cinvoke printf, "    IA32_QM_CTR conversion factor: 0x%X bytes %c", ebx, 10
 
         cinvoke printf, "    Maximum range of RMID of this resource type: 0x%X %c", edi, 10
 
@@ -1785,16 +1813,27 @@ IntelRDTAllocEnum:
         mov edi, ecx
         mov esi, edx
                 
-        bt edi, 2
+.bit11: bt edi, 1
+        jnc .bit12
+				
+        cinvoke printf, "    L3 CAT for non-CPU agents is supported %c", 10
+				
+.bit12: bt edi, 2
         jnc .cpns1
                 
-        cinvoke printf, "    Code and Prioritization Technology supported %c", 10
+        cinvoke printf, "    L3 Code and Prioritization Technology supported %c", 10
                 
-        jmp .hcos1
+        jmp .bit13
                 
 .cpns1:
 
-        cinvoke printf, "    Code and Prioritization Technology not supported %c", 10
+        cinvoke printf, "    L3 Code and Prioritization Technology not supported %c", 10
+
+.bit13: bt edi, 3
+        jnc .hcos1
+                
+        cinvoke printf, "    Non-contiguous capacity bitmask is supported %c", 10
+		cinvoke printf, "        The bits in IA32_L3_MASK_n registers do not have to be contiguous %c", 10
 
 .hcos1:
 
@@ -1835,16 +1874,22 @@ IntelRDTAllocEnum:
         mov edi, ecx
         mov esi, edx
                 
-        bt edi, 2
-        jnc .cpns2
+.bit22: bt edi, 2
+        jnc .bit23
                 
-        cinvoke printf, "    Code and Prioritization Technology supported %c", 10
+        cinvoke printf, "    L2 Code and Data Prioritization Technology supported %c", 10
                 
         jmp .hcos2
                 
 .cpns2:
 
         cinvoke printf, "    Code and Prioritization Technology not supported %c", 10
+
+.bit23: bt edi, 3
+        jnc .hcos2
+
+        cinvoke printf, "    Non-contiguous capacity bitmask is supported %c", 10
+		cinvoke printf, "        The bits in IA32_L2_MASK_n registers do not have to be contiguous %c", 10
 
 .hcos2:
 

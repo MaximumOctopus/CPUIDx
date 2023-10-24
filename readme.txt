@@ -16,6 +16,7 @@
     AMD64 Architecture Programmer’s Manual Volume 3: General-Purpose and System Instructions (June 2023)
     Intel® 64 and IA-32 Architectures Software Developer's Manual Volume 2 (December 2022)
     Intel® 64 and IA-32 Architectures Software Developer's Manual Volume 2 (March 2023)	
+    Intel® 64 and IA-32 Architectures Software Developer's Manual Volume 2 (September 2023)
   
 ========================================================================================================
 
