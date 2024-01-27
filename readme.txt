@@ -1,7 +1,7 @@
 ========================================================================================================
 
-  CPUidX 0.10
-  (c) Paul Alan Freshney 2022-2023
+  CPUidX 0.11
+  (c) Paul Alan Freshney 2022-2024
 
   paul@freshney.org
 
@@ -17,6 +17,7 @@
     Intel® 64 and IA-32 Architectures Software Developer's Manual Volume 2 (December 2022)
     Intel® 64 and IA-32 Architectures Software Developer's Manual Volume 2 (March 2023)	
     Intel® 64 and IA-32 Architectures Software Developer's Manual Volume 2 (September 2023)
+    Intel® 64 and IA-32 Architectures Software Developer's Manual Volume 2 (December 2023)	
   
 ========================================================================================================
 
@@ -47,9 +48,14 @@ All of my software is free and open source; please consider donating to a local 
 
 Release History
 
+0.11 / January 27th 2024
+
+A minor modification based on the Decembeer 2023 update of the Intel dev manual
+     Leaf 07h, subleaf 1
+
 0.10 / October 24th 2023
 
-A few modifications based on the latest Intel dev manual (Sept 20230).
+A few modifications based on the latest Intel dev manual (Sept 2023).
      Leafs 0Fh and 10h.
 
 0.9 / September 22nd 2023

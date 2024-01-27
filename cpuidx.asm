@@ -1,8 +1,8 @@
 ; ===================================================================================
 ; ===================================================================================
 ;
-; (c) Paul Alan Freshney 2023
-; v0.10, October 24th 2023
+; (c) Paul Alan Freshney 2023-2024
+; v0.11, January 27th 2024
 ;
 ; Source code:
 ;   https://github.com/MaximumOctopus/CPUIDx
@@ -16,6 +16,7 @@
 ;   Intel® 64 and IA-32 Architectures Software Developer's Manual Volume 2 (December 2022)
 ;   Intel® 64 and IA-32 Architectures Software Developer's Manual Volume 2 (March 2023)
 ;   Intel® 64 and IA-32 Architectures Software Developer's Manual Volume 2 (September 2023)
+;   Intel® 64 and IA-32 Architectures Software Developer's Manual Volume 2 (December 2023)
 ;
 ; ===================================================================================
 ; ===================================================================================
@@ -223,7 +224,7 @@ start:  call Arguments
 ; =============================================================================================
 ; =============================================================================================
 
-About:  cinvoke printf, "%c    CPUidx v0.10 :: October 24th 2023 :: Paul A Freshney %c", 10, 10
+About:  cinvoke printf, "%c    CPUidx v0.11 :: January 27th 2024 :: Paul A Freshney %c", 10, 10
 
         cinvoke printf, "       https://github.com/MaximumOctopus/CPUIDx %c %c", 10, 10
 
@@ -1007,9 +1008,16 @@ showd:  mov esi, 0
         pop eax
 
 .a010X: bt eax, 22
+        jnc .a010Y
+
+		push eax
+        cinvoke printf, "    HRESET. History reset via the HRESET instruction and the IA32_HRESET_ENABLE MSR %c", 10
+		pop eax
+
+.a010Y: bt eax, 30
         jnc .b0100
 
-        cinvoke printf, "    HRESET. History reset via the HRESET instruction and the IA32_HRESET_ENABLE MSR %c", 10
+        cinvoke printf, "    INVD_DISABLE_POST_BIOS_DONE. INVD execution prevention after BIOS Done %c", 10
 
 .b0100: bt edi, 0
         jnc .d0118
