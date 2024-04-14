@@ -1,6 +1,6 @@
 ========================================================================================================
 
-  CPUidX 0.11
+  CPUidX 0.12
   (c) Paul Alan Freshney 2022-2024
 
   paul@freshney.org
@@ -12,12 +12,16 @@
     https://flatassembler.net/
 	
   References
-    AMD64 Architecture Programmer’s Manual Volume 3: General-Purpose and System Instructions (October 2022)
-    AMD64 Architecture Programmer’s Manual Volume 3: General-Purpose and System Instructions (June 2023)
-    Intel® 64 and IA-32 Architectures Software Developer's Manual Volume 2 (December 2022)
-    Intel® 64 and IA-32 Architectures Software Developer's Manual Volume 2 (March 2023)	
-    Intel® 64 and IA-32 Architectures Software Developer's Manual Volume 2 (September 2023)
-    Intel® 64 and IA-32 Architectures Software Developer's Manual Volume 2 (December 2023)	
+      AMD64 Architecture Programmer’s Manual Volume 3: General-Purpose and System Instructions
+          October   2022
+          June      2023
+          March     2024
+      Intel® 64 and IA-32 Architectures Software Developer's Manual Volume 2
+          December  2022
+          March     2023
+          September 2023
+          December  2023
+          March     2024  	
   
 ========================================================================================================
 
@@ -47,6 +51,10 @@ All of my software is free and open source; please consider donating to a local 
 ========================================================================================================
 
 Release History
+
+0.12 / April 14th 2024
+
+A few minor modifications from the March editions of the Intel and AMD dev manuals.
 
 0.11 / January 27th 2024
 

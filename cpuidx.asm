@@ -2,21 +2,25 @@
 ; ===================================================================================
 ;
 ; (c) Paul Alan Freshney 2023-2024
-; v0.11, January 27th 2024
+; v0.12, April 14th 2024
 ;
 ; Source code:
-;   https://github.com/MaximumOctopus/CPUIDx
+;     https://github.com/MaximumOctopus/CPUIDx
 ;
 ; Assembled using "Flat Assembler"
-;   https://flatassembler.net/
+;     https://flatassembler.net/
 ;
 ; Resources used:
-;   AMD64 Architecture Programmer’s Manual Volume 3: General-Purpose and System Instructions (October 2022)
-;   AMD64 Architecture Programmer’s Manual Volume 3: General-Purpose and System Instructions (June 2023)
-;   Intel® 64 and IA-32 Architectures Software Developer's Manual Volume 2 (December 2022)
-;   Intel® 64 and IA-32 Architectures Software Developer's Manual Volume 2 (March 2023)
-;   Intel® 64 and IA-32 Architectures Software Developer's Manual Volume 2 (September 2023)
-;   Intel® 64 and IA-32 Architectures Software Developer's Manual Volume 2 (December 2023)
+;     AMD64 Architecture Programmer’s Manual Volume 3: General-Purpose and System Instructions
+;         October   2022
+;         June      2023
+;         March     2024
+;     Intel® 64 and IA-32 Architectures Software Developer's Manual Volume 2
+;         December  2022
+;         March     2023
+;         September 2023
+;         December  2023
+;         March     2024
 ;
 ; ===================================================================================
 ; ===================================================================================
@@ -224,7 +228,7 @@ start:  call Arguments
 ; =============================================================================================
 ; =============================================================================================
 
-About:  cinvoke printf, "%c    CPUidx v0.11 :: January 27th 2024 :: Paul A Freshney %c", 10, 10
+About:  cinvoke printf, "%c    CPUidx v0.12 :: April 14th 2024 :: Paul A Freshney %c", 10, 10
 
         cinvoke printf, "       https://github.com/MaximumOctopus/CPUIDx %c %c", 10, 10
 
@@ -251,6 +255,7 @@ Arguments:
 
 ; =============================================================================================
 
+; only outputs if the user has set the "show extra detail" flag from the command line
 ; requires string pointer in esi
 ; does not preserve eax, ebx, ecx, or edx
 ShowLeafInformation:
@@ -2149,15 +2154,13 @@ IntelSGXCapability:
         and ecx, 0x0000000F
         cmp ecx, 0
         jne .fin
+
+		dec ecx	; zero-index to the string table
                 
-        cmp ecx, 1
-        jne .ecx10
-                
-.ecx11: cinvoke printf, "    This section has confidentiality and integrity protection %c", 10
-                
-        jne .ecx
-                
-.ecx10: cinvoke printf, "    This section has confidentiality protection only %c", 10
+		imul ecx, __SGXEPCSubLeaf2Size
+        add ecx, __SGXEPCSubLeaf2
+				
+		cinvoke printf, "%s %c", ecx, 10
 
 .ecx:   shr edi, 12
         and edi, 0x000FFFFF
@@ -3748,16 +3751,16 @@ ProcessorCapacityParameters:
         mov esi, __AMDSizeIndentifiersDescription
 
         shr ecx, 16
-                and ecx, 0x03           ; PerfTscSize
+        and ecx, 0x03           ; PerfTscSize
                 
-                imul ecx, __AMDSizeIndentifiersDescriptionSize
+        imul ecx, __AMDSizeIndentifiersDescriptionSize
 
-                add esi, ecx
+        add esi, ecx
 
         cinvoke printf, "    Size of performance time-standard counter: %s %c", esi, 10
 
         mov eax, edi
-        and eax, 0x000000FF     ; NT - 1
+        and eax, 0x000000FF     ; NC - 1
 
         add eax, 1
 
@@ -5264,7 +5267,7 @@ __AMDStructuredExtendedFeatureIDs1:
                                 db "ADX      (ADCX, ADOX instructions)              ", 0
                                 db "SMAP     (Supervisor mode access prevention)    ", 0
                                 db "Reserved                                        ", 0
-                                db "RDPID    (RDPID instruction and TSC_AUX MSR)    ", 0
+                                db "Reserved                                        ", 0
                                 db "CLFLUSHOPT                                      ", 0
                                 db "CLWB                                            ", 0
                                 db "Reserved                                        ", 0
@@ -5300,7 +5303,7 @@ __AMDStructuredExtendedFeatureIDs2:
                                 db "Reserved                                      ", 0
                                 db "Reserved                                      ", 0
                                 db "Reserved                                      ", 0
-                                db "Reserved                                      ", 0
+                                db "RDPID    (RDPID instruction and TSC_AUX MSR)  ", 0
                                 db "Reserved                                      ", 0
                                 db "BUSLOCKTRAP (Bus Lock Trap (#DB))             ", 0
                                 db "Reserved                                      ", 0
@@ -5332,9 +5335,16 @@ __ProcExtStateEnumMain:         db "X87      ", 0
                                 db "HWP      ", 0
                                 db "TILECFG  ", 0
                                 db "TILEDATA ", 0
+								
+; 12h ecx = 2, ecx[03:00]
+__SGXEPCSubLeaf2Size = 67		; 66 + null terminator
+__SGXEPCSubLeaf2:               db "This section has confidentiality, integrity, and replay protection", 0
+                                db "This section has confidentiality protection only                  ", 0
+								db "This section has confidentiality and integrity protection         ", 0
+								
 
 ; 18h, edx[04:00]
-__DATCacheTypeSize = 13
+__DATCacheTypeSize = 13			; 12 + null terminator
 __DATCacheType:                 db "Unknown    :", 0
                                 db "Data       :", 0
                                 db "Instruction:", 0
@@ -5343,7 +5353,7 @@ __DATCacheType:                 db "Unknown    :", 0
                                 db "Store Only :", 0
 
 ; 1fh, ecx[15:08]
-__LevelTypeSize = 8                             ; 7 + null terminator
+__LevelTypeSize = 8             ; 7 + null terminator
 __LevelType:                    
                                 db "Invalid", 0
                                 db "Logical", 0
@@ -5530,7 +5540,7 @@ __SVMFeatureInformation:        db "NP                   ", 0
                                 db "VmcbClean            ", 0
                                 db "FlushByAsid          ", 0
                                 db "DecodeAssists        ", 0
-                                db "Reserved             ", 0
+                                db "PmcVirt              ", 0
                                 db "Reserved             ", 0
                                 db "PauseFilter          ", 0
                                 db "Reserved             ", 0
@@ -5552,7 +5562,7 @@ __SVMFeatureInformation:        db "NP                   ", 0
                                 db "ExtLvtAvicAccessChg  ", 0
                                 db "NestedVirtVmcbAddrChk", 0
                                 db "BusLockThreshold     ", 0
-                                db "Reserved             ", 0
+                                db "IdleHltIntercept     ", 0
                                 db "Reserved             ", 0
 
 ; AMD; 8000001B_EAX
@@ -5656,24 +5666,24 @@ __AMDSecureEncryption:          db "SME                 ", 0
                                 db "64BitHost           ", 0
                                 db "RestrictedInjection ", 0
                                 db "AlternateInjection  ", 0
-                                db "DebugSwap           ", 0
+                                db "DebugVirt           ", 0
                                 db "PreventHostIbs      ", 0
                                 db "VTE                 ", 0
                                 db "VmgexitParameter    ", 0
                                 db "VirtualTomMsr       ", 0
                                 db "IbsVirtGuestCtl     ", 0
-                                db "Reserved            ", 0
-                                db "Reserved            ", 0
+                                db "PmcVirtGuestCtl     ", 0
+                                db "RMPREAD             ", 0
                                 db "Reserved            ", 0
                                 db "Reserved            ", 0
                                 db "VmsaRegProt         ", 0
                                 db "SmtProtection       ", 0
-                                db "Reserved            ", 0
-                                db "Reserved            ", 0
+                                db "SecureAvic          ", 0
+                                db "AllowedSevFeatures  ", 0
                                 db "SvsmCommPageMSR     ", 0
                                 db "NestedVirtSnpMsr    ", 0
-                                db "Reserved            ", 0
-                                db "Reserved            ", 0
+                                db "HvInUseWrAllowed    ", 0
+                                db "IbpbOnEntry         ", 0
 
 ; AMD; 80000020_EBX
 __AMDPQOSExtendedFeaturesSize = 49          ; 48 + null terminator
