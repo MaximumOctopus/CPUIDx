@@ -2,7 +2,7 @@
 ; ===================================================================================
 ;
 ; (c) Paul Alan Freshney 2023-2024
-; v0.12, April 14th 2024
+; v0.13, April 20th 2024
 ;
 ; Source code:
 ;     https://github.com/MaximumOctopus/CPUIDx
@@ -26,7 +26,7 @@
 ; ===================================================================================
 
 format PE console
-include 'win32ax.inc'
+include 'WIN32AX.INC'
 
 ; ===================================================================================
 section '.code' code readable executable
@@ -228,7 +228,7 @@ start:  call Arguments
 ; =============================================================================================
 ; =============================================================================================
 
-About:  cinvoke printf, "%c    CPUidx v0.12 :: April 14th 2024 :: Paul A Freshney %c", 10, 10
+About:  cinvoke printf, "%c    CPUidx v0.13 :: April 20th 2024 :: Paul A Freshney %c", 10, 10
 
         cinvoke printf, "       https://github.com/MaximumOctopus/CPUIDx %c %c", 10, 10
 
@@ -401,14 +401,14 @@ lf1:    bt  eax, esi
 CoreCount:
 
         cmp dword [__VendorID + 8], 0x6c65746e
-        jne .AMD
+        jne .amd
 
 .intel: mov eax, [__Features2]
 
         bt eax, 28
         jnc .singlecore
 
-        invoke GetActiveProcessorCount, 0xffff	; all processor groups
+        invoke GetActiveProcessorCount, 0xffff  ; all processor groups
 
         cinvoke printf, "    Logical processors %d %c", eax, 10
 
@@ -420,7 +420,7 @@ CoreCount:
 
         ret
 
-.AMD:            
+.amd:
 
         ret
 
@@ -1015,9 +1015,9 @@ showd:  mov esi, 0
 .a010X: bt eax, 22
         jnc .a010Y
 
-		push eax
+                push eax
         cinvoke printf, "    HRESET. History reset via the HRESET instruction and the IA32_HRESET_ENABLE MSR %c", 10
-		pop eax
+                pop eax
 
 .a010Y: bt eax, 30
         jnc .b0100
@@ -1621,39 +1621,39 @@ IntelRDTMonitoring:
 
         cinvoke printf, "  L3 Cache Intel RDT Monitoring Capability (0x%X 0x%X 0x%X 0x%X) %c", eax, ebx, ecx, edx, 10
 
-        mov ecx, 1				; eax and ebx
+        mov ecx, 1                              ; eax and ebx
         mov eax, 0x0F                
         cpuid
 
-		mov edi, eax
-		mov esi, ebx
+                mov edi, eax
+                mov esi, ebx
 
-		and eax, 0xFF			; counter width is bits 0-7
-		add eax, 24				; counter width is encoded from an offset of 24
+                and eax, 0xFF                   ; counter width is bits 0-7
+                add eax, 24                             ; counter width is encoded from an offset of 24
 
-		cinvoke printf, "    %d-bit counters are supported %c", eax, 10
+                cinvoke printf, "    %d-bit counters are supported %c", eax, 10
 
-.bit8:	bt edi, 8
-		jnc .bit9
-		
-		cinvoke printf, "    Overflow bit in IA32_QM_CTR MSR bit 61 %c", 10
-		
-.bit9:	bt edi, 9
-		jnc .bita
+.bit8:  bt edi, 8
+                jnc .bit9
+                
+                cinvoke printf, "    Overflow bit in IA32_QM_CTR MSR bit 61 %c", 10
+                
+.bit9:  bt edi, 9
+                jnc .bita
 
         cinvoke printf, "    Non-CPU agent Intel RDT CMT support %c", 10
-		
-.bita:	bt edi, 10
-		jnc .next		
-		
+                
+.bita:  bt edi, 10
+                jnc .next               
+                
         cinvoke printf, "    Non-CPU agent Intel RDT MBM support %c", 10
 
 .next:  cinvoke printf, "    IA32_QM_CTR conversion factor: 0x%X bytes %c", esi, 10
-				
-        mov ecx, 1				; ecx and edx			
+                                
+        mov ecx, 1                              ; ecx and edx                   
         mov eax, 0x0F                
-        cpuid				
-				
+        cpuid                           
+                                
         inc ecx
                 
         mov edi, ecx
@@ -1828,9 +1828,9 @@ IntelRDTAllocEnum:
                 
 .bit11: bt edi, 1
         jnc .bit12
-				
+                                
         cinvoke printf, "    L3 CAT for non-CPU agents is supported %c", 10
-				
+                                
 .bit12: bt edi, 2
         jnc .cpns1
                 
@@ -1846,7 +1846,7 @@ IntelRDTAllocEnum:
         jnc .hcos1
                 
         cinvoke printf, "    Non-contiguous capacity bitmask is supported %c", 10
-		cinvoke printf, "        The bits in IA32_L3_MASK_n registers do not have to be contiguous %c", 10
+                cinvoke printf, "        The bits in IA32_L3_MASK_n registers do not have to be contiguous %c", 10
 
 .hcos1:
 
@@ -1902,7 +1902,7 @@ IntelRDTAllocEnum:
         jnc .hcos2
 
         cinvoke printf, "    Non-contiguous capacity bitmask is supported %c", 10
-		cinvoke printf, "        The bits in IA32_L2_MASK_n registers do not have to be contiguous %c", 10
+                cinvoke printf, "        The bits in IA32_L2_MASK_n registers do not have to be contiguous %c", 10
 
 .hcos2:
 
@@ -2026,13 +2026,13 @@ IntelSGXCapability:
         call ShowLeafInformation
                 
         mov ecx, 0
-        mov eax, 0x07           ;   
+        mov eax, 0x07           ; just getting SGX values  
         cpuid           
 
         cinvoke printf, "  Intel SGX Capability Enumeration (0x%X 0x%X 0x%X) %c", eax, ebx, edx, 10
                 
         mov ecx, 0
-        mov eax, 0x07           ; extended features   
+        mov eax, 0x07           ; get extended features   
         cpuid
                 
         bt ebx, 2               ; check SGX bit
@@ -2155,12 +2155,12 @@ IntelSGXCapability:
         cmp ecx, 0
         jne .fin
 
-		dec ecx	; zero-index to the string table
+                dec ecx ; zero-index to the string table
                 
-		imul ecx, __SGXEPCSubLeaf2Size
+                imul ecx, __SGXEPCSubLeaf2Size
         add ecx, __SGXEPCSubLeaf2
-				
-		cinvoke printf, "%s %c", ecx, 10
+                                
+                cinvoke printf, "%s %c", ecx, 10
 
 .ecx:   shr edi, 12
         and edi, 0x000FFFFF
@@ -2283,6 +2283,9 @@ IntelProcessorTrace:
 
         cmp eax, 1
         jl .fin
+                
+        mov esi, dword __Leaf1401
+        call ShowLeafInformation                
 
         mov ecx, 1
         mov eax, 0x14
@@ -3858,7 +3861,7 @@ AMDTLBCharacteristics:
 
         and eax, 0x00000FFF
 
-        cinvoke printf, "    L1 instruction TLB entries for 1 GB pages: %d %c", eax, 10
+        cinvoke printf, "    L1 instruction TLB entries for 1GB pages: %d %c", eax, 10
 
         mov eax, edi
                 
@@ -3877,7 +3880,7 @@ AMDTLBCharacteristics:
         shr  eax, 16
         and eax, 0x00000FFF
 
-        cinvoke printf, "    L1 data TLB entries for 1 GB pages: %d %c", eax, 10
+        cinvoke printf, "    L1 data TLB entries for 1GB pages: %d %c", eax, 10
 
         mov eax, edi
 
@@ -3897,7 +3900,7 @@ AMDTLBCharacteristics:
                 
         and eax, 0x00000FFF
 
-        cinvoke printf, "    L2 instruction TLB entries for 1 GB pages: %d %c", eax, 10
+        cinvoke printf, "    L2 instruction TLB entries for 1GB pages: %d %c", eax, 10
                 
         mov eax, esi
                 
@@ -3916,7 +3919,7 @@ AMDTLBCharacteristics:
         shr eax, 16
         and eax, 0x00000FFF
                 
-        cinvoke printf, "    L2 data TLB entries for 1 GB pages: %d %c", eax, 10
+        cinvoke printf, "    L2 data TLB entries for 1GB pages: %d %c", eax, 10
 
         mov eax, esi
                 
@@ -4906,9 +4909,9 @@ __FeatureString1:               db "SSE3       (Streaming SIMD Extensions 3)    
                                 db "Reserved                                                  ",0
                                 db "PCID       (Process-context identifiers)                  ",0
                                 db "DCA        (Prefetch data from a memory-mapped device)    ",0
-                                db "SSE4_1                                                    ",0
-                                db "SSE4_2                                                    ",0
-                                db "x2APIC                                                    ",0
+                                db "SSE4_1     (SSE4.1)                                       ",0
+                                db "SSE4_2     (SSE4.2)                                       ",0
+                                db "x2APIC     (x2APIC feature)                               ",0
                                 db "MOVBE      (instruction)                                  ",0
                                 db "POPCNT     (instruction)                                  ",0
                                 db "TSC        (TSC deadline)                                 ",0
@@ -5100,7 +5103,7 @@ __SF0                           db "64-Byte prefetching", 0
 __SF1                           db "128-Byte prefetching", 0                                                           
 
 ; 06h leaf, bits in eax
-__ThermalPower1Size = 46                        ; 45 + null terminator
+__ThermalPower1Size = 46        ; 45 + null terminator
 __ThermalPower1:                db "Digital temperature sensor supported         ", 0
                                 db "Intel Turbo Boost Technology                 ", 0
                                 db "ARAT. APIC-Timer-always-running              ", 0
@@ -5335,16 +5338,16 @@ __ProcExtStateEnumMain:         db "X87      ", 0
                                 db "HWP      ", 0
                                 db "TILECFG  ", 0
                                 db "TILEDATA ", 0
-								
+                                                                
 ; 12h ecx = 2, ecx[03:00]
-__SGXEPCSubLeaf2Size = 67		; 66 + null terminator
+__SGXEPCSubLeaf2Size = 67               ; 66 + null terminator
 __SGXEPCSubLeaf2:               db "This section has confidentiality, integrity, and replay protection", 0
                                 db "This section has confidentiality protection only                  ", 0
-								db "This section has confidentiality and integrity protection         ", 0
-								
+                                                                db "This section has confidentiality and integrity protection         ", 0
+                                                                
 
 ; 18h, edx[04:00]
-__DATCacheTypeSize = 13			; 12 + null terminator
+__DATCacheTypeSize = 13                 ; 12 + null terminator
 __DATCacheType:                 db "Unknown    :", 0
                                 db "Data       :", 0
                                 db "Instruction:", 0
@@ -5488,39 +5491,39 @@ __AMDAPMFeatures:               db "TS, Temperature sensor      ", 0
                                 db "ProcPowerReporting          ", 0
                                                                 
 ; AMD; 80000008_EBX
-__AMDExtendedFeatureIDSize = 24                 ; 23 + null terminator
-__AMDExtendedFeatureID:         db "CLZERO                 ", 0
-                                db "InstRetCntMsr          ", 0
-                                db "RstrFpErrPtrs          ", 0
-                                db "INVLPGB INVLPGB TLBSYNC", 0
-                                db "RDPRU                  ", 0
-                                db "Reserved               ", 0
-                                db "BE                     ", 0
-                                db "Reserved               ", 0
-                                db "MCOMMIT                ", 0
-                                db "WBNOINVD               ", 0
-                                db "Reserved               ", 0
-                                db "Reserved               ", 0
-                                db "IBPB                   ", 0
-                                db "INT_WBINVD             ", 0
-                                db "IBRS                   ", 0
-                                db "STIBP                  ", 0
-                                db "IbrsAlwaysOn           ", 0
-                                db "StibpAlwaysOn          ", 0
-                                db "IbrsPreferred          ", 0
-                                db "IbrsSameMode           ", 0
-                                db "EferLmsleUnsupported   ", 0
-                                db "INVLPGBnestedPages     ", 0
-                                db "Reserved               ", 0
-                                db "Reserved               ", 0
-                                db "SSBD                   ", 0
-                                db "SsbdVirtSpecCtrl       ", 0
-                                db "SsbdNotRequired        ", 0
-                                db "CPPC                   ", 0
-                                db "PSFD                   ", 0
-                                db "BTC_NO                 ", 0
-                                db "IBPB_RET               ", 0
-                                db "Reserved               ", 0
+__AMDExtendedFeatureIDSize = 61 ; 60 + null terminator
+__AMDExtendedFeatureID:         db "CLZERO (instruction)                                        ", 0
+                                db "InstRetCntMsr (Instruction Retired Counter MSR)             ", 0
+                                db "RstrFpErrPtrs (FP Error Pointers Restored by XRSTOR)        ", 0
+                                db "INVLPGB (INVLPGB TLBSYNC instructions)                      ", 0
+                                db "RDPRU (instruction)                                         ", 0
+                                db "Reserved                                                    ", 0
+                                db "BE (Bandwidth Enforcement Extension)                        ", 0
+                                db "Reserved                                                    ", 0
+                                db "MCOMMIT (instruction)                                       ", 0
+                                db "WBNOINVD (instruction)                                      ", 0
+                                db "Reserved                                                    ", 0
+                                db "Reserved                                                    ", 0
+                                db "IBPB (Indirect Branch Prediction Barrier)                   ", 0
+                                db "INT_WBINVD (WBINVD/WBNOINVD are interruptible)              ", 0
+                                db "IBRS (Indirect Branch Restricted Speculation)               ", 0
+                                db "STIBP (Single Thread Indirect Branch Prediction mode)       ", 0
+                                db "IbrsAlwaysOn (Processor prefers that IBRS be left on)       ", 0
+                                db "StibpAlwaysOn (Processor prefers that STIBP be left on)     ", 0
+                                db "IbrsPreferred (IBRS is preferred over software solution)    ", 0
+                                db "IbrsSameMode (IBRS provides same mode speculation limits)   ", 0
+                                db "EferLmsleUnsupported (EFER.LMSLE is unsupported)            ", 0
+                                db "INVLPGBnestedPages (INVLPGB suppor)                         ", 0
+                                db "Reserved                                                    ", 0
+                                db "Reserved                                                    ", 0
+                                db "SSBD (Speculative Store Bypass Disable)                     ", 0
+                                db "SsbdVirtSpecCtrl (Use VIRT_SPEC_CTL for SSBD)               ", 0
+                                db "SsbdNotRequired (SSBD not needed on this processor)         ", 0
+                                db "CPPC (Collaborative Processor Performance Control.          ", 0
+                                db "PSFD (Predictive Store Forward Disable)                     ", 0
+                                db "BTC_NO (Not affected by branch type confusion)              ", 0
+                                db "IBPB_RET (clears return address predictor MSR PRED_CMD.IBPB)", 0
+                                db "Reserved                                                    ", 0
                                                                
 ; AMD; 80000008_ECX
 __AMDSizeIndentifiersDescriptionSize = 8        ; 7 + null terminator
@@ -5531,54 +5534,54 @@ __AMDSizeIndentifiersDescription:
                                 db "64 bits", 0
                                                                                                                            
 ; AMD; 8000000A_EDX
-__SVMFeatureInformationSize = 22                ; 21 + null terminator
-__SVMFeatureInformation:        db "NP                   ", 0
-                                db "LbrVirt              ", 0
-                                db "SVML                 ", 0
-                                db "NRIPS                ", 0
-                                db "TscRateMsr           ", 0
-                                db "VmcbClean            ", 0
-                                db "FlushByAsid          ", 0
-                                db "DecodeAssists        ", 0
-                                db "PmcVirt              ", 0
-                                db "Reserved             ", 0
-                                db "PauseFilter          ", 0
-                                db "Reserved             ", 0
-                                db "PauseFilterThreshold ", 0
-                                db "AVIC                 ", 0
-                                db "Reserved             ", 0
-                                db "VMSAVEvirt           ", 0
-                                db "VGIF                 ", 0
-                                db "GMET                 ", 0
-                                db "x2AVIC               ", 0
-                                db "SSSCheck             ", 0
-                                db "SpecCtrl             ", 0
-                                db "ROGPT                ", 0
-                                db "Reserved             ", 0
-                                db "HOST_MCE_OVERRIDE    ", 0
-                                db "TlbiCtl              ", 0
-                                db "VNMI                 ", 0
-                                db "IbsVirt              ", 0
-                                db "ExtLvtAvicAccessChg  ", 0
-                                db "NestedVirtVmcbAddrChk", 0
-                                db "BusLockThreshold     ", 0
-                                db "IdleHltIntercept     ", 0
-                                db "Reserved             ", 0
+__SVMFeatureInformationSize = 71; 70 + null terminator
+__SVMFeatureInformation:        db "NP (Nested paging)                                                    ", 0
+                                db "LbrVirt (LBR virtualization)                                          ", 0
+                                db "SVML (SVM lock)                                                       ", 0
+                                db "NRIPS (NRIP save)                                                     ", 0
+                                db "TscRateMsr (MSR based TSC rate control)                               ", 0
+                                db "VmcbClean (VMCB clean bits)                                           ", 0
+                                db "FlushByAsid (Flush by ASID)                                           ", 0
+                                db "DecodeAssists (Decode assists)                                        ", 0
+                                db "PmcVirt (PMC virtualization)                                          ", 0
+                                db "Reserved                                                              ", 0
+                                db "PauseFilter (Pause intercept filter)                                  ", 0
+                                db "Reserved                                                              ", 0
+                                db "PauseFilterThreshold (PAUSE filter threshold)                         ", 0
+                                db "AVIC (Support AMD advanced virtual interrupt controller)              ", 0
+                                db "Reserved                                                              ", 0
+                                db "VMSAVEvirt (VMSAVE and VMLOAD virtualization)                         ", 0
+                                db "VGIF (Virtualize the Global Interrupt Flag)                           ", 0
+                                db "GMET (Guest Mode Execution Trap)                                      ", 0
+                                db "x2AVIC (Support AMD advanced virtual interrupt controller x2APIC mode)", 0
+                                db "SSSCheck (SVM supervisor shadow stack restrictions)                   ", 0
+                                db "SpecCtrl (SPEC_CTRL virtualization)                                   ", 0
+                                db "ROGPT (Read-Only Guest Page Table feature support)                    ", 0
+                                db "Reserved                                                              ", 0
+                                db "HOST_MCE_OVERRIDE                                                     ", 0
+                                db "TlbiCtl (INVLPGB/TLBSYNC hypervisor enable)                           ", 0
+                                db "VNMI (NMI Virtualization)                                             ", 0
+                                db "IbsVirt (IBS Virtualization)                                          ", 0
+                                db "ExtLvtAvicAccessChg                                                   ", 0
+                                db "NestedVirtVmcbAddrChk (Guest VMCB address check)                      ", 0
+                                db "BusLockThreshold (Bus Lock Threshold)                                 ", 0
+                                db "IdleHltIntercept (Idle HLT intercept)                                 ", 0
+                                db "Reserved                                                              ", 0
 
 ; AMD; 8000001B_EAX
-__IBSFeaturesSize = 19                          ; 18 + null terminator
-__IBSFeatures:                  db "IBSFFV            ", 0
-                                db "FetchSam          ", 0
-                                db "OpSam             ", 0
-                                db "RdWrOpCnt         ", 0
-                                db "OpCnt             ", 0
-                                db "BrnTrgt           ", 0
-                                db "OpCntExt          ", 0
-                                db "RipInvalidChk     ", 0
-                                db "OpBrnFuse         ", 0
-                                db "Reserved          ", 0
-                                db "Reserved          ", 0
-                                db "IbsL3MissFiltering", 0
+__IBSFeaturesSize = 57          ; 56 + null terminator
+__IBSFeatures:                  db "IBSFFV (IBS feature flags valid)                        ", 0
+                                db "FetchSam (IBS fetch sampling supported)                 ", 0
+                                db "OpSam (IBS execution sampling supported)                ", 0
+                                db "RdWrOpCnt (Read write of op counter supported)          ", 0
+                                db "OpCnt (Op counting mode supported)                      ", 0
+                                db "BrnTrgt (Branch target address reporting)               ", 0
+                                db "OpCntExt (IbsOpCurCnt and IbsOpMaxCnt extend by 7 bits) ", 0
+                                db "RipInvalidChk (Invalid RIP indication supported)        ", 0
+                                db "OpBrnFuse (Fused branch micro-op indication supported)  ", 0
+                                db "Reserved                                                ", 0
+                                db "Reserved                                                ", 0
+                                db "IbsL3MissFiltering (L3 Miss Filtering for IBS supported)", 0
                                                                 
 ; AMD; 8000001C_EAX             
 __AMDLWPEAXSize = 56                            ; 55 + null terminator
@@ -5616,7 +5619,7 @@ __AMDLWPEAX:                    db "LwpAvail. The LWP feature is supported      
                                 db "LwpInt.  Interrupt on threshold overflow               ", 0
 
 ; AMD; 8000001C_EDX
-__AMDLWPEDXSize = 55                            ; 54 + null terminator                    
+__AMDLWPEDXSize = 55            ; 54 + null terminator                    
 __AMDLWPEDX:                    db "LwpAvail Lightweight profiling                        ", 0
                                 db "LwpVAL LWPVAL instruction                             ", 0
                                 db "LwpIRE Instructions retired event                     ", 0
@@ -5651,39 +5654,39 @@ __AMDLWPEDX:                    db "LwpAvail Lightweight profiling              
                                 db "LwpInt  Interrupt on threshold overflow               ", 0
 
 ; AMD; 8000001F_EAX
-__AMDSecureEncryptionSize = 21                  ; 20 + null terminator
-__AMDSecureEncryption:          db "SME                 ", 0
-                                db "SEV                 ", 0
-                                db "PageFlushMsr        ", 0
-                                db "SEV-ES              ", 0
-                                db "SEV-SNP             ", 0
-                                db "VMPL                ", 0
-                                db "RMPQUERY            ", 0
-                                db "VmplSSS             ", 0
-                                db "SecureTsc           ", 0
-                                db "TscAuxVirtualization", 0
-                                db "HwEnfCacheCoh       ", 0
-                                db "64BitHost           ", 0
-                                db "RestrictedInjection ", 0
-                                db "AlternateInjection  ", 0
-                                db "DebugVirt           ", 0
-                                db "PreventHostIbs      ", 0
-                                db "VTE                 ", 0
-                                db "VmgexitParameter    ", 0
-                                db "VirtualTomMsr       ", 0
-                                db "IbsVirtGuestCtl     ", 0
-                                db "PmcVirtGuestCtl     ", 0
-                                db "RMPREAD             ", 0
-                                db "Reserved            ", 0
-                                db "Reserved            ", 0
-                                db "VmsaRegProt         ", 0
-                                db "SmtProtection       ", 0
-                                db "SecureAvic          ", 0
-                                db "AllowedSevFeatures  ", 0
-                                db "SvsmCommPageMSR     ", 0
-                                db "NestedVirtSnpMsr    ", 0
-                                db "HvInUseWrAllowed    ", 0
-                                db "IbpbOnEntry         ", 0
+__AMDSecureEncryptionSize = 77  ; 76 + null terminator
+__AMDSecureEncryption:          db "SME (Secure Memory Encryption)                                              ", 0
+                                db "SEV (Secure Encrypted Virtualization)                                       ", 0
+                                db "PageFlushMsr (Page Flush MSR available)                                     ", 0
+                                db "SEV-ES (SEV Encrypted State)                                                ", 0
+                                db "SEV-SNP (SEV Secure Nested Paging)                                          ", 0
+                                db "VMPL (VM Permission Levels)                                                 ", 0
+                                db "RMPQUERY (RMPQUERY Instruction)                                             ", 0
+                                db "VmplSSS (VMPL Supervisor Shadow Stack)                                      ", 0
+                                db "SecureTsc (Secure TSC)                                                      ", 0
+                                db "TscAuxVirtualization (TSC AUX Virtualization)                               ", 0
+                                db "HwEnfCacheCoh (Hardware cache coherency across encryption domains enforced) ", 0
+                                db "64BitHost (SEV guest execution only allowed from a 64-bit host)             ", 0
+                                db "RestrictedInjection (Restricted Injection)                                  ", 0
+                                db "AlternateInjection (Alternate Injection)                                    ", 0
+                                db "DebugVirt (Full debug state virtualization)                                 ", 0
+                                db "PreventHostIbs (Disallowing IBS use by the host)                            ", 0
+                                db "VTE (Virtual Transparent Encryption)                                        ", 0
+                                db "VmgexitParameter (VMGEXIT Parameter)                                        ", 0
+                                db "VirtualTomMsr (Virtual TOM MSR)                                             ", 0
+                                db "IbsVirtGuestCtl (IBS Virtualization)                                        ", 0
+                                db "PmcVirtGuestCtl (PMC Virtualization)                                        ", 0
+                                db "RMPREAD (Instruction)                                                       ", 0
+                                db "Reserved                                                                    ", 0
+                                db "Reserved                                                                    ", 0
+                                db "VmsaRegProt (VMSA Register Protection)                                      ", 0
+                                db "SmtProtection (SMT Protection)                                              ", 0
+                                db "SecureAvic (Secure AVIC)                                                    ", 0
+                                db "AllowedSevFeatures (Allowed SEV Features)                                   ", 0
+                                db "SvsmCommPageMSR (SVSM Communication Page MSR)                               ", 0
+                                db "NestedVirtSnpMsr (VIRT_RMPUPDATE MSR0)                                      ", 0
+                                db "HvInUseWrAllowed (Writes to Hypervisor-Owned pages allowed if marked in-use)", 0
+                                db "IbpbOnEntry (IBPB on Entry)                                                 ", 0
 
 ; AMD; 80000020_EBX
 __AMDPQOSExtendedFeaturesSize = 49          ; 48 + null terminator
@@ -5766,6 +5769,7 @@ __Leaf1200:                     db "Leaf 0x12h, ecx = 0x00", 0
 __Leaf1201:                     db "Leaf 0x12h, ecx = 0x01", 0
 __Leaf1202:                     db "Leaf 0x12h, ecx = 0x02", 0
 __Leaf1400:                     db "Leaf 0x14h, ecx = 0x00", 0
+__Leaf1401:                     db "Leaf 0x14h, ecx = 0x01", 0
 __Leaf15:                       db "Leaf 0x15h", 0
 __Leaf16:                       db "Leaf 0x16h", 0
 __Leaf1700:                     db "Leaf 0x17h, ecx = 0x00", 0
