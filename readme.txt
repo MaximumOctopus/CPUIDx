@@ -1,6 +1,6 @@
 ========================================================================================================
 
-  CPUidX 0.13
+  CPUidX 0.14
   (c) Paul Alan Freshney 2022-2024
 
   paul@freshney.org
@@ -44,7 +44,7 @@ Known issues:
    All coding       : Paul A Freshney
    Development Cats : Rutherford, Freeman, and Maxwell
 					  
-   Dedicated to Julie, Adam, and Dyanne.
+   Dedicated to Dad, Julie, Adam, and Dyanne.
 
 All of my software is free and open source; please consider donating to a local cat charity or shelter. Thanks.
 
@@ -52,9 +52,13 @@ All of my software is free and open source; please consider donating to a local 
 
 Release History
 
+0.14 / April 23rd 2024
+
+Tidied up the output, a couple of minor fixes (including a missing cpuid instruction!).
+
 0.13 / April 20th 2024
 
-A couple of minor fixes.
+A couple of minor fixes. Added some more detail to some AMD feature bits.
 
 0.12 / April 14th 2024
 
@@ -62,7 +66,7 @@ A few minor modifications from the March editions of the Intel and AMD dev manua
 
 0.11 / January 27th 2024
 
-A minor modification based on the Decembeer 2023 update of the Intel dev manual
+A minor modification based on the December 2023 update of the Intel dev manual
      Leaf 07h, subleaf 1
 
 0.10 / October 24th 2023
