@@ -2,7 +2,7 @@
 ; ===================================================================================
 ;
 ; (c) Paul Alan Freshney 2023-2024
-; v0.14, April 23rd 2024
+; v0.15, July 29th 2024
 ;
 ; Source code:
 ;     https://github.com/MaximumOctopus/CPUIDx
@@ -21,6 +21,7 @@
 ;         September 2023
 ;         December  2023
 ;         March     2024
+;         June      2024
 ;
 ; ===================================================================================
 ; ===================================================================================
@@ -230,7 +231,7 @@ start:  call Arguments
 ; =============================================================================================
 ; =============================================================================================
 
-About:  cinvoke printf, "%c    CPUidx v0.14 :: April 23rd 2024 :: Paul A Freshney %c", 10, 10
+About:  cinvoke printf, "%c    CPUidx v0.15 :: July 29th 2024 :: Paul A Freshney %c", 10, 10
 
         cinvoke printf, "       https://github.com/MaximumOctopus/CPUIDx %c %c", 10, 10
 
@@ -1082,9 +1083,16 @@ showd:  mov esi, 0
         cinvoke printf, "    BHI_CTRL. Bit 10 of the IA32_SPEC_CTRL MSR is supported %c", 10
                 
 .d0205: bt edi, 5
-        jnc .fin
+        jnc .d0207
 
         cinvoke printf, "    MCDT_NO. %c", 10
+        cinvoke printf, "    Processor does not exhibit MXCSR Configuration Dependent Timing (MCDT) %c", 10
+
+.d0207: bt edi, 5
+        jnc .fin
+
+        cinvoke printf, "    MONITOR_MITG_NO. %c", 10
+        cinvoke printf, "    MONITOR/UMONITOR instructions are not affected by performance or power issues %c", 10
 
 .invalid2:
 
@@ -5189,7 +5197,7 @@ __ThermalPower1:                db "Digital temperature sensor supported        
                                 db "HW_FEEDBACK                                  ", 0
                                 db "Ignoring Idle Logical Processor HWP request  ", 0
                                 db "Reserved.                                    ", 0
-                                db "Reserved.                                    ", 0
+                                db "HWP Control MSR support (IA32_HWP_CTL MSR)   ", 0
                                 db "Intel® Thread Director supported             ", 0
                                 db "IA32_THERM_INTERRUPT MSR bit 25 is supported ", 0
                                 db "Reserved.                                    ", 0

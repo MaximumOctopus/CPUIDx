@@ -1,6 +1,6 @@
-========================================================================================================
+==============================================================================
 
-  CPUidX 0.14
+  CPUidX 0.15
   (c) Paul Alan Freshney 2022-2024
 
   paul@freshney.org
@@ -22,8 +22,9 @@
           September 2023
           December  2023
           March     2024  	
+          June      2024
   
-========================================================================================================
+==============================================================================
 
 Run it from a command prompt.
 
@@ -36,8 +37,10 @@ Save the report to a file:
 Known issues:
   Lack of support for earlier Intel and AMD CPUs.
   AMD testing is lacking (I only have Intel CPUs to hand)
+  
+If you find a bug then please email me at the address at the top of this readme.
 
-========================================================================================================
+==============================================================================
 
  Credits:
 
@@ -48,9 +51,13 @@ Known issues:
 
 All of my software is free and open source; please consider donating to a local cat charity or shelter. Thanks.
 
-========================================================================================================
+==============================================================================
 
 Release History
+
+0.15 / July 29th 2024
+
+A couple of minor modifications based on the June version of the Intel dev docs.
 
 0.14 / April 23rd 2024
 
@@ -118,4 +125,4 @@ Fixed a couple of minor bugs
 
 First public release.
 
-===========================================================================================================================
+==============================================================================
