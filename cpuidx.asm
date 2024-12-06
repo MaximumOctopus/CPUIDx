@@ -1,33 +1,35 @@
 ; ===================================================================================
 ; ===================================================================================
 ;
-; (c) Paul Alan Freshney 2023-2024
-; v0.15, July 29th 2024
+;  (c) Paul Alan Freshney 2023-2024
+;  v0.16, December 6th 2024
 ;
-; Source code:
-;     https://github.com/MaximumOctopus/CPUIDx
+;  Source code:
+;      https://github.com/MaximumOctopus/CPUIDx
 ;
-; Assembled using "Flat Assembler"
-;     https://flatassembler.net/
+;  Assembled using "Flat Assembler"
+;      https://flatassembler.net/
 ;
-; Resources used:
-;     AMD64 Architecture Programmer’s Manual Volume 3: General-Purpose and System Instructions
-;         October   2022
-;         June      2023
-;         March     2024
-;     Intel® 64 and IA-32 Architectures Software Developer's Manual Volume 2
-;         December  2022
-;         March     2023
-;         September 2023
-;         December  2023
-;         March     2024
-;         June      2024
+;  Resources used:
+;      AMD64 Architecture Programmer’s Manual Volume 3: General-Purpose and System Instructions
+;          October   2022
+;          June      2023
+;          March     2024
+;      Intel® 64 and IA-32 Architectures Software Developer's Manual Volume 2
+;          December  2022
+;          March     2023
+;          September 2023
+;          December  2023
+;          March     2024
+;          June      2024
+;          October   2024
 ;
 ; ===================================================================================
 ; ===================================================================================
 
 format PE console
 include 'WIN32AX.INC'
+include 'cpuidx.inc'
 
 ; ===================================================================================
 section '.code' code readable executable
@@ -132,6 +134,10 @@ start:  call Arguments
                 
         call ProcessorHistoryReset              ; 20h
                 
+        call APMEMain                           ; 23h
+                
+        call ConvergedVectorISAMain             ; 24h
+
 ; =============================================================================================
                 
         mov [__MaxExtended], eax
@@ -231,7 +237,7 @@ start:  call Arguments
 ; =============================================================================================
 ; =============================================================================================
 
-About:  cinvoke printf, "%c    CPUidx v0.15 :: July 29th 2024 :: Paul A Freshney %c", 10, 10
+About:  cinvoke printf, "%c    CPUidx v0.16 :: December 6th 2024 :: Paul A Freshney %c", 10, 10
 
         cinvoke printf, "       https://github.com/MaximumOctopus/CPUIDx %c %c", 10, 10
 
@@ -316,7 +322,7 @@ ShowFamilyModel:
         mov eax, dword [__MaxBasic]
         mov ebx, dword [__MaxExtended]
 
-        cinvoke printf, "    Max Leaf 0x%x, Max Extended Leaf 0x%x %c", eax, ebx, 10
+        cinvoke printf, "    Max Leaf %xh, Max Extended Leaf %xh %c", eax, ebx, 10
 
         movzx edi, byte [__Family]
 
@@ -408,7 +414,7 @@ CoreCount:
 
 .intel: mov eax, [__Features2]
 
-        bt eax, 28
+        bt eax, kHTT
         jnc .singlecore
 
         invoke GetActiveProcessorCount, 0xffff  ; all processor groups
@@ -477,7 +483,7 @@ ShowCache:
 
         mov esi, eax
 
-        shr esi, 5              ; extract level from bits 5:7
+        shr esi, 5              ; extract level from bits 5:7 (cache level)
         and esi, 0x07
 
         mov edx, ebx
@@ -517,7 +523,7 @@ ShowCache:
                 
         mov esi, edx
 
-        bt esi, 0
+        bt esi, kWBINVD
         jnc .d00
                 
 .d01:   cinvoke printf, "      WBINVD/INVD is not guaranteed to act upon lower level caches of non-originating threads sharing this cache %c", 10
@@ -526,7 +532,7 @@ ShowCache:
                 
 .d00:   cinvoke printf, "      WBINVD/INVD from threads sharing this cache acts upon lower level caches for threads sharing this cache %c", 10
                 
-.dbit1: bt esi, 1
+.dbit1: bt esi, kCacheInclusiveLowerLevels
         jnc .d10
                 
 .d11:   cinvoke printf, "      Cache is inclusive of lower cache levels %c", 10
@@ -535,7 +541,7 @@ ShowCache:
                 
 .d10:   cinvoke printf, "      Cache is not inclusive of lower cache levels %c", 10
                 
-.dbit2: bt esi, 2
+.dbit2: bt esi, kComplexFunctionIndexCache
         jnc .d20
                 
 .d21:   cinvoke printf, "      A complex function is used to index the cache, potentially using all address bits %c", 10
@@ -681,7 +687,7 @@ ProcessorSerialNumber:
         mov eax, 0x01                
         cpuid
                 
-        bt edx, 18              ; check if PSN is supported
+        bt edx, kPSN            ; check if PSN is supported
         jnc .fin
 
         cinvoke printf, "  Processor serial number (bits 0-63) 0x%x%x %c", edx, ecx, 10
@@ -723,7 +729,7 @@ MonitorMWait:
         bt edi, 0
         jnc .notsupported       ; Monitor-Wait extension beyond EAX/EBX not supported
                 
-        bt edi, 1
+        bt edi, kInterruptsBreakEventMWAIT
         jnc .cstates
                 
         cinvoke printf, "    Supports treating interrupts as break-event for MWAIT, even when interrupts disabled. %c", 10
@@ -782,12 +788,12 @@ AMDMonitorMWait:
         cinvoke printf, "    Largest monitor-line size : %d bytes %c", ebx, 10
         pop ebx
                 
-.bit0:  bt edi, 0               ; EMX
+.bit0:  bt edi, kEMX
         jnc .bit1
                 
         cinvoke printf, "    MONITOR/MWAIT extensions are supported %c", 10
                 
-.bit1:  bt edi, 1               ; IBE
+.bit1:  bt edi, kIBE
         jnc .fin
                 
         cinvoke printf, "    IBE. Interrupt break-event. MWAIT can use ECX bit 0 to allow interrupts %c", 10
@@ -850,17 +856,18 @@ PowerManagementRelated:
 
         mov edi, ecx
 
-        bt eax, 2               ; ARAT
+        bt eax, kARAT
         jnc .c0
 
         cinvoke printf, "    Timebase for the local APIC timer is not affected by processor p-state %c", 10
 
-.c0:    bt edi, 0               ; EffFreq
+.c0:    bt edi, kEffFreq
+        jnc .fin
 
         cinvoke printf, "    Effective frequency interface support %c", 10
         cinvoke printf, "      idicates presence of MSR0000_00E7 (MPERF) and MSR0000_00E8 (APERF) %c", 10
 
-        ret
+.fin:   ret
 
 ; =============================================================================================
 
@@ -974,76 +981,95 @@ showd:  mov esi, 0
         mov ecx, 0x01
         mov eax, 0x07           ; sub-leaf 1   
         cpuid
+               
+        cmp eax, 0              ; eax returns 0 if sub-leaf index (1) is invald
+        je subleaf2
+               
+        push eax
+        cinvoke printf, "  Structured Extended Feature Sub-leaf 1 (0x%x) %c", eax, 10
+        pop eax
+
+        mov edi, dword __StructuredExtendedFeatureSubLeaf1aFlags
                 
-        mov edi, ebx
-        mov esi, edx
+showe:  mov esi, 0
+
+.lfs1:  bt  eax, esi
+        jnc .nexte
+
+        push eax
+        cinvoke printf, "    %02d::%s %c", esi, edi, 10
+        pop eax
+
+.nexte: add edi, __StructuredExtendedFeatureSubLeaf1aFlagsSize
+
+        inc esi
+
+        cmp esi, 32
+
+        jne .lfs1
                 
-        cmp eax, 0
-        je .invalid
+; sub-leaf 1, ebx
 
-        bt eax, 4
-        jnc .a0105
-
-        push eax
-        cinvoke printf, "    AVX-VNNI. AVX (VEX-encoded) versions of the Vector Neural Network Instructions %c", 10
-        pop eax
+        mov ecx, 0x01
+        mov eax, 0x07           ; sub-leaf 1   
+        cpuid
                 
-.a0105: bt eax, 5
-        jnc .a010A
-
-        push eax
-        cinvoke printf, "    AVX512_BF16. Vector Neural Network Instructions supporting BFLOAT16 inputs and conversion instructions from IEEE single precision %c", 10
-        pop eax
-
-.a010A: bt eax, 10
-        jnc .a010B
+        mov esi, ebx
                 
-        push eax
-        cinvoke printf, "    Fast zero-length REP MOVSB %c", 10
-        pop eax
-                
-.a010B: bt eax, 11
-        jnc .a010C
+        cmp eax, 0              ; eax returns 0 if sub-leaf index (1) is invald
+        je subleaf2
 
-        push eax
-        cinvoke printf, "    Fast short REP STOSB %c", 10
-        pop eax
+        cinvoke printf, "    ebx %02d", esi, 10
 
-.a010C: bt eax, 12
-       jnc .a010X
-
-        push eax
-        cinvoke printf, "    Fast short REP CMPSB, REP SCASB %c", 10
-        pop eax
-
-.a010X: bt eax, 22
-        jnc .a010Y
-
-        push eax
-        cinvoke printf, "    HRESET. History reset via the HRESET instruction and the IA32_HRESET_ENABLE MSR %c", 10
-        pop eax
-
-.a010Y: bt eax, 30
-        jnc .b0100
-
-        cinvoke printf, "    INVD_DISABLE_POST_BIOS_DONE. INVD execution prevention after BIOS Done %c", 10
-
-.b0100: bt edi, 0
-        jnc .d0118
+.b0100: bt esi, kIA32_PPIN
+        jnc .b0103
                 
         cinvoke printf, "    IA32_PPIN and IA32_PPIN_CTL MSRs %c", 10
-
-.d0118: bt esi, 18
-        jnc .sl72
                 
-        cinvoke printf, "    CET_SSS OS can enable supervisor shadow stacks %c", 10
+.b0103: bt esi, kCPUIDMAXVAL_LIM_RMV
+        jnc .sl1d
+                
+        cinvoke printf, "    CPUIDMAXVAL_LIM_RMV. IA32_MISC_ENABLE cannot be set to 1 to limit CPUID.00H:EAX[bits 7:0] %c", 10
+                
+; sub-leaf 1, ecx
+; ecx is reserved
+                
+; sub-leaf 1, edx
 
-		jmp .sl72
+.sl1d:  mov ecx, 0x01
+        mov eax, 0x07           ; sub-leaf 1   
+        cpuid
+                
+        cmp edx, 0              ; edx returns 0 if sub-leaf index (1) is invald
+        je subleaf2
+                
+        pop edx
+        cinvoke printf, "    edx %02d", edx, 10         
+        push edx
+                
+        mov edi, dword __StructuredExtendedFeatureSubLeaf1dFlags
+                
+showg:  mov esi, 0
 
-.invalid:
+.lfs1d: bt  edx, esi
+        jnc .nextf
+
+        push edx
+        cinvoke printf, "    %02d::%s %c", esi, edi, 10
+        pop edx
+
+.nextf: add edi, __StructuredExtendedFeatureSubLeaf1dFlagsSize
+
+        inc esi
+
+        cmp esi, 32
+
+        jne .lfs1d
+
+subleaf2: ; sub-leaf 2
 
         mov esi, dword __LeafInvalid
-        call ShowLeafInformation		
+        call ShowLeafInformation                
 
 .sl72:  mov esi, dword __Leaf0702
         call ShowLeafInformation
@@ -1057,38 +1083,43 @@ showd:  mov esi, 0
                 
         mov edi, edx
                 
-.d0200: bt edi, 0
+.d0200: bt edi, kPSFD
         jnc .d0201
                 
         cinvoke printf, "    PSFD. Indicates bit 7 of the IA32_SPEC_CTRL MSR is supported %c", 10
 
-.d0201: bt edi, 1
+.d0201: bt edi, kIPRED_CTRL
         jnc .d0202
 
         cinvoke printf, "    IPRED_CTRL. Bits 3 and 4 of the IA32_SPEC_CTRL MSR are supported %c", 10
 
-.d0202: bt edi, 2
+.d0202: bt edi, kRRSBA_CTRL
         jnc .d0203
 
         cinvoke printf, "    RRSBA_CTRL. Bits 5 and 6 of the IA32_SPEC_CTRL MSR are supported %c", 10
 
-.d0203: bt edi, 3
+.d0203: bt edi, kDDPD_U
         jnc .d0204
 
         cinvoke printf, "    DDPD_U. Bit 8 of the IA32_SPEC_CTRL MSR is supported %c", 10
 
-.d0204: bt edi, 4
+.d0204: bt edi, kBHI_CTRL
         jnc .d0205
 
         cinvoke printf, "    BHI_CTRL. Bit 10 of the IA32_SPEC_CTRL MSR is supported %c", 10
                 
-.d0205: bt edi, 5
-        jnc .d0207
+.d0205: bt edi, kMCDT_NO
+        jnc .d0206
 
         cinvoke printf, "    MCDT_NO. %c", 10
         cinvoke printf, "    Processor does not exhibit MXCSR Configuration Dependent Timing (MCDT) %c", 10
+                
+.d0206: bt edi, kUCLockDisable
+        jnc .d0207
 
-.d0207: bt edi, 5
+        cinvoke printf, "    Supports the UC-lock disable feature and it causes #AC %c", 10             
+
+.d0207: bt edi, 7
         jnc .fin
 
         cinvoke printf, "    MONITOR_MITG_NO. %c", 10
@@ -1097,7 +1128,7 @@ showd:  mov esi, 0
 .invalid2:
 
         mov esi, dword __LeafInvalid
-        call ShowLeafInformation	
+        call ShowLeafInformation        
 
 .fin:
         ret
@@ -1163,7 +1194,7 @@ AMDStructuredExtendedFeatureIDs:
 
 ; =============================================================================================
 
-; leaf 09h
+; leaf 09h, data in eax only
 ; Intel only, not supported by AMD
 DirectCacheAccessInfo:
 
@@ -1198,8 +1229,8 @@ ArchitecturalPerfMon:
 
         mov edi, eax
         mov esi, edx
-                
-        cinvoke printf, "  Architectural Performance Monitoring (EAX:0x%x EDX:0x%x) %c", edi, esi, 10
+
+        cinvoke printf, "  Architectural Performance Monitoring (EAX:0x%x EBX:0x%x ECX:0x%x EDX:0x%x) %c", edi, ebx, ecx, esi, 10
 
         mov eax, edi
         and eax, 0x000000FF
@@ -1220,26 +1251,130 @@ ArchitecturalPerfMon:
 
         cinvoke printf, "    Bit width of perf monitor counter : %d %c", eax, 10
 
+        mov eax, edi
+
+        shr eax, 24
+        and eax, 0x000000FF
+                
+        cinvoke printf, "    EBX bit vector : 0x%x %c", eax, 10         
+
         mov eax, esi
         and eax, 0x0000001F
 
         cinvoke printf, "    Contiguous fixed-function performance counters starting from 0: %d %c", eax, 10
 
         mov eax, esi
-        shr eax, 8
+        shr eax, 5
         and eax, 0x000000FF
 
         cinvoke printf, "    Bit width of fixed-function performance counters: %d %c", eax, 10
 
-        bt esi, 15
-        jnc .fin
+        bt esi, kAnyThread
+        jnc .sfcbm
 
         cinvoke printf, "    AnyThread deprecation %c", 10
 
-        mov eax, 0x0A
+.sfcbm: mov eax, 0x0A
         cpuid
 
         cinvoke printf, "    Supported fixed counters bit mask: 0x%x %c", ecx, 10
+		cinvoke printf, "%c", 10
+		
+        mov eax, 0x0A
+        cpuid
+
+        shr eax, 24
+        and eax, 0x000000FF     ; isolate event bit vector EAX[31:24]
+		mov edi, eax
+        mov esi, ebx
+
+.b1:    bt esi, 0
+        jc .b1n
+
+        cmp edi, 1
+        jle .b1n
+		
+.b1y:   cinvoke printf, "    Core cycle event available %c", 10
+        jmp .b2
+
+.b1n:   cinvoke printf, "    Core cycle event not available %c", 10
+
+.b2:    bt esi, 1
+        jc .b2n
+
+        cmp edi, 2
+        jle .b2n
+		
+.b2y:   cinvoke printf, "    Instruction retired event available %c", 10
+        jmp .b3
+
+.b2n:   cinvoke printf, "    Instruction retired event not available %c", 10
+
+.b3:    bt esi, 2
+        jc .b3n
+
+        cmp edi, 3
+        jle .b3n
+		
+.b3y:   cinvoke printf, "    Reference cycles event available %c", 10
+        jmp .b4
+
+.b3n:   cinvoke printf, "    Reference cycles event not available %c", 10
+
+.b4:    bt esi, 3
+        jc .b4n
+
+        cmp edi, 4
+        jle .b4n
+		
+.b4y:   cinvoke printf, "    Last-level cache reference event available %c", 10
+        jmp .b5
+
+.b4n:   cinvoke printf, "    Last-level cache reference event not available %c", 10
+
+.b5:    bt esi, 4
+        jc .b5n
+
+        cmp edi, 5
+        jle .b5n
+		
+.b5y:   cinvoke printf, "    Last-level cache misses event available %c", 10
+        jmp .b6
+
+.b5n:   cinvoke printf, "    Last-level cache misses event not available %c", 10
+
+.b6:    bt esi, 5
+        jc .b6n
+
+        cmp edi, 6
+        jle .b6n
+		
+.b6y:   cinvoke printf, "    Branch instruction retired event available %c", 10
+        jmp .b7
+
+.b6n:   cinvoke printf, "    Branch instruction retired event not available %c", 10
+
+.b7:    bt esi, 6
+        jc .b7n
+
+        cmp edi, 7
+        jle .b8n
+		
+.b7y:   cinvoke printf, "    Branch mispredict retired event available %c", 10
+        jmp .b8
+
+.b7n:   cinvoke printf, "    Branch mispredict retired event not available %c", 10
+
+.b8:    bt esi, 7
+        jc .b8n
+
+        cmp edi, 8
+        jle .b8n
+		
+.b8y:   cinvoke printf, "    Top-down slots event available %c", 10
+        jmp .fin
+
+.b8n:   cinvoke printf, "    Top-down slots event not available %c", 10
 
 .fin:   ret
 
@@ -1429,27 +1564,27 @@ ProcExtStateEnumSub1:
         mov edi, eax
         mov esi, ebx
                 
-        bt edi, 0
+        bt edi, kXSAVEOPT
         jnc .bit1
                 
         cinvoke printf, "    XSAVEOPT available %c", 10
                 
-.bit1:  bt edi, 1
+.bit1:  bt edi, kXSAVEC
         jnc .bit2
                 
         cinvoke printf, "    Supports XSAVEC and the compacted form of XRSTOR %c", 10
                 
-.bit2:  bt edi, 2
+.bit2:  bt edi, kXGETBV
         jnc .bit3
                 
         cinvoke printf, "    Supports XGETBV %c", 10
 
-.bit3:  bt edi, 3
+.bit3:  bt edi, kIA32_XSS
         jnc .bit4
                 
         cinvoke printf, "    Supports XSAVES/XRSTORS and IA32_XSS %c", 10
                 
-.bit4:  bt edi, 4
+.bit4:  bt edi, kXFD
         jnc .size
                 
         cinvoke printf, "    Supports extended feature disable (XFD) %c", 10            
@@ -1506,35 +1641,35 @@ AMDProcExtStateEnum:
         mov edi, eax
         mov esi, ecx
 
-.01a0:  bt edi, 0               ; XSAVEOPT
+.01a0:  bt edi, kXSAVEOPT
         jnc .01a1
 
         cinvoke printf, "    XSAVEOPT is available %c", 10
 
-.01a1:  bt edi, 1               ; XSAVEC
+.01a1:  bt edi, kXSAVEC
         jnc .01a2
 
         cinvoke printf, "    XSAVEC and compact XRSTOR supported %c", 10
 
-.01a2:  bt edi, 2               ; XGETBV
+.01a2:  bt edi, kXGETBV
         jnc .01a3
 
         cinvoke printf, "    XGETBV with ECX = 1 supported %c", 10
 
-.01a3:  bt edi, 3               ; XSAVES
+.01a3:  bt edi, kIA32_XSS
         jnc .01c11
         
         cinvoke printf, "    XSAVES, XRSTOR, and XSS are supported %c", 10
 
-.01c11: bt esi, 11              ; CET_U
+.01c11: bt esi, kCET_U
         jnc .01c12
 
-        cinvoke printf, "    CET user state %c", 10
+        cinvoke printf, "    CET_U. CET user state %c", 10
                 
-.01c12: bt esi, 12              ; CET_S
+.01c12: bt esi, kCET_S
         jnc .func2
 
-        cinvoke printf, "    CET supervisor %c", 10
+        cinvoke printf, "    CET_S. CET supervisor %c", 10
 
 .func2: mov esi, dword __Leaf0D02
         call ShowLeafInformation
@@ -1563,7 +1698,7 @@ AMDProcExtStateEnum:
 
         cinvoke printf, "    CET User state offset   : %d bytes %c", edi, 10 
 
-        bt edi, 0               ; U/S
+        bt edi, kU_S
         jnc .funcC
 
         cinvoke printf, "    Supervisor state component %c", 10 
@@ -1582,7 +1717,7 @@ AMDProcExtStateEnum:
 
         cinvoke printf, "    CET supervisor state offset   : %d bytes %c", edi, 10 
  
-        bt edi, 0               ; U/S
+        bt edi, kU_S
         jnc .func62
 
         cinvoke printf, "    Supervisor state component %c", 10 
@@ -1632,7 +1767,7 @@ IntelRDTMonitoring:
                 
         cinvoke printf, "    Max Range of RMID within this physical processor: 0x%x %c", eax, 10
 
-        bt edi, 1
+        bt edi, kL3CacheIntelRDTM
         jnc .subleaf
                 
         cinvoke printf, "    Supports L3 Cache Intel RDT Monitoring %c", 10
@@ -1660,17 +1795,17 @@ IntelRDTMonitoring:
 
         cinvoke printf, "    %d-bit counters are supported %c", eax, 10
 
-.bit8:  bt edi, 8
+.bit8:  bt edi, kIA32_QM_CTR
         jnc .bit9
                 
         cinvoke printf, "    Overflow bit in IA32_QM_CTR MSR bit 61 %c", 10
                 
-.bit9:  bt edi, 9
+.bit9:  bt edi, kRDT_CMT
         jnc .bita
 
         cinvoke printf, "    Non-CPU agent Intel RDT CMT support %c", 10
                 
-.bita:  bt edi, 10
+.bita:  bt edi, kRDT_MBM
         jnc .next               
                 
         cinvoke printf, "    Non-CPU agent Intel RDT MBM support %c", 10
@@ -1688,17 +1823,17 @@ IntelRDTMonitoring:
 
         cinvoke printf, "    Maximum range of RMID of this resource type: 0x%x %c", edi, 10
 
-        bt esi, 0
+        bt esi, kL3OccupancyMonitoring
         jnc .bit1
 
         cinvoke printf, "    Supports L3 occupancy monitoring %c", 10
                 
-.bit1:  bt esi, 1
+.bit1:  bt esi, kL3TotalBandwidthMonitoring
         jnc .bit2
                 
         cinvoke printf, "    Supports L3 Total Bandwidth monitoring %c", 10
                 
-.bit2:  bt esi, 2
+.bit2:  bt esi, kL3LocalBandwidthMonitoring
         jnc .fin
 
         cinvoke printf, "    Supports L3 Local Bandwidth monitoring %c", 10
@@ -1712,7 +1847,7 @@ IntelRDTMonitoring:
 AMDPQOSMonitoring:
 
         mov eax, [__Features2]
-        bt eax, 12              ; test for PQOS bit
+        bt eax, kPQOS
                 
         jnc .fin
                 
@@ -1733,7 +1868,7 @@ AMDPQOSMonitoring:
                 
         cinvoke printf, "    Largest RMID supported, any resource: 0x%x %c", ebx, 10
 
-        bt esi, 1               ; L3CacheMon
+        bt esi, kL3CacheMon
         jnc .ecx1
 
         cinvoke printf, "    L3CacheMon. L3 Cache monitoring supported %c", 10
@@ -1763,22 +1898,22 @@ AMDPQOSMonitoring:
                 
         cinvoke printf, "    CM_CTR counter width: %d %c", eax, 10
                 
-        bt edi, 8               ; OverflowBit
+        bt edi, kOverflowBit
         jnc .edx0
 
         cinvoke printf, "    MSR QM_CTR bit 61 is a counter overflow bit %c", 10
 
-.edx0:  bt esi, 0               ; L3CacheOccMon
+.edx0:  bt esi, kL3CacheOccMon
         jnc .edx1
                 
         cinvoke printf, "    L3 Cache Occupancy Monitoring Event %c", 10
                 
-.edx1:  bt esi, 1               ; L3CacheBWMonEvt0
+.edx1:  bt esi, kL3CacheBWMonEvt0
         jnc .edx2
                 
         cinvoke printf, "    L3 Cache Bandwidth Monitoring Event 0 %c", 10
 
-.edx2:  bt esi, 2               ; L3CacheBWMonEvt1
+.edx2:  bt esi, kL3CacheBWMonEvt1
         jnc .fin
                 
         cinvoke printf, "    L3 Cache Bandwidth Monitoring Event 1 %c", 10
@@ -1805,17 +1940,17 @@ IntelRDTAllocEnum:
                 
         cinvoke printf, "  Intel Resource Director Technology Allocation Enumeration (EBX:0x%x) %c", edi, 10
                 
-.bit1:  bt edi, 1
+.bit1:  bt edi, kL3CacheAllocationTechnology
         jnc .bit2
                 
         cinvoke printf, "    Supports L3 Cache Allocation Technology %c", 10
 
-.bit2:  bt edi, 1
+.bit2:  bt edi, kL2CacheAllocationTechnology
         jnc .bit3
                 
         cinvoke printf, "    Supports L2 Cache Allocation Technology %c", 10
 
-.bit3:  bt edi, 1
+.bit3:  bt edi, kMemoryBandwidthAllocation
         jnc .subleaf1
                 
         cinvoke printf, "    Supports Memory Bandwidth Allocation %c", 10
@@ -1853,12 +1988,12 @@ IntelRDTAllocEnum:
         mov edi, ecx
         mov esi, edx
                 
-.bit11: bt edi, 1
+.bit11: bt edi, kL3CATNonCPUAgent
         jnc .bit12
                                 
         cinvoke printf, "    L3 CAT for non-CPU agents is supported %c", 10
                                 
-.bit12: bt edi, 2
+.bit12: bt edi, kL3CPT
         jnc .cpns1
                 
         cinvoke printf, "    L3 Code and Prioritization Technology supported %c", 10
@@ -1869,17 +2004,17 @@ IntelRDTAllocEnum:
 
         cinvoke printf, "    L3 Code and Prioritization Technology not supported %c", 10
 
-.bit13: bt edi, 3
+.bit13: bt edi, kNonContiguousCapacityBitmask
         jnc .hcos1
                 
         cinvoke printf, "    Non-contiguous capacity bitmask is supported %c", 10
-                cinvoke printf, "        The bits in IA32_L3_MASK_n registers do not have to be contiguous %c", 10
+        cinvoke printf, "        The bits in IA32_L3_MASK_n registers do not have to be contiguous %c", 10
 
 .hcos1:
 
         and esi, 0x0000FFFF
                 
-        cinvoke printf, "    Highest COS number supported for ResID1: %d %c", esi, 10
+        cinvoke printf, "    Highest CLOS number supported for ResID: %d %c", esi, 10
 
 ; leaf 10h, sub-leaf 2 (data in eax, ebx, ecx, and edx)
 
@@ -1914,7 +2049,7 @@ IntelRDTAllocEnum:
         mov edi, ecx
         mov esi, edx
                 
-.bit22: bt edi, 2
+.bit22: bt edi, kL2CDPT
         jnc .bit23
                 
         cinvoke printf, "    L2 Code and Data Prioritization Technology supported %c", 10
@@ -1925,7 +2060,7 @@ IntelRDTAllocEnum:
 
         cinvoke printf, "    Code and Prioritization Technology not supported %c", 10
 
-.bit23: bt edi, 3
+.bit23: bt edi, kNonContiguousCapacityBitmask
         jnc .hcos2
 
         cinvoke printf, "    Non-contiguous capacity bitmask is supported %c", 10
@@ -1962,7 +2097,7 @@ IntelRDTAllocEnum:
                 
         cinvoke printf, "    Max MBA throttling value supported by ResID 3: %d %c", eax, 10
                 
-        bt edi, 2
+        bt edi, kDelayValuesLinear
         jnc .dnl
                 
         cinvoke printf, "    Response of the delay values is linear %c", 10
@@ -1986,7 +2121,7 @@ IntelRDTAllocEnum:
 AMDPQECapabilities:
 
         mov eax, [__MaxExtended]
-        bt eax, 15                              ; test for PQE bit
+        bt eax, kPQE
                 
         jnc .fin
                 
@@ -1999,7 +2134,7 @@ AMDPQECapabilities:
         mov eax, 0x10
         cpuid           
 
-        bt eax, 1               ; L3Alloc
+        bt eax, kL3Alloc
         jnc .ecx1
                 
         cinvoke printf, "    L3 Cache Allocation Enforcement Support %c", 10
@@ -2029,7 +2164,7 @@ AMDPQECapabilities:
                 
         mov edi, edx
                 
-        bt eax, 2               ; CDP
+        bt eax, kCDP
         jnc .edx
 
         cinvoke printf, "    Code-Data Prioritization support %c", 10
@@ -2062,7 +2197,7 @@ IntelSGXCapability:
         mov eax, 0x07           ; get extended features   
         cpuid
                 
-        bt ebx, 2               ; check SGX bit
+        bt ebx, kSGX
         jnc .notsupported
 
         mov ecx, 0
@@ -2072,49 +2207,49 @@ IntelSGXCapability:
         mov edi, ebx
         mov esi, edx
                 
-        bt eax, 0
+        bt eax, kSGX1Leaf
         jnc .bit1
                 
         push eax
         cinvoke printf, "    Intel SGX supports the collection of SGX1 leaf functions %c", 10
         pop eax
                 
-.bit1:  bt eax, 1
+.bit1:  bt eax, kSGX2Leaf
         jnc .bit5
                 
         push eax
         cinvoke printf, "    Intel SGX supports the collection of SGX2 leaf functions %c", 10
         pop eax
                 
-.bit5:  bt eax, 5
+.bit5:  bt eax, kENCLVx
         jnc .bit6
 
         push eax
         cinvoke printf, "    Intel SGX supports ENCLV instructions (EINCVIRTCHILD, EDECVIRTCHILD, and ESETCONTEXT) %c", 10
         pop eax
 
-.bit6:  bt eax, 6
+.bit6:  bt eax, kENCLSx
         jnc .bit7
                 
         push eax
         cinvoke printf, "    Intel SGX supports ENCLS instructions (ETRACKC, ERDINFO, ELDBC, and ELDUC) %c", 10
         pop eax
                 
-.bit7:  bt eax, 7
+.bit7:  bt eax, kEVERIFYREPORT2
         jnc .bit10
                 
         push eax
         cinvoke printf, "    Intel SGX supports ENCLU instruction leaf EVERIFYREPORT2 %c", 10
         pop eax
 
-.bit10:  bt eax, 10
+.bit10: bt eax, kEUPDATESVN
         jnc .bit11
                 
         push eax
         cinvoke printf, "    Intel SGX supports ENCLS instruction leaf EUPDATESVN %c", 10
         pop eax
 
-.bit11: bt eax, 11
+.bit11: bt eax, kEDECCSSA
         jnc .ebx
                 
         push eax
@@ -2229,77 +2364,77 @@ IntelProcessorTrace:
         mov edi, ebx
         mov esi, ecx
                 
-.bbit0: bt edi, 0
+.bbit0: bt edi, kIA32_RTIT_CTL
         jnc .bbit1
                 
         cinvoke printf, "    IA32_RTIT_CTL.CR3Filter can be set to 1, IA32_RTIT_CR3_MATCH MSR can be accessed %c", 10
 
-.bbit1: bt edi, 1
+.bbit1: bt edi, kConfigurablePSB
         jnc .bbit2
 
         cinvoke printf, "    Configurable PSB and Cycle-Accurate Mod is supported %c", 10
 
-.bbit2: bt edi, 2
+.bbit2: bt edi, kIPFiltering
         jnc .bbit3
 
         cinvoke printf, "    IP Filtering, TraceStop filtering, and preservation of Intel PT MSRs across warm reset. %c", 10
 
-.bbit3: bt edi, 3
+.bbit3: bt edi, kMTCTimingPacket
         jnc .bbit4
 
         cinvoke printf, "    MTC timing packet and suppression of COFI-based packets is supported %c", 10
 
-.bbit4: bt edi, 4
+.bbit4: bt edi, kPTWRITE
         jnc .bbit5
 
         cinvoke printf, "    PTWRITE. Writes can set IA32_RTIT_CTL[12] (PTWEn) and IA32_RTIT_CTL[5] (FUPonPTW),%c", 10
         cinvoke printf, "      and PTWRITE can generate packets is supported %c", 10
 
-.bbit5: bt edi, 5
+.bbit5: bt edi, kPwrEvtEn
         jnc .bbit6
 
         cinvoke printf, "    Power Event Trace. Writes can set IA32_RTIT_CTL[4] (PwrEvtEn), enabling Power Event Trace packet generation. %c", 10
 
-.bbit6: bt edi, 6
+.bbit6: bt edi, kInjectPsbPmiOnEnable
         jnc .bbit7
 
         cinvoke printf, "    PSB and PMI preservation. Writes can set IA32_RTIT_CTL[56] (InjectPsbPmiOnEnable), enabling the processor %c", 10 
         cinvoke printf, "      to set IA32_RTIT_STATUS[7] (PendTopaPMI) and/or IA32_RTIT_STATUS[6] (PendPSB) in order to preserve ToPA PMIs %c", 10
         cinvoke printf, "      and/or PSBs otherwise lost due to Intel PT disable. Writes can also set PendToPAPMI and PendPSB. %c", 10
 
-.bbit7: bt edi, 7
+.bbit7: bt edi, kEventEn
         jnc .bbit8
 
         cinvoke printf, "    Writes can set IA32_RTIT_CTL[31] (EventEn), enabling Event Trace packet generation %c", 10
 
-.bbit8: bt edi, 8
+.bbit8: bt edi, kDisTNT
         jnc .cbit0
 
         cinvoke printf, "    Writes can set IA32_RTIT_CTL[55] (DisTNT), disabling TNT packet generation %c", 10
 
-.cbit0: bt esi, 0
+.cbit0: bt esi, kTracingIA32_RTIT_CTL
         jnc .cbit1
 
         cinvoke printf, "    Tracing can be enabled with IA32_RTIT_CTL.ToPA = 1, hence utilizing the ToPA output scheme; %c", 10
         cinvoke printf, "      IA32_RTIT_OUTPUT_BASE and IA32_RTIT_OUTPUT_MASK_PTRS MSRs can be accessed %c", 10
                 
-.cbit1: bt esi, 1
+.cbit1: bt esi, kToPATables
         jnc .cbit2
 
         cinvoke printf, "    ToPA tables can hold any number of output entries, up to the maximum allowed by the MaskOrTableOffset %c", 10
         cinvoke printf, "      field of IA32_RTIT_OUTPUT_MASK_PTRS %c", 10
                 
-.cbit2: bt esi, 2
+.cbit2: bt esi, kSingleRangeOutput
         jnc .cbit3
 
         cinvoke printf, "    Single-Range Output scheme is supported %c", 10
 
-.cbit3: bt esi, 3
+.cbit3: bt esi, kTraceTransportSubsystem
         jnc .cbitx
 
         cinvoke printf, "    Indicates support of output to Trace Transport subsystem %c", 10
 
-.cbitx: bt esi, 31
+.cbitx: bt esi, kIPPayloadsLIPValues
         jnc .fin
 
         cinvoke printf, "    Generated packets which contain IP payloads have LIP values, which include the CS base component %c", 10
@@ -2479,7 +2614,7 @@ SoCVendor:
 
         cinvoke printf, "    SOC Vendor ID: 0x%x %c", ebx, 10
 
-        bt edi, 16
+        bt edi, kIsVendorScheme
         jnc .p2
 
         cinvoke printf, "    IsVendorScheme (vendor ID is industry standard) %c", ebx, 10
@@ -2563,22 +2698,22 @@ DATParameters:
 
         add edi, 13*5
 
-.bit0:  bt ebx, 0
+.bit0:  bt ebx, k4PageSize
         jnc .bit1
 
         cinvoke printf, "    %s 4K page size, %d ways of associativity, %d sets %c", edi, eax, ecx, 10
 
-.bit1:  bt ebx, 1
+.bit1:  bt ebx, k2MBPageSize
         jnc .bit2
                 
         cinvoke printf, "    %s 2MB page size, %d ways of associativity, %d sets %c", edi, eax, ecx, 10
 
-.bit2:  bt ebx, 2
+.bit2:  bt ebx, k4MBPageSize
         jnc .bit3
 
         cinvoke printf, "    %s 4MB page size, %d ways of associativity, %d sets %c", edi, eax, ecx, 10
 
-.bit3:  bt ebx, 3
+.bit3:  bt ebx, k1GBPageSize
         jnc .next
                 
         cinvoke printf, "    %s 1GB page size, %d ways of associativity, %d sets %c", edi, eax, ecx, 10
@@ -2611,17 +2746,17 @@ KeyLocker:
 
         mov edi, eax
 
-        bt edi, 0
+        bt edi, kKLCPL0
         jnc .a01
 
         cinvoke printf, "    Key Locker restriction of CPL0-only supported %c", 10
 
-.a01:   bt edi, 1
+.a01:   bt edi, kKLNoEncrypt
         jnc .a02
 
         cinvoke printf, "    Key Locker restriction of no-encrypt supported %c", 10
 
-.a02:   bt edi, 2
+.a02:   bt edi, kKLNoDecrypt
         jnc .b00
 
         cinvoke printf, "    Key Locker restriction of no-decrypt supported %c", 10
@@ -2632,29 +2767,29 @@ KeyLocker:
         mov edi, ebx
         mov esi, ecx
 
-        bt edi, 0
+        bt edi, kAESKLE
         jnc .b02
                 
         cinvoke printf, "    AESKLE. AES Key Locker instructions are fully enabled %c", 10
                 
-.b02:   bt edi, 2
+.b02:   bt edi, kAESWideKeyLockerInstructions
         jnc .b04
                 
         cinvoke printf, "    AES wide Key Locker instructions are supported %c", 10
 
-.b04:   bt edi, 4
+.b04:   bt edi, kKeyLockerMSRs
         jnc .c00
 
         cinvoke printf, "    Platform supports the Key Locker MSRs %c", 10
         cinvoke printf, "      (IA32_COPY_LOCAL_TO_PLATFORM, IA23_COPY_PLATFORM_TO_LOCAL, %c", 10
         cinvoke printf, "       IA32_COPY_STATUS, and IA32_IWKEYBACKUP_STATUS) %c", 10
 
-.c00:   bt esi, 0
+.c00:   bt esi, kLOADIWKEYNoBackup
         jnc .c01
 
         cinvoke printf, "    NoBackup parameter to LOADIWKEY is supported %c", 10
 
-.c01:   bt esi, 1
+.c01:   bt esi, kKeySourceEncodingOne
         jnc .fin
 
         cinvoke printf, "    KeySource encoding of 1 (randomization of the internal wrapping key) is supported %c", 10
@@ -2763,12 +2898,12 @@ LastBranchRecords:
         cmp esi, 8
         jne .lbr
                 
-        bt edi, 30
+        bt edi, kDeepCStateReset
         jnc .a31
                 
         cinvoke printf, "    Deep C-state Reset %c", 10
                 
-.a31:   bt edi, 31
+.a31:   bt edi, kIPValuesContainLIP
         jnc .pass2
                 
         cinvoke printf, "    IP Values Contain LIP %c", 10
@@ -2779,35 +2914,40 @@ LastBranchRecords:
         mov edi, ebx
         mov esi, ecx
                 
-.b00:   bt edi, 0
+.b00:   bt edi, kCPLFiltering
         jnc .b01
                 
         cinvoke printf, "    CPL Filtering Supported %c", 10
                 
-.b01:   bt edi, 1
+.b01:   bt edi, kBranchFiltering
         jnc .b02
                 
         cinvoke printf, "    Branch Filtering Supported %c", 10
                 
-.b02:   bt edi, 2
+.b02:   bt edi, kCallStackMode
         jnc .c00
                 
         cinvoke printf, "    Call-stack Mode Supported %c", 10
                 
-.c00:   bt esi, 0
+.c00:   bt esi, kMispredictBit
         jnc .c01
 
         cinvoke printf, "    Mispredict Bit Supported %c", 10
 
-.c01:   bt esi, 1
+.c01:   bt esi, kTimedLBRs
         jnc .c02
 
         cinvoke printf, "    Timed LBRs Supported %c", 10
 
-.c02:   bt esi, 2
-        jnc .fin
+.c02:   bt esi, kBranchTypeField
+        jnc .c03
 
         cinvoke printf, "    Branch Type Field Supported %c", 10
+
+.c03:   shr esi, 16             ; bits 19-16 are event logging supported bitmap
+        and esi, 0x0f
+                
+        cinvoke printf, "    Event logging supported bitmap 0x%x %c", esi, 10
 
 .fin:   ret
 
@@ -3002,7 +3142,7 @@ ProcessorHistoryReset:
 
 ; =============================================================================================
 ; =============================================================================================
-
+;
 ; As per the Intel docs:
 ;
 ; No existing or future CPU will return processor identification or feature information if the initial
@@ -3011,11 +3151,236 @@ ProcessorHistoryReset:
 ;
 ; No existing or future CPU will return processor identification or feature information if the initial
 ; EAX value is in the range 40000000H to 4FFFFFFFH.
-
+;
 ; As per the AMD docs:
 ;
 ; 40000000h to 400000FFh — Reserved for Hypervisor Use
 ; These function numbers are reserved for use by the virtual machine monitor.
+;
+; =============================================================================================
+; =============================================================================================
+
+; leaf 23h, ecx=0, data in eax, ebx, ecx (edx reserved)
+; intel only
+
+APMEMain:
+
+        mov ecx, 0x01
+        mov eax, 0x07           ; sub-leaf 1   
+        cpuid
+                
+        bt eax, kArchPerfmonExt ; if set, then 23h is supported
+        jc .go
+
+        ret
+
+.go:    mov esi, dword __Leaf2300
+        call ShowLeafInformation
+
+        cinvoke printf, "  Architectural Performance Monitoring Main Leaf %c", 10
+
+        mov ecx, 0
+        mov eax, 0x23
+        cpuid
+
+        mov [__APMESubLeafs], eax
+
+        mov edi, ebx
+        mov esi, ecx
+
+.bb0:   bt edi, kUnitMask2
+        jnc .bb1
+
+        cinvoke printf, "    UnitMask2. Supports UnitMask2 field in IA32_PERFEVTSELx MSRs. %c", 10
+
+.bb1:   bt edi, kEQBit
+        jnc .bex
+
+        cinvoke printf, "    EQ-bit. Supports the equal flag in the IA32_PERFEVTSELx MSRs %c", 10
+
+.bex:   cinvoke printf, "    Number of Top-down Microarchitecture Analysis (TMA) slots per cycle: 0x%x %c", esi, 10
+        cinvoke printf, "    This number can be multiplied by the number of cycles (from CPU_CLK_UNHALTED.THREAD / CPU_CLK_UNHALTED.CORE %c", 10
+        cinvoke printf, "    or IA32_FIXED_CTR1) to determine the total number of slots. %c", 10
+
+        mov eax, [__APMESubLeafs]
+
+.sl1:   bt eax, 0
+        jnc .sl2
+
+        call APMESub1
+
+        mov eax, [__APMESubLeafs]
+
+.sl2:   bt eax, 1
+        jnc .sl3
+
+        call APMESub2
+
+        mov eax, [__APMESubLeafs]
+
+.sl3:   bt eax, 2
+        jnc .fin
+                
+        call APMESub3
+
+.fin:   ret
+
+; =============================================================================================
+
+; leaf 23h, ecx=1, data in eax, ebx (ecx/edx reserved)
+; intel only
+
+APMESub1:
+
+        mov esi, dword __Leaf2301
+        call ShowLeafInformation
+
+        cinvoke printf, "  Architectural Performance Monitoring Extended Sub-Leaf 1 %c", 10
+
+        mov ecx, 1
+        mov eax, 0x23
+        cpuid
+
+        mov edi, eax
+        mov esi, ebx
+
+        cinvoke printf, "    General-purpose performance counters bitmap 0x%x %c", edi, 10
+        cinvoke printf, "    Fixed-function performance counters bitmap 0x%x %c", esi, 10
+                
+        ret
+
+; =============================================================================================
+
+; leaf 23h, ecx=2, data in eax, ebx, ecx, edx
+; intel only
+
+APMESub2:
+
+        mov esi, dword __Leaf2302
+        call ShowLeafInformation
+
+        cinvoke printf, "  Architectural Performance Monitoring Extended Sub-Leaf 2 %c", 10
+
+        mov ecx, 2
+        mov eax, 0x23
+        cpuid
+
+        mov edi, eax
+        mov esi, ebx
+
+        cinvoke printf, "    Auto Counter Reload (ACR) general counters that can be reloaded %c", 10
+        cinvoke printf, "      for general-purpose performance monitoring counter 0x%x %c", edi, 10
+
+        cinvoke printf, "    Auto Counter Reload (ACR) fixed counters that can be reloaded %c", 10
+        cinvoke printf, "      for fixed-function performance monitoring counter 0x%x %c", esi, 10
+
+        mov ecx, 2
+        mov eax, 0x23
+        cpuid
+
+        mov edi, ecx
+        mov esi, edx
+
+        cinvoke printf, "    Auto Counter Reload (ACR) general counters that can cause reloads %c", 10
+        cinvoke printf, "     for general-purpose performance monitoring counter 0x%x %c", edi, 10
+
+        cinvoke printf, "    Auto Counter Reload (ACR) fixed counters that can cause reloads %c", 10
+        cinvoke printf, "      for fixed-function performance monitoring counter 0x%x %c", esi, 10
+
+        ret
+
+; =============================================================================================
+
+; leaf 23h, ecx=3, data in eax (ebx/ecx/edx reserved)
+; intel only
+
+APMESub3:
+
+        mov esi, dword __Leaf2303
+        call ShowLeafInformation
+
+        cinvoke printf, "  Architectural Performance Monitoring Extended Sub-Leaf 3 %c", 10             
+        cinvoke printf, "    APM supports the following events: %c", 10
+
+        mov ecx, 3
+        mov eax, 0x23
+        cpuid
+
+        mov edi, __APMES3
+
+        mov esi, 0              ; bit counter
+
+.loop:  bt  eax, esi
+        jnc .nextb
+
+        push eax
+        cinvoke printf, "    %02d::%s %c", esi, edi, 10
+        pop eax
+
+.nextb: add edi, __APMES3Size
+
+        inc esi
+
+        cmp esi, 13
+
+        jne .loop
+
+        ret
+
+; =============================================================================================
+
+; leaf 24h, ecx=0, data in eax, ebx (ecx/edx reserved)
+; intel only
+
+ConvergedVectorISAMain:
+
+        mov ecx, 0x01
+        mov eax, 0x07           ; sub-leaf 1   
+        cpuid
+                
+        bt edx, kAVX10          ; if set, then 24h is supported
+        jc .go
+
+        ret
+
+.go:    mov esi, dword __Leaf2400
+        call ShowLeafInformation
+
+        cinvoke printf, "  Converged Vector ISA Main Leaf %c", 10
+
+        mov ecx, 0
+        mov eax, 0x24
+        cpuid
+
+        mov edi, eax
+        mov esi, ebx
+
+        cinvoke printf, "    Sub-leaves supported by 24h: %c", edi, 10
+
+        mov edi, esi 
+
+        and esi, 0x000000ff       ; bits 07-00
+
+        cinvoke printf, "    Intel AVX10 Converged Vector ISA version 0x%x (%d) %c", esi, esi, 10
+
+        mov esi, edi
+
+.b16:   bt esi, k128BitVector
+        jnc .b17
+
+        cinvoke printf, "    128-bit vector support %c", 10
+
+.b17:   bt esi, k256BitVector
+        jnc .b18
+
+        cinvoke printf, "    256-bit vector support %c", 10
+
+.b18:   bt esi, k512BitVector
+        jnc .fin
+
+        cinvoke printf, "    512-bit vector support %c", 10
+
+.fin:   ret
 
 ; =============================================================================================
 ; =============================================================================================
@@ -3043,56 +3408,56 @@ ExtendedFeatures:
 
         cinvoke printf, "  Extended CPU Features (ECX:0x%x EDX:0x%x) %c", edi, esi, 10
 
-        bt edi, 0
+        bt edi, kxAHF
         jnc .lzcnt
 
         cinvoke printf, "    LAHF/SAHF available in 64-bit mode %c", 10
 
 .lzcnt:
 
-        bt edi, 5
+        bt edi, kLZCNT
         jnc .prefetchw
 
         cinvoke printf, "    LZCNT (count the number of leading zero bits) %c", 10
 
 .prefetchw:
 
-        bt edi, 8
+        bt edi, kPREFETCHW
         jnc .syscall
 
         cinvoke printf, "    PREFETCHW (software prefetches) %c", 10
 
 .syscall:
 
-        bt esi, 11
+        bt esi, kSYSCALL
         jnc .execdis
 
         cinvoke printf, "    SYSCALL/SYSRET %c", 10
 
 .execdis:
 
-        bt esi, 20
+        bt esi, kExecuteDisableBit
         jnc .onegig
 
         cinvoke printf, "    Execute Disable Bit available %c", 10
 
 .onegig:
 
-        bt esi, 26
+        bt esi, k1GBytePages
         jnc .rdtscp
 
         cinvoke printf, "    1-GByte pages are available %c", 10
 
 .rdtscp:
 
-        bt esi, 27
+        bt esi, kRDTSCP
         jnc .i64arch
 
         cinvoke printf, "    RDTSCP and IA32_TSC_AUX available %c", 10
 
 .i64arch:
 
-        bt esi, 29
+        bt esi, kIntel64Architecture
         jnc .fin
 
         cinvoke printf, "    Intel(r) 64 Architecture available %c", 10
@@ -3221,7 +3586,7 @@ AMDCacheTLBLevelOne:
 
         mov eax, edi
         shr eax, 8
-        and eax, 0x000000FF    ; L1ITlb2and4MAssoc
+        and eax, 0x000000FF     ; L1ITlb2and4MAssoc
                 
         call AMDCacheTLBLevelOneFromTable
 
@@ -3242,25 +3607,25 @@ AMDCacheTLBLevelOne:
         cpuid
                 
         mov edi, ebx
-                
+
         mov eax, ebx
-                
+
         and eax, 0x000000FF     ; L1ITlb4KSize
-                
+
         cinvoke printf, "    Instruction TLB number of entries for 4KB pages: %d %c", eax, 10
-                
+
         mov eax, edi
         shr eax, 8
         and eax, 0x000000FF     ; L1ITlb4KAssoc
-                
+
         call AMDCacheTLBLevelOneFromTable
-                
+
         mov eax, edi
         shr eax, 16
         and eax, 0x000000FF     ; L1DTlb4KSize
-                
+
         cinvoke printf, "    Data TLB number of entries for 4KB pages: %d %c", eax, 10
-                
+
         mov eax, edi
         shr eax, 24
         and eax, 0x000000FF     ; L1DTlb4KAssoc
@@ -3269,38 +3634,38 @@ AMDCacheTLBLevelOne:
                 
         mov eax, 0x80000005     ; pass 3 (ecx)
         cpuid
-                
+
         mov edi, ecx
         mov eax, ecx
-                
+
         and eax, 0x000000FF     ; L1DcLineSize
-                
+
         cinvoke printf, "    L1 data cache line size    : %d bytes %c", eax, 10
-                
+
         mov eax, edi
         shr eax, 8
         and eax, 0x000000FF     ; L1DcLinesPerTag
-                
+
         cinvoke printf, "    L1 data cache lines per tag: %d %c", eax, 10
-                
+
         mov eax, edi
         shr eax, 16
         and eax, 0x000000FF     ; L1DcAssoc
-                
+
         call AMDCacheTLBLevelOneFromTable
-                
+
         mov eax, edi
         shr eax, 24
         and eax, 0x000000FF     ; L1DcSize
-                
+
         cinvoke printf, "    L1 data cache size               : %d KB %c", eax, 10
-                
+
         mov eax, 0x80000005     ; pass 4 (edx)
         cpuid
-                
+
         mov edi, edx
         mov eax, edx
-                
+
         and eax, 0x000000FF     ; L1IcLineSize
                 
         cinvoke printf, "    L1 instruction cache line size   : %d bytes %c", eax, 10
@@ -3338,10 +3703,10 @@ AMDCacheTLBLevelOneFromTable:
         cmp eax, 0
         je .reserved
                 
-        cmp eax, 1
+        cmp eax, kOneWayAssociative
         je .oneway
                 
-        cmp eax, 255
+        cmp eax, kFullyAssociative
         je .fully
                 
         cinvoke printf, "    %d-way associative %c", eax, 10
@@ -3370,7 +3735,7 @@ AMDCacheTLBLevelOneFromTable:
 ; Intel only
 
 ; Reserved. EAX/EBX/ECX/EDX = 0
-		  
+                  
 ; =============================================================================================
           
 ; extended leaf 80000006h, data in ecx
@@ -3608,7 +3973,7 @@ InvariantTSC:
         mov eax, 0x80000007
         cpuid
                 
-        bt edx, 8
+        bt edx, kInvariantTSC
         jnc .notavailable
                 
         cinvoke printf, "    Invariant TSC available %c", 10
@@ -3645,28 +4010,28 @@ PPMandRAS:
         mov edi, ecx
         mov esi, edx
                 
-        bt ebx, 0               ; McaOverflowRecov
+        bt ebx, kMcaOverflowRecov
         jnc .bit1
 
         push ebx
         cinvoke printf, "    MCA overflow recovery support %c", 10
         pop ebx
 
-.bit1:  bt ebx, 1               ; SUCCOR
+.bit1:  bt ebx, kSUCCOR
         jnc .bit2
 
         push ebx
         cinvoke printf, "    Software uncorrectable error containment and recovery capability %c", 10
         pop ebx
 
-.bit2:  bt ebx, 2               ; HWA
+.bit2:  bt ebx, kHWA
         jnc .bit3
 
         push ebx
         cinvoke printf, "    Hardware assert support (MSRC001_10) %c", 10
         pop ebx
 
-.bit3:  bt ebx, 3               ; ScalableMca
+.bit3:  bt ebx, kScalableMca
         jnc .ecx
 
         push ebx
@@ -3732,7 +4097,7 @@ AddressBits:
                 
         cinvoke printf, "    Physical Address Bits: %d; Linear Address Bits: %d %c", eax, edx, 10
                 
-        bt edi, 9
+        bt edi, kWBOINVD
         jnc .notsupported
                 
         cinvoke printf, "    WBOINVD is available %c", 10
@@ -3998,7 +4363,7 @@ AMDTLBCharacteristics:
 
 ; =============================================================================================
 
-; extended leaf 80000001Ah, data in eax
+; extended leaf 8000001Ah, data in eax
 ; AMD only
 AMDPerformanceOptimisation:
 
@@ -4017,19 +4382,19 @@ AMDPerformanceOptimisation:
                 
         mov edi, eax
                 
-        bt edi, 0               ; FP128
+        bt edi, kFP128
         jnc .bit1
                 
         cinvoke printf, "    FP128. The internal FP/SIMD execution data path is 128 bits wide %c", 10
 
-.bit1:  bt edi, 1               ; MOVU
+.bit1:  bt edi, kMOVU
         jnc .bit2
 
-        cinvoke printf, "    MOVU. MOVU SSE instructions are more efficient and should be preferred to SSE %c", 10
-        cinvoke printf, "          MOVL/MOVH. MOVUPS is more efficient than MOVLPS/MOVHPS. %c", 10
-        cinvoke printf, "          MOVUPD is more efficient than MOVLPD/MOVHPD. %c", 10
+        cinvoke printf, "    MOVU.  MOVU SSE instructions are more efficient and should be preferred to SSE %c", 10
+        cinvoke printf, "           MOVL/MOVH. MOVUPS is more efficient than MOVLPS/MOVHPS. %c", 10
+        cinvoke printf, "           MOVUPD is more efficient than MOVLPD/MOVHPD. %c", 10
 
-.bit2:  bt edi, 2               ; FP256
+.bit2:  bt edi, kFP256
         jnc .fin
 
         cinvoke printf, "    FP256. The internal FP/SIMD execution data path is 256 bits wide %c", 10
@@ -4085,7 +4450,7 @@ AMDLightweightProfiling:
         mov eax, 0x80000001
         cpuid
 
-        bt ecx, 15              ; LWP bit
+        bt ecx, kLWP
         jc .cont
 
         ret
@@ -4163,7 +4528,7 @@ showa:  mov esi, 0              ; bit counter
         
         cinvoke printf, "    LwpLatencyMax, Latency counter size (bits) of the cache latency counters: %d %c", eax, 10
         
-        bt edi, 5               ; LwpDataAddress
+        bt edi, kLwpDataAddress
         jnc .LRnd
 
         cinvoke printf, "    LwpDataAddress, Data cache miss address valid. Address is valid for cache miss event records %c", 10
@@ -4186,22 +4551,22 @@ showa:  mov esi, 0              ; bit counter
 
         cinvoke printf, "    LwpMinBufferSize, Minimum size of the LWP event ring buffer, in units of 32 event records: %d %c", eax, 10
                 
-        bt edi, 28              ; LwpBranchPrediction
+        bt edi, kLwpBranchPrediction
         jnc .LpF
                 
         cinvoke printf, "    Branch prediction filtering supported. Branches Retired events can be filtered based on whether the branch was predicted properly. %c", 10
                 
-.LpF:   bt edi, 29              ; LwpIpFiltering
+.LpF:   bt edi, kLwpIpFiltering
         jnc .Lvls
                 
         cinvoke printf, "    IP filtering supported. %c", 10
                 
-.Lvls:  bt edi, 30              ; LwpCacheLevels
+.Lvls:  bt edi, kLwpCacheLevels
         jnc .Lncy
                 
         cinvoke printf, "    Cache level filtering supported. Cache-related events can be filtered by the cache level that returned the data. %c", 10
                 
-.Lncy:  bt edi, 31              ; LwpCacheLatency
+.Lncy:  bt edi, kLwpCacheLatency
         jnc .fin
                 
         cinvoke printf, "    Cache latency filtering supported. Cache-related events can be filtered by latency. %c", 10
@@ -4308,7 +4673,7 @@ AMDCache:
 
         mov edi, eax
 
-.si:    bt edi, 8               ; SelfInitialization
+.si:    bt edi, kSelfInitialization
         jnc .nsi
 
         cinvoke printf, "    SelfInitialization. Self-initializing cache %c", 10
@@ -4317,7 +4682,7 @@ AMDCache:
 
 .nsi:   cinvoke printf, "    SelfInitialization. Hardware does not initialize this cache %c", 10
 
-.fa:    bt edi, 9               ; FullyAssociative
+.fa:    bt edi, kFullyAssociative
         jnc .nfa
 
         cinvoke printf, "    FullyAssociative. Cache is fully associative %c", 10
@@ -4376,7 +4741,7 @@ AMDCache:
         
         cinvoke printf, "    Write-Back Invalidate/Invalidate execution scope %c", 10
         
-        bt edi, 0               ; WBINVD
+        bt edi, kWBINVD
         jnc .wni
 
         cinvoke printf, "      WBINVD/INVD instruction is not guaranteed to invalidate all lower level caches %c", 10
@@ -4385,7 +4750,7 @@ AMDCache:
 
 .wni:   cinvoke printf, "      WBINVD/INVD instruction invalidates all lower level caches of non-originating logical processors sharing this cache %c", 10
 
-.ci:    bt edi, 1               ; CacheInclusive 
+.ci:    bt edi, kCacheInclusive
         jnc .cni
 
         cinvoke printf, "    CacheInclusive. Cache is inclusive of lower cache levels %c", 10
@@ -4414,7 +4779,7 @@ AMDProcTopology:
         mov eax, 0x80000001                
         cpuid
                 
-        bt ecx, 22              ; topology extensions
+        bt ecx, kTopologyExtensions
         jnc .fin
                 
         mov esi, dword __Leaf80__1E
@@ -4565,7 +4930,7 @@ AMDQOS: mov eax, dword [__MaxExtended]
 
         jne lf1
 
-.ecx1:  bt [__AMDPQOS], 1       ; L3MBE
+.ecx1:  bt [__AMDPQOS], kL3MBE
         jnc .ecx2
 
         mov esi, dword __Leaf80__20_1
@@ -4583,7 +4948,7 @@ AMDQOS: mov eax, dword [__MaxExtended]
 
         cinvoke printf, "    Number of COS number supported by L3MBE: 0x%x %c", edi, 10
 
-.ecx2:  bt [__AMDPQOS], 2       ; L3SMBE
+.ecx2:  bt [__AMDPQOS], kL3SMBE
         jnc .ecx3
 
         mov esi, dword __Leaf80__20_2
@@ -4601,7 +4966,7 @@ AMDQOS: mov eax, dword [__MaxExtended]
 
         cinvoke printf, "    Number of COS number supported by L3SMBE: 0x%x %c", edi, 10
                 
-.ecx3:  bt [__AMDPQOS], 3       ; BMEC
+.ecx3:  bt [__AMDPQOS], kBMEC
         jnc .ecx5
 
         mov esi, dword __Leaf80__20_3
@@ -4640,7 +5005,7 @@ AMDQOS: mov eax, dword [__MaxExtended]
 
         jne .l203
 
-.ecx5:  bt [__AMDPQOS], 5       ; ABMC
+.ecx5:  bt [__AMDPQOS], kABMC   ; ABMC
         jnc .fin
                 
         mov esi, dword __Leaf80__20_5
@@ -4654,7 +5019,7 @@ AMDQOS: mov eax, dword [__MaxExtended]
                 
         mov edi, eax
 
-        bt eax, 8               ; OverflowBit
+        bt eax, kOverflowBit    ; OverflowBit
         jnc .cs
                 
         cinvoke printf, "    QM_CTR bit 61 is an overflow bit %c", 10
@@ -4676,7 +5041,7 @@ AMDQOS: mov eax, dword [__MaxExtended]
 
         cinvoke printf, "    Maximum supported ABMC counter ID: %d %c", ebx, 10
                 
-        bt edi, 0               ; Select_COS
+        bt edi, kSelect_COS     ; Select_COS
                 
         cinvoke printf, "    Bandwidth counters can be configured to measure bandwidth consumed by a COS instead of an RMID %c", 10
 
@@ -4748,17 +5113,17 @@ AMDExtPMandD:
         mov edi, eax
         mov esi, ebx
 
-.a00:   bt edi, 0               ; PerfMonV2 
+.a00:   bt edi, kPerfMonV2
         jnc .a01
 
         cinvoke printf, "    Performance Monitoring Version 2 supported %c", 10
 
-.a01:   bt edi, 1               ; LbrStack 
+.a01:   bt edi, kLbrStack 
         jnc .a02
 
         cinvoke printf, "    Last Branch Record Stack supported %c", 10
 
-.a02:   bt edi, 2               ; LbrAndPmcFreeze
+.a02:   bt edi, kLbrAndPmcFreeze
         jnc .num
 
         cinvoke printf, "    Freezing Core Performance Counters and %c", 10
@@ -4807,7 +5172,7 @@ AMDMultiKeyEMC:
         mov edi, eax
         mov esi, ebx
 
-        bt edi, 0               ; MemHmk
+        bt edi, kMemHmk
         jnc .b15
 
         cinvoke printf, "    Secure Host Multi-Key Memory (MEM-HMK) Encryption Mode Supported %c", 10
@@ -4866,19 +5231,19 @@ AMDExtendedCPUTop:
 
 .areg:  mov edi, eax
 
-.a29:   bt edi, 29              ; EfficiencyRankingAvailable
+.a29:   bt edi, kEfficiencyRankingAvailable
         jnc .a30
 
         cinvoke printf, "    Processor power efficiency ranking (PwrEfficiencyRanking) is %c", 10
         cinvoke printf, "        available and varies between cores %c", 10
 
-.a30:   bt edi, 30              ; HeterogeneousCores
+.a30:   bt edi, kHeterogeneousCores
         jnc .a31
 
         cinvoke printf, "    All components at the current hierarchy level do not consist of %c", 10
         cinvoke printf, "        the cores that report the same core type (CoreType) %c", 10
 
-.a31:   bt edi, 31              ; AsymmetricTopology
+.a31:   bt edi, kAsymmetricTopology
         jnc .breg
 
         cinvoke printf, "    All components at the current hierarchy level do not report the same %c", 10
@@ -4946,6 +5311,7 @@ __Cores         db 0
 __System        dd 0
 __Features1     dd 0
 __Features2     dd 0
+__APMESubLeafs  dd 0
 __AMDPQOS       dd 0
 
 __argc dd ?
@@ -4961,72 +5327,72 @@ section '.data2' data readable
 
 ; 01h leaf, bits in ecx
 __FeatureStringSize = 59                        ; 58 + null terminator
-__FeatureString1:               db "SSE3       (Streaming SIMD Extensions 3)                  ",0
-                                db "PCLMULQDQ  (PCLMULQDQ instruction)                        ",0
-                                db "DTES64     (64-bit DS Area)                               ",0
-                                db "MONITOR    (MONITOR/MWAIT)                                ",0
-                                db "DS-CPL     (CPL Qualified Debug Store)                    ",0
-                                db "VMX        (Virtual Machine Extensions)                   ",0
-                                db "SMX        (Safer Mode Extensions)                        ",0
-                                db "EIST       (Enhanced Intel SpeedStep® technology)         ",0
-                                db "TM2        (Thermal Monitor 2)                            ",0
-                                db "SSSE3      (Supplemental Streaming SIMD Extensions 3)     ",0
-                                db "CNXT-ID    (L1 Context ID)                                ",0
-                                db "SDBG       (IA32_DEBUG_INTERFACE MSR)                     ",0
-                                db "FMA        (FMA extensions using YMM state)               ",0
-                                db "CMPXCHG16B (CMPXCHG16B Available)                         ",0
-                                db "xTPR       (xTPR Update Control)                          ",0
-                                db "PDCM       (Perfmon and Debug Capability)                 ",0
-                                db "Reserved                                                  ",0
-                                db "PCID       (Process-context identifiers)                  ",0
-                                db "DCA        (Prefetch data from a memory-mapped device)    ",0
-                                db "SSE4_1     (SSE4.1)                                       ",0
-                                db "SSE4_2     (SSE4.2)                                       ",0
-                                db "x2APIC     (x2APIC feature)                               ",0
-                                db "MOVBE      (instruction)                                  ",0
-                                db "POPCNT     (instruction)                                  ",0
-                                db "TSC        (TSC deadline)                                 ",0
-                                db "AESNI      (AESNI instruction extensions)                 ",0
-                                db "XSAVE      (XSAVE/XRSTOR processor extended states)       ",0
-                                db "OSXSAVE    (XSETBV/XGETBV instructions)                   ",0
-                                db "AVX        (AVX instruction extensions)                   ",0
-                                db "F16C       (16-bit floating-point conversion instructions)",0
-                                db "RDRAND     (RDRAND instruction)                           ",0
-                                db "Not used                                                  ",0
+__FeatureString1:               db "SSE3       (Streaming SIMD Extensions 3)                  ", 0
+                                db "PCLMULQDQ  (PCLMULQDQ instruction)                        ", 0
+                                db "DTES64     (64-bit DS Area)                               ", 0
+                                db "MONITOR    (MONITOR/MWAIT)                                ", 0
+                                db "DS-CPL     (CPL Qualified Debug Store)                    ", 0
+                                db "VMX        (Virtual Machine Extensions)                   ", 0
+                                db "SMX        (Safer Mode Extensions)                        ", 0
+                                db "EIST       (Enhanced Intel SpeedStep® technology)         ", 0
+                                db "TM2        (Thermal Monitor 2)                            ", 0
+                                db "SSSE3      (Supplemental Streaming SIMD Extensions 3)     ", 0
+                                db "CNXT-ID    (L1 Context ID)                                ", 0
+                                db "SDBG       (IA32_DEBUG_INTERFACE MSR)                     ", 0
+                                db "FMA        (FMA extensions using YMM state)               ", 0
+                                db "CMPXCHG16B (CMPXCHG16B Available)                         ", 0
+                                db "xTPR       (xTPR Update Control)                          ", 0
+                                db "PDCM       (Perfmon and Debug Capability)                 ", 0
+                                db "Reserved                                                  ", 0
+                                db "PCID       (Process-context identifiers)                  ", 0
+                                db "DCA        (Prefetch data from a memory-mapped device)    ", 0
+                                db "SSE4_1     (SSE4.1)                                       ", 0
+                                db "SSE4_2     (SSE4.2)                                       ", 0
+                                db "x2APIC     (x2APIC feature)                               ", 0
+                                db "MOVBE      (instruction)                                  ", 0
+                                db "POPCNT     (instruction)                                  ", 0
+                                db "TSC        (TSC deadline)                                 ", 0
+                                db "AESNI      (AESNI instruction extensions)                 ", 0
+                                db "XSAVE      (XSAVE/XRSTOR processor extended states)       ", 0
+                                db "OSXSAVE    (XSETBV/XGETBV instructions)                   ", 0
+                                db "AVX        (AVX instruction extensions)                   ", 0
+                                db "F16C       (16-bit floating-point conversion instructions)", 0
+                                db "RDRAND     (RDRAND instruction)                           ", 0
+                                db "Not used                                                  ", 0
 
 ; 01h leaf, bits in edx
-__FeatureString2:               db "FPU-x87    (Floating-Point Unit On-Chip)                  ",0
-                                db "VME        (Virtual 8086 Mode Enhancements)               ",0
-                                db "DE         (Debugging Extensions)                         ",0
-                                db "PSE        (Page Size Extension)                          ",0
-                                db "TSC        (Time Stamp Counter)                           ",0
-                                db "MSR        (Model Specific Registers + RDMSR/WRMSR instr.)",0
-                                db "PAE        (Physical Address Extension)                   ",0
-                                db "MCE        (Machine Check Exception)                      ",0
-                                db "CX8        (CMPXCHG8B Instruction)                        ",0
-                                db "APIC       (APIC On-Chip)                                 ",0
-                                db "Reserved                                                  ",0
-                                db "SEP        (SYSENTER and SYSEXIT Instructions)            ",0
-                                db "MTRR       (Memory Type Range Registers)                  ",0
-                                db "PGE        (Page Global Bit)                              ",0
-                                db "MCA        (Machine Check Architecture)                   ",0
-                                db "CMOV       (Conditional Move Instructions)                ",0
-                                db "PAT        (Page Attribute Table)                         ",0
-                                db "PSE-36     (36-Bit Page Size Extension)                   ",0
-                                db "PSN        (Processor Serial Number)                      ",0
-                                db "CLFSH      (LFLUSH Instruction)                           ",0
-                                db "Reserved                                                  ",0
-                                db "DS         (Debug Store)                                  ",0
-                                db "ACPI       (Thermal Monitor and Software Controlled Clock)",0
-                                db "MMX        (Intel MMX Technology)                         ",0
-                                db "FXSR       (FXSAVE and FXRSTOR Instructions)              ",0
-                                db "SSE        (SSE extensions)                               ",0
-                                db "SSE2       (SSE2 extensions)                              ",0
-                                db "SS         (Self Snoop)                                   ",0
-                                db "HTT        (Max APIC IDs reserved field is Valid)         ",0
-                                db "TM         (Thermal Monitor)                              ",0
-                                db "Reserved                                                  ",0
-                                db "PBE        (Pending Break Enable)                         ",0
+__FeatureString2:               db "FPU-x87    (Floating-Point Unit On-Chip)                  ", 0
+                                db "VME        (Virtual 8086 Mode Enhancements)               ", 0
+                                db "DE         (Debugging Extensions)                         ", 0
+                                db "PSE        (Page Size Extension)                          ", 0
+                                db "TSC        (Time Stamp Counter)                           ", 0
+                                db "MSR        (Model Specific Registers + RDMSR/WRMSR instr.)", 0
+                                db "PAE        (Physical Address Extension)                   ", 0
+                                db "MCE        (Machine Check Exception)                      ", 0
+                                db "CX8        (CMPXCHG8B Instruction)                        ", 0
+                                db "APIC       (APIC On-Chip)                                 ", 0
+                                db "Reserved                                                  ", 0
+                                db "SEP        (SYSENTER and SYSEXIT Instructions)            ", 0
+                                db "MTRR       (Memory Type Range Registers)                  ", 0
+                                db "PGE        (Page Global Bit)                              ", 0
+                                db "MCA        (Machine Check Architecture)                   ", 0
+                                db "CMOV       (Conditional Move Instructions)                ", 0
+                                db "PAT        (Page Attribute Table)                         ", 0
+                                db "PSE-36     (36-Bit Page Size Extension)                   ", 0
+                                db "PSN        (Processor Serial Number)                      ", 0
+                                db "CLFSH      (LFLUSH Instruction)                           ", 0
+                                db "Reserved                                                  ", 0
+                                db "DS         (Debug Store)                                  ", 0
+                                db "ACPI       (Thermal Monitor and Software Controlled Clock)", 0
+                                db "MMX        (Intel MMX Technology)                         ", 0
+                                db "FXSR       (FXSAVE and FXRSTOR Instructions)              ", 0
+                                db "SSE        (SSE extensions)                               ", 0
+                                db "SSE2       (SSE2 extensions)                              ", 0
+                                db "SS         (Self Snoop)                                   ", 0
+                                db "HTT        (Max APIC IDs reserved field is Valid)         ", 0
+                                db "TM         (Thermal Monitor)                              ", 0
+                                db "Reserved                                                  ", 0
+                                db "PBE        (Pending Break Enable)                         ", 0
 
 ; 02h leaf, data stored in eax, ebx, ecx, and edx
 __CacheTlbValueTable            db 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E
@@ -5315,6 +5681,78 @@ __StructuredExtendedFeatureFlags3:
                                 db "IA32_ARCH_CAPABILITIES MSR        ", 0
                                 db "IA32_CORE_CAPABILITIES MSR        ", 0
                                 db "SSBD. IA32_SPEC_CTRL MSR          ", 0
+                                                                
+; 07h leaf (intel), bits in eax
+__StructuredExtendedFeatureSubLeaf1aFlagsSize = 71      ; 70 + null terminator
+__StructuredExtendedFeatureSubLeaf1aFlags:
+                                db "SHA512.        SHA512 instructions supported                          ", 0
+                                db "SM3.           SM3 instructions supported                             ", 0
+                                db "SM4.           SM4 instructions supported                             ", 0
+                                db "Reserved                                                              ", 0
+                                db "AVX-VNNI.      AVX (VEX-encoded) versions of the VNNI                 ", 0
+                                db "AVX512_BF16.   VNNI supports BFLOAT16 inputs and conversion           ", 0
+                                db "LASS.          Supports Linear Address Space Separation               ", 0
+                                db "CMPCCXADD.     Supports the CMPccXADD instruction                     ", 0
+                                db "ArchPerfmonExt Supports ArchPerfmonExt, Leaf (EAX=23H)                ", 0
+                                db "Reserved                                                              ", 0
+                                db "REP MOVSB.     Fast zero-length instructions supported                ", 0
+                                db "REP STOSB.     Supports fast short instructions                       ", 0
+                                db "REP CMPSB, REP SCASB. Supports fast short instructions                ", 0
+                                db "Reserved                                                              ", 0
+                                db "Reserved                                                              ", 0
+                                db "Reserved                                                              ", 0
+                                db "Reserved                                                              ", 0
+                                db "Reserved                                                              ", 0
+                                db "Reserved                                                              ", 0
+                                db "WRMSRNS.       WRMSRNS instruction supported                          ", 0
+                                db "Reserved                                                              ", 0
+                                db "AMX-FP16.      Supports tile computational operations on FP16 numbers ", 0
+                                db "HRESET.        HRESET instruction and IA32_HRESET_ENABLE, Leaf 20H    ", 0
+                                db "AVX-IFMA.      Supports the AVX-IFMA instructions                     ", 0
+                                db "Reserved                                                              ", 0
+                                db "Reserved                                                              ", 0
+                                db "LAM.           Supports Linear Address Masking                        ", 0
+                                db "MSRLIST        Supports RDMSRLIST and WRMSRLIST, IA32_BARRIER MSR     ", 0
+                                db "Reserved                                                              ", 0
+                                db "Reserved                                                              ", 0
+                                db "INVD_DISABLE_POST_BIOS_DONE. INVD execution prevention after BIOS Done", 0
+                                db "Reserved                                                              ", 0
+
+; 07h leaf (intel), bits in edx
+__StructuredExtendedFeatureSubLeaf1dFlagsSize = 55      ; 54 + null terminator
+__StructuredExtendedFeatureSubLeaf1dFlags:
+                                db "Reserved                                              ", 0
+                                db "Reserved                                              ", 0
+                                db "Reserved                                              ", 0
+                                db "Reserved                                              ", 0
+                                db "AVX-VNNI-INT8.  Supports AVX-VNNI-INT8 instructions   ", 0
+                                db "AVX-NE-CONVERT. AVX-NE-CONVERT instructions           ", 0
+                                db "Reserved                                              ", 0
+                                db "Reserved                                              ", 0
+                                db "Reserved                                              ", 0
+                                db "Reserved                                              ", 0
+                                db "AVX-VNNI-INT16. Supports AVX-VNNI-INT16 instructions  ", 0
+                                db "Reserved                                              ", 0
+                                db "Reserved                                              ", 0
+                                db "Reserved                                              ", 0
+                                db "PREFETCHI.      Supports PREFETCHIT0/1 instructions   ", 0
+                                db "Reserved                                              ", 0
+                                db "Reserved                                              ", 0
+                                db "UIRET_UIF.      UIRET sets UIF to bit 1 of RFLAGS     ", 0
+                                db "CET_SSS.        OS can enable supervisor shadow stacks", 0
+                                db "AVX10.          Intel AVX10 instructions supported    ", 0
+                                db "Reserved                                              ", 0
+                                db "Reserved                                              ", 0
+                                db "Reserved                                              ", 0
+                                db "Reserved                                              ", 0
+                                db "Reserved                                              ", 0
+                                db "Reserved                                              ", 0
+                                db "Reserved                                              ", 0
+                                db "Reserved                                              ", 0
+                                db "Reserved                                              ", 0
+                                db "Reserved                                              ", 0
+                                db "Reserved                                              ", 0
+                                db "Reserved                                              ", 0
 
 ; 07h leaf (amd), bits in ebx
 __AMDStructuredExtendedFeatureIDs1Size = 50     ; 48 + null terminator
@@ -5362,9 +5800,8 @@ __AMDStructuredExtendedFeatureIDs2:
                                 db "OSPKE      (Memory Protection Keys enabled)   ", 0
                                 db "Reserved                                      ", 0
                                 db "Reserved                                      ", 0
-                                db "CET_SS     (Shadow Stacks supported)          ", 0
-                               
-							   db "Reserved                                      ", 0
+                                db "CET_SS     (Shadow Stacks supported)          ", 0                               
+                                db "Reserved                                      ", 0
                                 db "VAES       (VAES 256-bit instructions)        ", 0
                                 db "VPCMULQDQ  (VPCLMULQDQ 256-bit instruction    ", 0
                                 db "Reserved                                      ", 0
@@ -5436,9 +5873,25 @@ __LevelType:                    db "Invalid", 0
                                 db "Tile   ", 0
                                 db "Die    ", 0
                                 db "Die/Grp", 0
-                                                                
+
+; 23h, ecx=3; eax[12:00]
+__APMES3Size = 28               ; 27 + null terminator
+__APMES3:                       db "Core cycles                ", 0 
+                                db "Instructions retired       ", 0
+                                db "Reference cycles           ", 0
+                                db "Last level cache references", 0
+                                db "Last level cache misses    ", 0
+                                db "Branch instructions retired", 0
+                                db "Branch mispredicts retired ", 0
+                                db "Topdown slots              ", 0
+                                db "Topdown backend bound      ", 0
+                                db "Topdown bad speculation    ", 0
+                                db "Topdown frontend bound     ", 0
+                                db "Topdown retiring           ", 0
+                                db "LBR inserts                ", 0
+
 ; AMD: 80000001_ECX
-__AMDFeatureIdentifiers1Size = 70               ; 68 + null terminator
+__AMDFeatureIdentifiers1Size = 70 ; 69 + null terminator
 __AMDFeatureIdentifiers1:       db "LahfSahf           (LAHF/SAHF instruction support in 64-bit mode)    ", 0
                                 db "CmpLegacy          (Core multi-processing legacy mode)               ", 0
                                 db "SVM                (Secure virtual machine)                          ", 0
@@ -5657,12 +6110,12 @@ __IBSFeatures:                  db "IBSFFV (IBS feature flags valid)            
 ; AMD; 8000001C_EAX             
 __AMDLWPEAXSize = 56            ; 55 + null terminator
 __AMDLWPEAX:                    db "LwpAvail. The LWP feature is supported                 ", 0
-                                db "LwpVAL. LWPVAL instruction                             ", 0
-                                db "LwpIRE. Instructions retired event                     ", 0
-                                db "LwpBRE. Branch retired event                           ", 0
-                                db "LwpDME. DC miss event                                  ", 0
-                                db "LwpCNH. Core clocks not halted event                   ", 0
-                                db "LwpRNH. Core reference clocks not halted event         ", 0
+                                db "LwpVAL.   LWPVAL instruction                           ", 0
+                                db "LwpIRE.   Instructions retired event                   ", 0
+                                db "LwpBRE.   Branch retired event                         ", 0
+                                db "LwpDME.   DC miss event                                ", 0
+                                db "LwpCNH.   Core clocks not halted event                 ", 0
+                                db "LwpRNH.   Core reference clocks not halted event       ", 0
                                 db "Reserved                                               ", 0
                                 db "Reserved                                               ", 0
                                 db "Reserved                                               ", 0
@@ -5804,7 +6257,7 @@ __AMDExtendedFeatureIdentifiers2:
                                 db "CpuidUserDis            CPUID disable for non-privileged software", 0
                                                                 
 ; AMD; 80000026_ECX
-__AMDLevelTypeSize = 8
+__AMDLevelTypeSize = 8 ; 7 + null terminator
 __AMDLevelType:                 db "Core   ", 0
                                 db "Complex", 0
                                 db "Die    ", 0
@@ -5815,75 +6268,79 @@ __AMDLevelType:                 db "Core   ", 0
 ; =============================================================================================
 
 __LeafInvalid:                  db "  Invalid", 0
-__Leaf01ECX:                    db "(Leaf 0x01h (from ecx))", 0
-__Leaf01EDX:                    db "(Leaf 0x01h (from edx))", 0
-__Leaf02:                       db "(Leaf 0x02h)", 0
-__Leaf0400:                     db "(Leaf 0x04h, ecx = 0x00)", 0
-__Leaf05:                       db "(Leaf 0x05h)", 0
-__Leaf06:                       db "(Leaf 0x06h)", 0
-__Leaf0700:                     db "(Leaf 0x07h, ecx = 0x00)", 0
-__Leaf0701:                     db "(Leaf 0x07h, ecx = 0x01)", 0
-__Leaf0702:                     db "(Leaf 0x07h, ecx = 0x02)", 0
-__Leaf09:                       db "(Leaf 0x09h)", 0
-__Leaf0A:                       db "(Leaf 0x0Ah)", 0
-__Leaf0B00:                     db "(Leaf 0x0Bh, ecx = 0x00)", 0
-__Leaf0B01:                     db "(Leaf 0x0Bh, ecx = 0x01)", 0
-__Leaf0D00:                     db "(Leaf 0x0Dh, ecx = 0x00)", 0
-__Leaf0D01:                     db "(Leaf 0x0Dh, ecx = 0x01)", 0
-__Leaf0D02:                     db "(Leaf 0x0Dh, ecx = 0x02)", 0
-__Leaf0D0B:                     db "(Leaf 0x0Dh, ecx = 0x0b)", 0
-__Leaf0D0C:                     db "(Leaf 0x0Dh, ecx = 0x0c)", 0
-__Leaf0D3E:                     db "(Leaf 0x0Dh, ecx = 0x3e)", 0
-__Leaf0F00:                     db "(Leaf 0x0Fh, ecx = 0x00)", 0
-__Leaf0F01:                     db "(Leaf 0x0Fh, ecx = 0x01)", 0
-__Leaf1000:                     db "(Leaf 0x10h, ecx = 0x00)", 0
-__Leaf1001:                     db "(Leaf 0x10h, ecx = 0x01)", 0
-__Leaf1002:                     db "(Leaf 0x10h, ecx = 0x02)", 0
-__Leaf1003:                     db "(Leaf 0x10h, ecx = 0x03)", 0
-__Leaf1200:                     db "(Leaf 0x12h, ecx = 0x00)", 0
-__Leaf1201:                     db "(Leaf 0x12h, ecx = 0x01)", 0
-__Leaf1202:                     db "(Leaf 0x12h, ecx = 0x02)", 0
-__Leaf1400:                     db "(Leaf 0x14h, ecx = 0x00)", 0
-__Leaf1401:                     db "(Leaf 0x14h, ecx = 0x01)", 0
-__Leaf15:                       db "(Leaf 0x15h)", 0
-__Leaf16:                       db "(Leaf 0x16h)", 0
-__Leaf1700:                     db "(Leaf 0x17h, ecx = 0x00)", 0
-__Leaf18:                       db "(Leaf 0x18h)", 0
-__Leaf19:                       db "(Leaf 0x19h)", 0
-__Leaf1A00:                     db "(Leaf 0x1Ah, ecx = 0x00)", 0
-__Leaf1B00:                     db "(Leaf 0x1Bh, ecx = 0x00)", 0
-__Leaf1C00:                     db "(Leaf 0x1Ch, ecx = 0x00)", 0
-__Leaf1D00:                     db "(Leaf 0x1Dh, ecx = 0x00)", 0
-__Leaf1D01:                     db "(Leaf 0x1Dh, ecx = 0x01)", 0
-__Leaf1E00:                     db "(Leaf 0x1Eh, ecx = 0x00)", 0
-__Leaf1F00:                     db "(Leaf 0x1Fh, ecx = 0x00)", 0
-__Leaf20:                       db "(Leaf 0x20h)", 0
-__Leaf80__01:                   db "(Leaf 0x80000001h)", 0
-__Leaf80__02:                   db "(Leaf 0x80000002h)", 0
-__Leaf80__05:                   db "(Leaf 0x80000005h)", 0
-__Leaf80__06:                   db "(Leaf 0x80000006h)", 0
-__Leaf80__07:                   db "(Leaf 0x80000007h)", 0
-__Leaf80__08:                   db "(Leaf 0x80000008h)", 0
-__Leaf80__0A:                   db "(Leaf 0x8000000Ah)", 0
-__Leaf80__0F:                   db "(Leaf 0x8000000Fh)", 0
-__Leaf80__19:                   db "(Leaf 0x80000019h)", 0
-__Leaf80__1A:                   db "(Leaf 0x8000001Ah)", 0
-__Leaf80__1B:                   db "(Leaf 0x8000001Bh)", 0
-__Leaf80__1C:                   db "(Leaf 0x8000001Ch)", 0
-__Leaf80__1D:                   db "(Leaf 0x8000001Dh)", 0
-__Leaf80__1E:                   db "(Leaf 0x8000001Eh)", 0
-__Leaf80__1F:                   db "(Leaf 0x8000001Fh)", 0
-__Leaf80__20:                   db "(Leaf 0x80000020h)", 0
-__Leaf80__20_1:                 db "(Leaf 0x80000020h, ecx = 0x01)", 0
-__Leaf80__20_2:                 db "(Leaf 0x80000020h, ecx = 0x02)", 0
-__Leaf80__20_3:                 db "(Leaf 0x80000020h, ecx = 0x03)", 0
-__Leaf80__20_5:                 db "(Leaf 0x80000020h, ecx = 0x05)", 0
-__Leaf80__21:                   db "(Leaf 0x80000021h)", 0
-__Leaf80__22:                   db "(Leaf 0x80000022h)", 0
-__Leaf80__23:                   db "(Leaf 0x80000023h)", 0
-__Leaf80__26:                   db "(Leaf 0x80000026h)", 0
-__Leaf80__FF:                   db "(Leaf 0x800000FFh)", 0
-
+__Leaf01ECX:                    db "(Leaf 01h (from ecx))", 0
+__Leaf01EDX:                    db "(Leaf 01h (from edx))", 0
+__Leaf02:                       db "(Leaf 02h)", 0
+__Leaf0400:                     db "(Leaf 04h, ecx = 0x00)", 0
+__Leaf05:                       db "(Leaf 05h)", 0
+__Leaf06:                       db "(Leaf 06h)", 0
+__Leaf0700:                     db "(Leaf 07h, ecx = 0x00)", 0
+__Leaf0701:                     db "(Leaf 07h, ecx = 0x01)", 0
+__Leaf0702:                     db "(Leaf 07h, ecx = 0x02)", 0
+__Leaf09:                       db "(Leaf 09h)", 0
+__Leaf0A:                       db "(Leaf 0Ah)", 0
+__Leaf0B00:                     db "(Leaf 0Bh, ecx = 0x00)", 0
+__Leaf0B01:                     db "(Leaf 0Bh, ecx = 0x01)", 0
+__Leaf0D00:                     db "(Leaf 0Dh, ecx = 0x00)", 0
+__Leaf0D01:                     db "(Leaf 0Dh, ecx = 0x01)", 0
+__Leaf0D02:                     db "(Leaf 0Dh, ecx = 0x02)", 0
+__Leaf0D0B:                     db "(Leaf 0Dh, ecx = 0x0b)", 0
+__Leaf0D0C:                     db "(Leaf 0Dh, ecx = 0x0c)", 0
+__Leaf0D3E:                     db "(Leaf 0Dh, ecx = 0x3e)", 0
+__Leaf0F00:                     db "(Leaf 0Fh, ecx = 0x00)", 0
+__Leaf0F01:                     db "(Leaf 0Fh, ecx = 0x01)", 0
+__Leaf1000:                     db "(Leaf 10h, ecx = 0x00)", 0
+__Leaf1001:                     db "(Leaf 10h, ecx = 0x01)", 0
+__Leaf1002:                     db "(Leaf 10h, ecx = 0x02)", 0
+__Leaf1003:                     db "(Leaf 10h, ecx = 0x03)", 0
+__Leaf1200:                     db "(Leaf 12h, ecx = 0x00)", 0
+__Leaf1201:                     db "(Leaf 12h, ecx = 0x01)", 0
+__Leaf1202:                     db "(Leaf 12h, ecx = 0x02)", 0
+__Leaf1400:                     db "(Leaf 14h, ecx = 0x00)", 0
+__Leaf1401:                     db "(Leaf 14h, ecx = 0x01)", 0
+__Leaf15:                       db "(Leaf 15h)", 0
+__Leaf16:                       db "(Leaf 16h)", 0
+__Leaf1700:                     db "(Leaf 17h, ecx = 0x00)", 0
+__Leaf18:                       db "(Leaf 18h)", 0
+__Leaf19:                       db "(Leaf 19h)", 0
+__Leaf1A00:                     db "(Leaf 1Ah, ecx = 0x00)", 0
+__Leaf1B00:                     db "(Leaf 1Bh, ecx = 0x00)", 0
+__Leaf1C00:                     db "(Leaf 1Ch, ecx = 0x00)", 0
+__Leaf1D00:                     db "(Leaf 1Dh, ecx = 0x00)", 0
+__Leaf1D01:                     db "(Leaf 1Dh, ecx = 0x01)", 0
+__Leaf1E00:                     db "(Leaf 1Eh, ecx = 0x00)", 0
+__Leaf1F00:                     db "(Leaf 1Fh, ecx = 0x00)", 0
+__Leaf20:                       db "(Leaf 20h)", 0
+__Leaf2300:                     db "(Leaf 23h, ecx = 0x00)", 0
+__Leaf2301:                     db "(Leaf 23h, ecx = 0x01)", 0
+__Leaf2302:                     db "(Leaf 23h, ecx = 0x02)", 0
+__Leaf2303:                     db "(Leaf 23h, ecx = 0x03)", 0
+__Leaf2400:                     db "(Leaf 24h, ecx = 0x00)", 0
+__Leaf80__01:                   db "(Leaf 80000001h)", 0
+__Leaf80__02:                   db "(Leaf 80000002h)", 0
+__Leaf80__05:                   db "(Leaf 80000005h)", 0
+__Leaf80__06:                   db "(Leaf 80000006h)", 0
+__Leaf80__07:                   db "(Leaf 80000007h)", 0
+__Leaf80__08:                   db "(Leaf 80000008h)", 0
+__Leaf80__0A:                   db "(Leaf 8000000Ah)", 0
+__Leaf80__0F:                   db "(Leaf 8000000Fh)", 0
+__Leaf80__19:                   db "(Leaf 80000019h)", 0
+__Leaf80__1A:                   db "(Leaf 8000001Ah)", 0
+__Leaf80__1B:                   db "(Leaf 8000001Bh)", 0
+__Leaf80__1C:                   db "(Leaf 8000001Ch)", 0
+__Leaf80__1D:                   db "(Leaf 8000001Dh)", 0
+__Leaf80__1E:                   db "(Leaf 8000001Eh)", 0
+__Leaf80__1F:                   db "(Leaf 8000001Fh)", 0
+__Leaf80__20:                   db "(Leaf 80000020h)", 0
+__Leaf80__20_1:                 db "(Leaf 80000020h, ecx = 0x01)", 0
+__Leaf80__20_2:                 db "(Leaf 80000020h, ecx = 0x02)", 0
+__Leaf80__20_3:                 db "(Leaf 80000020h, ecx = 0x03)", 0
+__Leaf80__20_5:                 db "(Leaf 80000020h, ecx = 0x05)", 0
+__Leaf80__21:                   db "(Leaf 80000021h)", 0
+__Leaf80__22:                   db "(Leaf 80000022h)", 0
+__Leaf80__23:                   db "(Leaf 80000023h)", 0
+__Leaf80__26:                   db "(Leaf 80000026h)", 0
+__Leaf80__FF:                   db "(Leaf 800000FFh)", 0
 
 ; =============================================================================================
 ; =============================================================================================

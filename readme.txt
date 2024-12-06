@@ -1,6 +1,6 @@
 ==============================================================================
 
-  CPUidX 0.15
+  CPUidX 0.16
   (c) Paul Alan Freshney 2022-2024
 
   paul@freshney.org
@@ -23,6 +23,7 @@
           December  2023
           March     2024  	
           June      2024
+		  October   2024
   
 ==============================================================================
 
@@ -54,6 +55,17 @@ All of my software is free and open source; please consider donating to a local 
 ==============================================================================
 
 Release History
+
+0.16 / December 6th 2024
+
+Changes based on the October Intel docs. 
+Adds support for the new Architectural Performance Monitoring extended information (23h) and AVX10 (24h) leaves and sub-leaves.
+
+Modified all reference to leaf IDs to be consistent with Intel terminology (eg. leaf 01h)
+
+Split some constants into a new file (more tidying coming soon!).
+
+A couple of minor bug fixes and tweaks.
 
 0.15 / July 29th 2024
 
