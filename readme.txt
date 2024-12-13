@@ -1,6 +1,6 @@
 ==============================================================================
 
-  CPUidX 0.16
+  CPUidX 0.17
   (c) Paul Alan Freshney 2022-2024
 
   paul@freshney.org
@@ -37,7 +37,7 @@ Save the report to a file:
 
 Known issues:
   Lack of support for earlier Intel and AMD CPUs.
-  AMD testing is lacking (I only have Intel CPUs to hand)
+
   
 If you find a bug then please email me at the address at the top of this readme.
 
@@ -55,6 +55,10 @@ All of my software is free and open source; please consider donating to a local 
 ==============================================================================
 
 Release History
+
+0.17 / December 12th 2024
+
+Fixed a few errors for AMD CPUs.
 
 0.16 / December 6th 2024
 
