@@ -60,6 +60,12 @@ Release History
 
 Fixed a few errors for AMD CPUs.
 
+Fixed a bug in the CPU Features #1 list caused by a (C) symbol. This unicode character pushed everything below it forwards
+by one byte, meaning the first character to sent to printf was a null character. This caused the correct bit position value
+to be output, but the flag's description was blank :(
+
+Split the AMD- and Intel-specific constants into their own file. Code will likely go next.
+
 0.16 / December 6th 2024
 
 Changes based on the October Intel docs. 
