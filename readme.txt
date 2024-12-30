@@ -1,6 +1,6 @@
 ==============================================================================
 
-  CPUidX 0.17
+  CPUidX 0.18
   (c) Paul Alan Freshney 2022-2024
 
   paul@freshney.org
@@ -24,7 +24,8 @@
           March     2024  	
           June      2024
 		  October   2024
-  
+          December  2024
+		  
 ==============================================================================
 
 Run it from a command prompt.
@@ -37,7 +38,6 @@ Save the report to a file:
 
 Known issues:
   Lack of support for earlier Intel and AMD CPUs.
-
   
 If you find a bug then please email me at the address at the top of this readme.
 
@@ -56,12 +56,18 @@ All of my software is free and open source; please consider donating to a local 
 
 Release History
 
+0.18 / Decemember 30th 2024
+
+A few very minor changes present in the December 2024 Intel docs (including leaf 80000008h).
+
+A couple of tweaks and minor bug fixes.
+
 0.17 / December 12th 2024
 
 Fixed a few errors for AMD CPUs.
 
 Fixed a bug in the CPU Features #1 list caused by a (C) symbol. This unicode character pushed everything below it forwards
-by one byte, meaning the first character to sent to printf was a null character. This caused the correct bit position value
+by one byte, meaning the first character sent to printf was a null character. This caused the correct bit position value
 to be output, but the flag's description was blank :(
 
 Split the AMD- and Intel-specific constants into their own file. Code will likely go next.

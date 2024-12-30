@@ -2,7 +2,7 @@
 ; ===================================================================================
 ;
 ;  (c) Paul Alan Freshney 2023-2024
-;  v0.17, December 12th 2024
+;  v0.18, December 30th 2024
 ;
 ;  Source code:
 ;      https://github.com/MaximumOctopus/CPUIDx
@@ -136,7 +136,7 @@ GetStringAddress:
         mov esi, [esi]
 
         ret
-				
+                                
 ; =============================================================================================
 
 ; leaf 04, data returned in eax, ebx, and ecx
@@ -519,11 +519,8 @@ showe:  mov esi, 0
         jnc .sl1d
                 
         cinvoke printf, "    CPUIDMAXVAL_LIM_RMV. IA32_MISC_ENABLE cannot be set to 1 to limit CPUID.00H:EAX[bits 7:0] %c", 10
-                
-; sub-leaf 1, ecx
-; ecx is reserved
-                
-; sub-leaf 1, edx
+
+; sub-leaf 1
 
 .sl1d:  mov ecx, 0x01
         mov eax, 0x07           ; sub-leaf 1   
@@ -554,13 +551,17 @@ showg:  mov esi, 0
         cmp esi, 32
 
         jne .lfs1d
+                
+        jmp sl72
 
 subleaf2: ; sub-leaf 2
 
         mov esi, dword __LeafInvalid
-        call ShowLeafInformation                
+        call ShowLeafInformation
 
-.sl72:  mov esi, dword __Leaf0702
+        ret
+
+sl72:  mov esi, dword __Leaf0702
         call ShowLeafInformation
         
         mov ecx, 0x02           ; sub-leaf 2
@@ -708,7 +709,7 @@ ArchitecturalPerfMon:
         cpuid
 
         cinvoke printf, "    Supported fixed counters bit mask: 0x%x %c", ecx, 10
-                cinvoke printf, "%c", 10
+        cinvoke printf, "%c", 10
                 
         mov eax, 0x0A
         cpuid
@@ -2620,7 +2621,7 @@ AddressBits:
         mov eax, dword [__MaxExtended]
 
         cmp eax, 0x80000008
-        jl .notsupported
+        jl .fin
 
         mov esi, dword __Leaf80__08
         call ShowLeafInformation
@@ -2628,18 +2629,29 @@ AddressBits:
         mov eax, 0x80000008
         cpuid
 
-        mov edx, eax
+        mov esi, eax
 
         and eax, 0x000000FF     ; isolate bits 7:0 from eax
 
-        shr edx, 8              ; isolate bits 15:08 from eax (copied to edx)
-        and edx, 0x000000FF
+        mov edi, esi
 
-        mov edi, ebx
+        shr edi, 8              ; isolate bits 15:08 from eax
+        and edi, 0x000000FF
+
+        shr esi, 16             ; isolate bits 23:16 from eax
+        and esi, 0x000000FF
                 
-        cinvoke printf, "    Physical Address Bits: %d; Linear Address Bits: %d %c", eax, edx, 10
+        cinvoke printf, "    #Physical Address Bits       : %d %c", eax, 10
+                cinvoke printf, "    #Linear Address Bits         : %d %c", edi, 10
+                cinvoke printf, "    #Guest Physical Address Bits*: %d %c", esi, 10
+                cinvoke printf, "     *This value applies only to software operating in a virtual machine %c", 10
+        cinvoke printf, "      (Intel processors enumerate this value as zero). When this field is zero, refer to %c", 10
+        cinvoke printf, "      #Physical Address Bits for the number of guest physical address bits %c %c", 10, 10
+             
+        mov eax, 0x80000008
+        cpuid
                 
-        bt edi, kWBOINVD
+        bt ebx, kWBOINVD
         jnc .notsupported
                 
         cinvoke printf, "    WBOINVD is available %c", 10
@@ -2650,7 +2662,7 @@ AddressBits:
 
         cinvoke printf, "    WBOINVD is not available %c", 10
 
-        ret
+.fin:   ret
 
 ; =============================================================================================
 ; =============================================================================================

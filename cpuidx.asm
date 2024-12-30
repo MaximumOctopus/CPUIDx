@@ -2,7 +2,7 @@
 ; ===================================================================================
 ;
 ;  (c) Paul Alan Freshney 2023-2024
-;  v0.17, December 12th 2024
+;  v0.18, December 30th 2024
 ;
 ;  Source code:
 ;      https://github.com/MaximumOctopus/CPUIDx
@@ -23,6 +23,7 @@
 ;          March     2024
 ;          June      2024
 ;          October   2024
+;          December  2024
 ;
 ; ===================================================================================
 ; ===================================================================================
@@ -237,7 +238,7 @@ start:  call Arguments
 ; =============================================================================================
 ; =============================================================================================
 
-About:  cinvoke printf, "%c    CPUidx v0.17 :: December 12th 2024 :: Paul A Freshney %c", 10, 10
+About:  cinvoke printf, "%c    CPUidx v0.18 :: December 30th 2024 :: Paul A Freshney %c", 10, 10
 
         cinvoke printf, "       https://github.com/MaximumOctopus/CPUIDx %c %c", 10, 10
 
@@ -274,8 +275,12 @@ ShowLeafInformation:
         jne .finish
 
         cinvoke printf, "%s %c", esi, 10
-                
+
+        ret
+
 .finish:
+
+        cinvoke printf, "%c", 10
 
         ret
 

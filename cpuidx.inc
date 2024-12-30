@@ -2,7 +2,7 @@
 ; ===================================================================================
 ;
 ;  (c) Paul Alan Freshney 2023-2024
-;  v0.16, December 6th 2024
+;  v0.18, December 30th 2024
 ;
 ;  Source code:
 ;      https://github.com/MaximumOctopus/CPUIDx
@@ -48,7 +48,7 @@ kMCDT_NO = 5
 kUCLockDisable = 6
 kMONITOR_MITG_NO = 7
 
-kAnyThread = 15                 ; 08h (Intel)
+kAnyThread = 15                 ; 08h and 0ah (Intel)
 
 kXSAVEOPT = 0                   ; 0dh (ecx = 1) (Intel/AMD)
 kXSAVEC = 1
