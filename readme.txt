@@ -1,7 +1,7 @@
 ==============================================================================
 
-  CPUidX 0.18
-  (c) Paul Alan Freshney 2022-2024
+  CPUidX 0.19
+  (c) Paul Alan Freshney 2022-2025
 
   paul@freshney.org
 
@@ -25,12 +25,13 @@
           June      2024
           October   2024
           December  2024
+          March     2025		  
 		  
 ==============================================================================
 
 Run it from a command prompt.
 
-To see which cpuid leaf each section comes from, run it:
+To see which cpuid leaf each section comes from, run it as follows:
   cpuidx /x  
 
 Save the report to a file:
@@ -55,6 +56,10 @@ All of my software is free and open source; please consider donating to a local 
 ==============================================================================
 
 Release History
+
+0.19 / April 19th 2025
+
+A single change from the March 2025 Intel docs: 24h, all CPUs that support AVX10 support 128/256/512-bit vector widths.
 
 0.18 / Decemember 30th 2024
 

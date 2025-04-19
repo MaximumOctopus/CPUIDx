@@ -1,8 +1,8 @@
 ; ===================================================================================
 ; ===================================================================================
 ;
-;  (c) Paul Alan Freshney 2023-2024
-;  v0.18, December 30th 2024
+;  (c) Paul Alan Freshney 2022-2025
+;  v0.19, April 19th 2025
 ;
 ;  Source code:
 ;      https://github.com/MaximumOctopus/CPUIDx
@@ -24,6 +24,7 @@
 ;          June      2024
 ;          October   2024
 ;          December  2024
+;          March     2025
 ;
 ; ===================================================================================
 ; ===================================================================================
@@ -238,7 +239,7 @@ start:  call Arguments
 ; =============================================================================================
 ; =============================================================================================
 
-About:  cinvoke printf, "%c    CPUidx v0.18 :: December 30th 2024 :: Paul A Freshney %c", 10, 10
+About:  cinvoke printf, "%c    CPUidx v0.19 :: April 19th 2025 :: Paul A Freshney %c", 10, 10
 
         cinvoke printf, "       https://github.com/MaximumOctopus/CPUIDx %c %c", 10, 10
 
@@ -422,7 +423,7 @@ CoreCount:
         bt eax, kHTT
         jnc .singlecore
 
-        invoke GetActiveProcessorCount, 0xffff  ; all processor groups
+        cinvoke GetActiveProcessorCount, 0xffff  ; all processor groups
 
         cinvoke printf, "    Logical processors %d %c", eax, 10
 

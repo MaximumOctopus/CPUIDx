@@ -1,8 +1,8 @@
 ; ===================================================================================
 ; ===================================================================================
 ;
-;  (c) Paul Alan Freshney 2023-2024
-;  v0.18, December 30th 2024
+;  (c) Paul Alan Freshney 2022-2025
+;  v0.19, April 19th 2025
 ;
 ;  Source code:
 ;      https://github.com/MaximumOctopus/CPUIDx
@@ -2468,22 +2468,8 @@ ConvergedVectorISAMain:
 
         cinvoke printf, "    Intel AVX10 Converged Vector ISA version 0x%x (%d) %c", esi, esi, 10
 
-        mov esi, edi
-
-.b16:   bt esi, k128BitVector
-        jnc .b17
-
-        cinvoke printf, "    128-bit vector support %c", 10
-
-.b17:   bt esi, k256BitVector
-        jnc .b18
-
-        cinvoke printf, "    256-bit vector support %c", 10
-
-.b18:   bt esi, k512BitVector
-        jnc .fin
-
-        cinvoke printf, "    512-bit vector support %c", 10
+		; changed in March 2025 update (see note 2 on 24h specification), all processors supporting AVX10 support all vector widths.
+        cinvoke printf, "    128/256/512-bit vector widths supported %c", 10
 
 .fin:   ret
 
