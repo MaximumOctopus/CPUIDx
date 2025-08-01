@@ -2,7 +2,7 @@
 ; ===================================================================================
 ;
 ;  (c) Paul Alan Freshney 2022-2025
-;  v0.19, April 19th 2025
+;  v0.20, August 1st 2025
 ;
 ;  Source code:
 ;      https://github.com/MaximumOctopus/CPUIDx
@@ -97,9 +97,11 @@ AMDStructuredExtendedFeatureIDs:
         mov eax, 0x07           ; first pass
         cpuid
 
-        cinvoke printf, "  Structured Extended Feature Identifiers %c", 10
+        push ebx
+        cinvoke printf, "  Structured Extended Feature Identifiers (0x%x) %c", ebx, 10
+        pop ebx
 
-        mov edi, __AMDStructuredExtendedFeatureIDs1
+        mov edi, __AMDStructuredExtendedFeatureIDs1	; pointer to start of table
 
         mov esi, 0              ; bit counter
 
@@ -122,7 +124,11 @@ AMDStructuredExtendedFeatureIDs:
         mov eax, 0x07           ; first pass
         cpuid
 
-        mov edi, __AMDStructuredExtendedFeatureIDs2
+        push ecx
+        cinvoke printf, "  Structured Extended Feature Identifiers (0x%x) %c", ecx, 10
+        pop ecx
+
+        mov edi, __AMDStructuredExtendedFeatureIDs2 ; pointer to start of table
 
         mov esi, 0              ; bit counter
 
@@ -140,6 +146,33 @@ AMDStructuredExtendedFeatureIDs:
         cmp esi, 32
 
         jne .lf2
+		
+		mov ecx, 1
+        mov eax, 0x07           ; added July 2025
+        cpuid
+		
+        push eax
+        cinvoke printf, "  Structured Extended Feature Identifiers (0x%x) %c", eax, 10
+        pop eax	
+
+        mov edi, __AMDStructuredExtendedFeatureIDs3
+
+        mov esi, 0              ; bit counter
+
+.lf3:   bt  eax, esi
+        jnc .nextd
+
+        push eax
+        cinvoke printf, "    %02d::%s %c", esi, edi, 10
+        pop eax
+
+.nextd: add edi, __AMDStructuredExtendedFeatureIDs3Size
+
+        inc esi
+
+        cmp esi, 32
+
+        jne .lf3
 
 .fin:   ret
 
@@ -1157,33 +1190,62 @@ AMDSVM:
         cpuid
                 
         mov edi, ebx
-        mov esi, edx
+        mov esi, ecx	        ; added in July 2025
                 
         and eax, 0x000000FF
                 
         cinvoke printf, "    SVM Revision : %d %c", eax, 10
                 
         cinvoke printf, "    ASIDs        : %d %c", edi, 10
+
+        cinvoke printf, "  SVM Feature Identification (ECX) %c", 10
                 
         mov eax, esi
-                
-        mov esi, 0              ; bit counter
-        mov edi, __SVMFeatureInformation
 
-.loop:  bt  eax, esi
-        jnc .next
+        mov esi, 0              ; bit counter
+        mov edi, __SVMFeatureInformation1
+
+.l1:    bt  eax, esi
+        jnc .n1
 
         push eax
         cinvoke printf, "    %02d::%s %c", esi, edi, 10
         pop eax
 
-.next:  add edi, __SVMFeatureInformationSize
+.n1:    add edi, __SVMFeatureInformation1Size
 
         inc esi
 
         cmp esi, 32             ; number of bits to test
 
-        jne .loop
+        jne .l1
+		
+        mov eax, 0x8000000A
+        cpuid		
+
+        mov edi, edx
+		
+        cinvoke printf, "  SVM Feature Identification (EDX) %c", 10
+                
+        mov eax, edi
+
+        mov esi, 0              ; bit counter
+        mov edi, __SVMFeatureInformation2
+
+.l2:    bt  eax, esi
+        jnc .n2
+
+        push eax
+        cinvoke printf, "    %02d::%s %c", esi, edi, 10
+        pop eax
+
+.n2:    add edi, __SVMFeatureInformation2Size
+
+        inc esi
+
+        cmp esi, 32             ; number of bits to test
+
+        jne .l2		
 
 .fin:   ret
 
@@ -1987,7 +2049,7 @@ AMDEFI2:
         mov esi, dword __Leaf80__21
         call ShowLeafInformation
 
-        mov eax, 0x80000021
+        mov eax, 0x80000021	; testing eax data
         cpuid
 
         push eax
@@ -2011,6 +2073,34 @@ AMDEFI2:
         cmp esi, 18             ; number of bits to test
 
         jne .loop
+		
+        mov eax, 0x80000021 ; testing ebx data
+        cpuid		
+
+        cinvoke printf, "  Extended Feature Identification 2 (EBX:0x%x) %c", ebx, 10
+
+        mov edi, ebx	
+
+        and ebx, 0xFFFF ; MicrocodePatchSize (stored as 16-byte multiples)
+
+        cmp ebx, 0      ; if 0, size is at most 0x15C0 bytes
+
+        jne .mpsn0
+
+        cinvoke printf, "    Microcode patch is at most 0x15c0 bytes %c", 10
+
+        jmp .raps
+
+.mpsn0: shl ebx, 4      ; multiply by 16
+
+        cinvoke printf, "    Microcode patch is 0x%x bytes %c", ebx, 10
+
+.raps:  mov eax, edi
+
+        shr eax, 16
+        and eax, 0xFF ; RapSize
+
+        cinvoke printf, "    Return Address Predictor size: %d %c", eax, 10
 
 .fin:   ret
 
@@ -2111,6 +2201,62 @@ AMDMultiKeyEMC:
 
 ; =============================================================================================
 
+; leaf 80000024h
+; AMD only
+
+; Reserved
+
+; =============================================================================================
+
+; leaf 80000025h
+; AMD only, data in eax and ebx
+AMDSEV2:
+
+        mov eax, dword [__MaxExtended]
+
+        cmp eax, 0x80000025
+        jl .fin
+
+        mov esi, dword __Leaf80__25
+        call ShowLeafInformation
+
+        mov eax, 0x80000025
+        cpuid
+		
+		cinvoke printf, "  SEV Capabilities 2 (EAX:0x%x EBX:0x%x) %c", eax, ebx, 10
+
+        mov eax, 0x80000025
+        cpuid
+
+        mov edi, eax
+        mov esi, ebx
+
+        and eax, 0x3F	; MinRmpSegSize
+
+        cinvoke printf, "     Minimum supported RMP segment size %d %c", eax, 10
+
+        mov eax, edi
+        shr eax, 6
+        and eax, 0x3F   ; MaxRmpSegSize
+
+        cinvoke printf, "     Maximum supported RMP segment size %d %c", eax, 10
+
+        mov eax, esi
+        and eax, 0x1FF  ; NumCachedSegments
+
+        cinvoke printf, "     Number of cached RMP segment definitions %d %c", eax, 10	
+
+        bt esi, kNumSegReduction
+        jnc .fin
+
+        cinvoke printf, "     Number of RMP segments is reduced %c", 10	
+
+.fin:
+
+        ret
+
+; =============================================================================================
+
 ; leaf 80000026h
 ; AMD only, data in eax and ebx
 AMDExtendedCPUTop:
@@ -2144,7 +2290,7 @@ AMDExtendedCPUTop:
         shr edi, 8
         and edi, 0x000000FF
 
-        cmp edi, 4              ; only four types are specified in the 2022 docs
+        cmp edi, 4              ; only four types are specified in the 2025 docs
         jg .areg
 
         dec edi
@@ -2181,17 +2327,20 @@ AMDExtendedCPUTop:
 
         mov edi, ebx
 
+        cinvoke printf, "    Extended APIC ID: 0x%x %c", edx, 10
+
+        mov ebx, edi
         and ebx, 0x0000FFFF
 
         cinvoke printf, "    NumLogProc: %d %c", ebx, 10
 
-        mov ebx,  edi
+        mov ebx, edi
         shr ebx, 16
         and ebx, 0x000000FF
 
         cinvoke printf, "    PwrEfficiencyRanking: %d %c", ebx, 10
 
-        mov ebx,  edi
+        mov ebx, edi
         shr ebx, 24
         and ebx, 0x0000000F
 

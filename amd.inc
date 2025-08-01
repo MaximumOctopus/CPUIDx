@@ -2,7 +2,7 @@
 ; ===================================================================================
 ;
 ;  (c) Paul Alan Freshney 2022-2025
-;  v0.19, April 19th 2025
+;  v0.20, August 1st 2025
 ;
 ;  Source code:
 ;      https://github.com/MaximumOctopus/CPUIDx
@@ -14,77 +14,113 @@
 ; =================================================================================== 
 
 
-; 07h leaf (amd), bits in ebx
-__AMDStructuredExtendedFeatureIDs1Size = 49     ; 48 + null terminator
+; 07h leaf (amd), bits in ebx (ECX = 0);
+__AMDStructuredExtendedFeatureIDs1Size = 58     ; 57 + null terminator
 __AMDStructuredExtendedFeatureIDs1:
-                                db "FSGSBASE (FS and GS base read/write instruction)", 0
-                                db "Reserved                                        ", 0
-                                db "Reserved                                        ", 0
-                                db "BMI1     (Bit manipulation group 1 instruction) ", 0
-                                db "Reserved                                        ", 0
-                                db "AVX2     (AVX2 instruction subset support)      ", 0
-                                db "Reserved                                        ", 0
-                                db "SMEP     (Supervisor mode execution prevention) ", 0
-                                db "BMI2     (Bit manipulation group 2 instruction) ", 0
-                                db "Reserved                                        ", 0
-                                db "INVPCID  (instruction support)                  ", 0
-                                db "Reserved                                        ", 0
-                                db "PQM      (Platform QOS Monitoring)              ", 0 
-                                db "Reserved                                        ", 0
-                                db "Reserved                                        ", 0
-                                db "PQE      (Platform QOS Enforcement)             ", 0
-                                db "Reserved                                        ", 0
-                                db "Reserved                                        ", 0
-                                db "RDSEED   (instruction support)                  ", 0
-                                db "ADX      (ADCX, ADOX instructions)              ", 0
-                                db "SMAP     (Supervisor mode access prevention)    ", 0
-                                db "Reserved                                        ", 0
-                                db "Reserved                                        ", 0
-                                db "CLFLUSHOPT (instruction support)                ", 0
-                                db "CLWB     (instruction support)                  ", 0
-                                db "Reserved                                        ", 0
-                                db "Reserved                                        ", 0
-                                db "Reserved                                        ", 0
-                                db "Reserved                                        ", 0
-                                db "SHA      (Secure Hash Algorithm instruction)    ", 0
-                                db "Reserved                                        ", 0
-                                db "Reserved                                        ", 0
+                                db "FSGSBASE (FS and GS base read/write instruction)         ", 0
+                                db "TSCADJUST TSC Adjust MSR (3Bh) support                   ", 0
+                                db "Reserved                                                 ", 0
+                                db "BMI1     (Bit manipulation group 1 instruction)          ", 0
+                                db "Reserved                                                 ", 0
+                                db "AVX2     (AVX2 instruction subset support)               ", 0
+                                db "Reserved                                                 ", 0
+                                db "SMEP     (Supervisor mode execution prevention)          ", 0
+                                db "BMI2     (Bit manipulation group 2 instruction)          ", 0
+                                db "ERMS     Enhanced REP MOVSB/STOSB support                ", 0
+                                db "INVPCID  (instruction support)                           ", 0
+                                db "Reserved                                                 ", 0
+                                db "PQM      (Platform QOS Monitoring)                       ", 0 
+                                db "Reserved                                                 ", 0
+                                db "Reserved                                                 ", 0
+                                db "PQE      (Platform QOS Enforcement)                      ", 0
+                                db "AVX512F  AVX512 Foundation                               ", 0
+                                db "AVX512DQ  AVX512 Doubleword/Quadword Packed Integer      ", 0
+                                db "RDSEED   (instruction support)                           ", 0
+                                db "ADX      (ADCX, ADOX instructions)                       ", 0
+                                db "SMAP     (Supervisor mode access prevention)             ", 0
+                                db "AVX512_IFMA AVX512 Integer Fused Multiply-Add support    ", 0
+                                db "Reserved                                                 ", 0
+                                db "CLFLUSHOPT (instruction support)                         ", 0
+                                db "CLWB     (instruction support)                           ", 0
+                                db "Reserved                                                 ", 0
+                                db "Reserved                                                 ", 0
+                                db "Reserved                                                 ", 0
+                                db "AVX512CD AVX512 Conflict Detection for Vectorizing Loops ", 0
+                                db "SHA      (Secure Hash Algorithm instruction)             ", 0
+                                db "AVX512BW AVX512 Byte/Word Packed Integer instructions    ", 0
+                                db "AVX512VL AVX512 instructions extended to 128 and 256 bits", 0
 
-; 07h leaf (amd), bits in ecx
-__AMDStructuredExtendedFeatureIDs2Size = 47     ; 46 + null terminator
+; 07h leaf (amd), bits in ecx (ECX = 0);
+__AMDStructuredExtendedFeatureIDs2Size = 59     ; 58 + null terminator
 __AMDStructuredExtendedFeatureIDs2:
-                                db "Reserved                                      ", 0
-                                db "Reserved                                      ", 0
-                                db "UMIP       (User mode instruction prevention) ", 0
-                                db "PKU        (Memory Protection Keys supported  ", 0
-                                db "OSPKE      (Memory Protection Keys enabled)   ", 0
-                                db "Reserved                                      ", 0
-                                db "Reserved                                      ", 0
-                                db "CET_SS     (Shadow Stacks supported)          ", 0                               
-                                db "Reserved                                      ", 0
-                                db "VAES       (VAES 256-bit instructions)        ", 0
-                                db "VPCMULQDQ  (VPCLMULQDQ 256-bit instruction    ", 0
-                                db "Reserved                                      ", 0
-                                db "Reserved                                      ", 0
-                                db "Reserved                                      ", 0
-                                db "Reserved                                      ", 0
-                                db "Reserved                                      ", 0
-                                db "LA57       (5-Level paging support)           ", 0
-                                db "Reserved                                      ", 0
-                                db "Reserved                                      ", 0
-                                db "Reserved                                      ", 0
-                                db "Reserved                                      ", 0
-                                db "Reserved                                      ", 0
-                                db "RDPID      (RDPID instruction and TSC_AUX MSR)", 0
-                                db "Reserved                                      ", 0
-                                db "BUSLOCKTRAP (Bus Lock Trap (#DB))             ", 0
-                                db "Reserved                                      ", 0
-                                db "Reserved                                      ", 0
-                                db "Reserved                                      ", 0
-                                db "Reserved                                      ", 0
-                                db "Reserved                                      ", 0
-                                db "Reserved                                      ", 0
-                                db "Reserved                                      ", 0
+                                db "Reserved                                                  ", 0
+                                db "AVX512_VBMI AVX512 vector byte permutation support        ", 0
+                                db "UMIP       (User mode instruction prevention)             ", 0
+                                db "PKU        (Memory Protection Keys supported              ", 0
+                                db "OSPKE      (Memory Protection Keys enabled)               ", 0
+                                db "Reserved                                                  ", 0
+                                db "AVX512_VBMI2 AVX512 vector byte permutation 2 support     ", 0
+                                db "CET_SS     (Shadow Stacks supported)                      ", 0                               
+                                db "GFNI       Galois Field New instructions support          ", 0
+                                db "VAES       (VAES 256-bit instructions)                    ", 0
+                                db "VPCMULQDQ  (VPCLMULQDQ 256-bit instruction                ", 0
+                                db "AVX512_VNNI   AVX512 vector neural network support        ", 0
+                                db "AVX512_BITALG AVX512 bit algorithm VPSHUFBITQMB VPOPCNTB/W", 0
+                                db "Reserved                                                  ", 0
+                                db "AVX512_VPOPCNTDQ AVX-512 VPOPCNTD/Q instructions          ", 0
+                                db "Reserved                                                  ", 0
+                                db "LA57       (5-Level paging support)                       ", 0
+                                db "Reserved                                                  ", 0
+                                db "Reserved                                                  ", 0
+                                db "Reserved                                                  ", 0
+                                db "Reserved                                                  ", 0
+                                db "Reserved                                                  ", 0
+                                db "RDPID      (RDPID instruction and TSC_AUX MSR)            ", 0
+                                db "Reserved                                                  ", 0
+                                db "BUSLOCKTRAP (Bus Lock Trap (#DB))                         ", 0
+                                db "Reserved                                                  ", 0
+                                db "Reserved                                                  ", 0
+                                db "MOVDIRI      MOVDIRI instruction support.                 ", 0
+                                db "MOVDIR64B    MOVDIR64B instruction support.               ", 0
+                                db "Reserved                                                  ", 0
+                                db "Reserved                                                  ", 0
+                                db "Reserved                                                  ", 0
+
+; 07h leaf (amd), bits in eax (ECX = 1);
+__AMDStructuredExtendedFeatureIDs3Size = 44     ; 43 + null terminator
+__AMDStructuredExtendedFeatureIDs3:
+                                db "Reserved                                   ", 0
+                                db "Reserved                                   ", 0
+                                db "Reserved                                   ", 0
+                                db "Reserved                                   ", 0
+                                db "AVX_VNNI    AVX Neural Network instructions", 0
+                                db "AVX512_BF16 AVX512 BFloat16 instructions   ", 0
+                                db "Reserved                                   ", 0
+                                db "Reserved                                   ", 0
+                                db "Reserved                                   ", 0
+                                db "Reserved                                   ", 0
+                                db "Reserved                                   ", 0
+                                db "Reserved                                   ", 0
+                                db "Reserved                                   ", 0
+                                db "Reserved                                   ", 0
+                                db "Reserved                                   ", 0
+                                db "Reserved                                   ", 0
+                                db "Reserved                                   ", 0
+                                db "Reserved                                   ", 0
+                                db "Reserved                                   ", 0
+                                db "Reserved                                   ", 0
+                                db "Reserved                                   ", 0
+                                db "Reserved                                   ", 0
+                                db "Reserved                                   ", 0
+                                db "Reserved                                   ", 0
+                                db "Reserved                                   ", 0
+                                db "Reserved                                   ", 0
+                                db "Reserved                                   ", 0
+                                db "Reserved                                   ", 0
+                                db "Reserved                                   ", 0
+                                db "Reserved                                   ", 0
+                                db "Reserved                                   ", 0
+                                db "Reserved                                   ", 0
 
 ; AMD: 80000001_ECX
 __AMDFeatureIdentifiers1Size = 70 ; 69 + null terminator
@@ -192,39 +228,39 @@ __AMDAPMFeatures:               db "TS, Temperature sensor      ", 0
                                 db "ProcPowerReporting          ", 0
                                                                 
 ; AMD; 80000008_EBX
-__AMDExtendedFeatureIDSize = 61 ; 60 + null terminator
-__AMDExtendedFeatureID:         db "CLZERO (instruction)                                        ", 0
-                                db "InstRetCntMsr (Instruction Retired Counter MSR)             ", 0
-                                db "RstrFpErrPtrs (FP Error Pointers Restored by XRSTOR)        ", 0
-                                db "INVLPGB (INVLPGB TLBSYNC instructions)                      ", 0
-                                db "RDPRU (instruction)                                         ", 0
-                                db "Reserved                                                    ", 0
-                                db "BE (Bandwidth Enforcement Extension)                        ", 0
-                                db "Reserved                                                    ", 0
-                                db "MCOMMIT (instruction)                                       ", 0
-                                db "WBNOINVD (instruction)                                      ", 0
-                                db "Reserved                                                    ", 0
-                                db "Reserved                                                    ", 0
-                                db "IBPB (Indirect Branch Prediction Barrier)                   ", 0
-                                db "INT_WBINVD (WBINVD/WBNOINVD are interruptible)              ", 0
-                                db "IBRS (Indirect Branch Restricted Speculation)               ", 0
-                                db "STIBP (Single Thread Indirect Branch Prediction mode)       ", 0
-                                db "IbrsAlwaysOn (Processor prefers that IBRS be left on)       ", 0
-                                db "StibpAlwaysOn (Processor prefers that STIBP be left on)     ", 0
-                                db "IbrsPreferred (IBRS is preferred over software solution)    ", 0
-                                db "IbrsSameMode (IBRS provides same mode speculation limits)   ", 0
-                                db "EferLmsleUnsupported (EFER.LMSLE is unsupported)            ", 0
-                                db "INVLPGBnestedPages (INVLPGB suppor)                         ", 0
-                                db "Reserved                                                    ", 0
-                                db "Reserved                                                    ", 0
-                                db "SSBD (Speculative Store Bypass Disable)                     ", 0
-                                db "SsbdVirtSpecCtrl (Use VIRT_SPEC_CTL for SSBD)               ", 0
-                                db "SsbdNotRequired (SSBD not needed on this processor)         ", 0
-                                db "CPPC (Collaborative Processor Performance Control.          ", 0
-                                db "PSFD (Predictive Store Forward Disable)                     ", 0
-                                db "BTC_NO (Not affected by branch type confusion)              ", 0
-                                db "IBPB_RET (clears return address predictor MSR PRED_CMD.IBPB)", 0
-                                db "Reserved                                                    ", 0
+__AMDExtendedFeatureIDSize = 63 ; 62 + null terminator
+__AMDExtendedFeatureID:         db "CLZERO (instruction)                                          ", 0
+                                db "InstRetCntMsr (Instruction Retired Counter MSR)               ", 0
+                                db "RstrFpErrPtrs (FP Error Pointers Restored by XRSTOR)          ", 0
+                                db "INVLPGB (INVLPGB TLBSYNC instructions)                        ", 0
+                                db "RDPRU (instruction)                                           ", 0
+                                db "Reserved                                                      ", 0
+                                db "BE (Bandwidth Enforcement Extension)                          ", 0
+                                db "Reserved                                                      ", 0
+                                db "MCOMMIT (instruction)                                         ", 0
+                                db "WBNOINVD (instruction)                                        ", 0
+                                db "Reserved                                                      ", 0
+                                db "Reserved                                                      ", 0
+                                db "IBPB (Indirect Branch Prediction Barrier)                     ", 0
+                                db "INT_WBINVD (WBINVD/WBNOINVD are interruptible)                ", 0
+                                db "IBRS (Indirect Branch Restricted Speculation)                 ", 0
+                                db "STIBP (Single Thread Indirect Branch Prediction mode)         ", 0
+                                db "IbrsAlwaysOn (Setting IBRS to 1 once is recommended)          ", 0
+                                db "StibpAlwaysOn (Setting STIBP to 1 once is recommended.)       ", 0
+                                db "IbrsPreferred (IBRS is preferred over software solution)      ", 0
+                                db "IbrsSameMode (IBRS provides same mode speculation limits)     ", 0
+                                db "EferLmsleUnsupported (EFER.LMSLE is unsupported)              ", 0
+                                db "INVLPGBnestedPages (INVLPGB suppor)                           ", 0
+                                db "Reserved                                                      ", 0
+                                db "Reserved                                                      ", 0
+                                db "SSBD (Speculative Store Bypass Disable)                       ", 0
+                                db "SsbdVirtSpecCtrl (Use VIRT_SPEC_CTL MSR, C001_011Fh) for SSBD)", 0
+                                db "SsbdNotRequired (SSBD not needed on this processor)           ", 0
+                                db "CPPC (Collaborative Processor Performance Control.            ", 0
+                                db "PSFD (Predictive Store Forward Disable)                       ", 0
+                                db "BTC_NO (Not affected by branch type confusion)                ", 0
+                                db "IBPB_RET (BPB clears return address predictor)                ", 0
+                                db "Reserved                                                      ", 0
                                                                
 ; AMD; 80000008_ECX
 __AMDSizeIndentifiersDescriptionSize = 8        ; 7 + null terminator
@@ -233,10 +269,45 @@ __AMDSizeIndentifiersDescription:
                                 db "48 bits", 0
                                 db "56 bits", 0
                                 db "64 bits", 0
+
+; AMD; 8000000A_ECX 
+__SVMFeatureInformation1Size = 47; 46 + null terminator
+__SVMFeatureInformation1:       db "Reserved                                      ", 0
+                                db "Reserved                                      ", 0
+                                db "Reserved                                      ", 0
+                                db "Reserved                                      ", 0
+                                db "Reserved                                      ", 0
+                                db "Reserved                                      ", 0
+                                db "x2AVIC_EXT 4096 vCPUs supported in x2AVIC mode", 0
+                                db "Reserved                                      ", 0
+                                db "Reserved                                      ", 0
+                                db "Reserved                                      ", 0
+                                db "Reserved                                      ", 0
+                                db "Reserved                                      ", 0
+                                db "Reserved                                      ", 0
+                                db "Reserved                                      ", 0
+                                db "Reserved                                      ", 0
+                                db "Reserved                                      ", 0
+                                db "Reserved                                      ", 0
+                                db "Reserved                                      ", 0
+                                db "Reserved                                      ", 0
+                                db "Reserved                                      ", 0
+                                db "Reserved                                      ", 0
+                                db "Reserved                                      ", 0
+                                db "Reserved                                      ", 0
+                                db "Reserved                                      ", 0
+                                db "Reserved                                      ", 0
+                                db "Reserved                                      ", 0
+                                db "Reserved                                      ", 0
+                                db "Reserved                                      ", 0
+                                db "Reserved                                      ", 0
+                                db "Reserved                                      ", 0
+                                db "Reserved                                      ", 0
+                                db "Reserved                                      ", 0
                                                                                                                            
 ; AMD; 8000000A_EDX
-__SVMFeatureInformationSize = 71; 70 + null terminator
-__SVMFeatureInformation:        db "NP (Nested paging)                                                    ", 0
+__SVMFeatureInformation2Size = 71; 70 + null terminator
+__SVMFeatureInformation2:       db "NP (Nested paging)                                                    ", 0
                                 db "LbrVirt (LBR virtualization)                                          ", 0
                                 db "SVML (SVM lock)                                                       ", 0
                                 db "NRIPS (NRIP save)                                                     ", 0
@@ -378,13 +449,13 @@ __AMDSecureEncryption:          db "SME (Secure Memory Encryption)              
                                 db "IbsVirtGuestCtl (IBS Virtualization)                                        ", 0
                                 db "PmcVirtGuestCtl (PMC Virtualization)                                        ", 0
                                 db "RMPREAD (Instruction)                                                       ", 0
-                                db "Reserved                                                                    ", 0
-                                db "Reserved                                                                    ", 0
+                                db "GuestInterceptCtl (Guest intercept control supported)                       ", 0
+                                db "SegmentedRmp (Segmented RMP supported)                                      ", 0
                                 db "VmsaRegProt (VMSA Register Protection)                                      ", 0
                                 db "SmtProtection (SMT Protection)                                              ", 0
                                 db "SecureAvic (Secure AVIC)                                                    ", 0
                                 db "AllowedSevFeatures (Allowed SEV Features)                                   ", 0
-                                db "SvsmCommPageMSR (SVSM Communication Page MSR)                               ", 0
+                                db "SvsmCommPageMsr (SVSM Communication Page MSR (C001_F000h) is supported)     ", 0
                                 db "NestedVirtSnpMsr (VIRT_RMPUPDATE MSR0)                                      ", 0
                                 db "HvInUseWrAllowed (Writes to Hypervisor-Owned pages allowed if marked in-use)", 0
                                 db "IbpbOnEntry (IBPB on Entry)                                                 ", 0
@@ -412,27 +483,41 @@ __AMDPQOSExtendedFeaturesBMEC:
                                 db "L3CacheVicMon          ", 0
 
 ; AMD; 80000021_EAX
-__AMDExtendedFeatureIdentifiers2Size = 66       ; 65 + null terminator
+__AMDExtendedFeatureIdentifiers2Size = 84       ; 83 + null terminator
 __AMDExtendedFeatureIdentifiers2:
-                                db "NoNestedDataBp          Processor ignores nested data breakpoints", 0
-                                db "Reserved                                                         ", 0
-                                db "LFenceAlwaysSerializing LFENCE is always dispatch serializing    ", 0
-                                db "SmmPgCfgLock            SMM paging configuration lock supported  ", 0
-                                db "Reserved                                                         ", 0
-                                db "Reserved                                                         ", 0
-                                db "NullSelectClearsBase    Null segment selector loads clear dest.  ", 0
-                                db "UpperAddressIgnore      Upper Address Ignore is supported        ", 0
-                                db "AutomaticIBRS           Automatic IBRS                           ", 0
-                                db "NoSmmCtlMSR             SMM_CTL MSR (C001_0116h) is not supported", 0
-                                db "Reserved                                                         ", 0
-                                db "Reserved                                                         ", 0
-                                db "Reserved                                                         ", 0
-                                db "PrefetchCtlMsr          Prefetch control MSR supported           ", 0
-                                db "Reserved                                                         ", 0
-                                db "Reserved                                                         ", 0
-                                db "Reserved                                                         ", 0
-                                db "CpuidUserDis            CPUID disable for non-privileged software", 0
-                                                                
+                                db "NoNestedDataBp          Processor ignores nested data breakpoints                  ", 0
+                                db "FsGsBaseWriteNotSerializing WRMSR FS.Base/GS.Base/KernelGSBase MSRs is !serializing", 0
+                                db "LFenceAlwaysSerializing LFENCE is always dispatch serializing                      ", 0
+                                db "SmmPgCfgLock            SMM paging configuration lock supported                    ", 0
+                                db "Reserved                                                                           ", 0
+                                db "Reserved                                                                           ", 0
+                                db "NullSelectClearsBase    Null segment selector loads clear dest.                    ", 0
+                                db "UpperAddressIgnore      Upper Address Ignore is supported                          ", 0
+                                db "AutomaticIBRS           Automatic IBRS                                             ", 0
+                                db "NoSmmCtlMSR             SMM_CTL MSR (C001_0116h) is not supported                  ", 0
+                                db "FastShortRepStosb       Fast short REP STOSB supported                             ", 0
+                                db "FastShortRepeCmpsb      Fast short REPE CMPSB supported                            ", 0
+                                db "Pmc2PreciseRetire      MSR PerfEvtSel2[PreciseRetire] is supported                 ", 0
+                                db "PrefetchCtlMsr          Prefetch control MSR supported                             ", 0
+                                db "L2TlbSizeX32            L2TLB sizes are encoded as multiples of 32                 ", 0
+                                db "AMD_ERMSB               AMD's Enhanced REP MOVSB/STOSB                             ", 0
+                                db "Opcode0F017Reclaim      0F 01/7 opcode space is reserved for AMD use               ", 0
+                                db "CpuidUserDis            CPUID disable for non-privileged software                  ", 0
+                                db "EPSF                    Enhanced Predictive Store Forwarding                       ", 0
+                                db "FAST_REP_SCASB          Fast short REP SCASB supported                             ", 0
+                                db "PREFETCHI               IC prefetch supported                                      ", 0
+                                db "FP512_DOWNGRADE         FP512 is downgraded to FP256                               ", 0
+                                db "Reserved                                                                           ", 0
+                                db "Reserved                                                                           ", 0
+                                db "ERAPS                   Enhanced Return Address Predictor Security                 ", 0
+                                db "Reserved                                                                           ", 0
+                                db "Reserved                                                                           ", 0
+                                db "SBPB                    Selective Branch Predictor Barrier                         ", 0
+                                db "IBPB_BRTYPE             PRED_CMD[IBPB] clears all branch type predictions          ", 0
+                                db "SRSO_NO                 No Speculative Return Stack Overflow vulnerability         ", 0
+                                db "SRSO_USER_KERNEL_NO     No Speculative Return Stack Overflow vulnerability         ", 0
+                                db "SRSO_MSR_FIX            Use MSR_BP_CFG[BpSpecReduce] to mitigate SRSO vulnerability", 0
+                                                                   
 ; AMD; 80000026_ECX
 __AMDLevelTypeSize = 8 ; 7 + null terminator
 __AMDLevelType:                 db "Core   ", 0

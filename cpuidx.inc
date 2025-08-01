@@ -2,7 +2,7 @@
 ; ===================================================================================
 ;
 ;  (c) Paul Alan Freshney 2022-2025
-;  v0.19, April 19th 2025
+;  v0.20, August 1st 2025
 ;
 ;  Source code:
 ;      https://github.com/MaximumOctopus/CPUIDx
@@ -204,6 +204,8 @@ kLbrStack = 1
 kLbrAndPmcFreeze = 2
 
 kMemHmk = 0                     ; 80000023h (AMD)
+
+kNumSegReduction = 10           ; 80000025h (AMD)
 
 kEfficiencyRankingAvailable = 29; 80000026h (AMD)
 kHeterogeneousCores = 30

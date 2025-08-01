@@ -1,6 +1,6 @@
 ==============================================================================
 
-  CPUidX 0.19
+  CPUidX 0.20
   (c) Paul Alan Freshney 2022-2025
 
   paul@freshney.org
@@ -16,6 +16,7 @@
           October   2022
           June      2023
           March     2024
+          July      2025
       Intel® 64 and IA-32 Architectures Software Developer's Manual Volume 2
           December  2022
           March     2023
@@ -25,7 +26,8 @@
           June      2024
           October   2024
           December  2024
-          March     2025		  
+          March     2025
+          June      2025		  
 		  
 ==============================================================================
 
@@ -56,6 +58,12 @@ All of my software is free and open source; please consider donating to a local 
 ==============================================================================
 
 Release History
+
+0.20 / August 1st 2025
+
+Some very minor Intel changes based on their lastest docs.
+
+Many changes based on the latest AMD docs (including 80000025h, a new leaf).
 
 0.19 / April 19th 2025
 

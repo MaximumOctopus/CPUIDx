@@ -2,7 +2,7 @@
 ; ===================================================================================
 ;
 ;  (c) Paul Alan Freshney 2022-2025
-;  v0.19, April 19th 2025
+;  v0.20, August 1st 2025
 ;
 ;  Source code:
 ;      https://github.com/MaximumOctopus/CPUIDx
@@ -2628,9 +2628,9 @@ AddressBits:
         and esi, 0x000000FF
                 
         cinvoke printf, "    #Physical Address Bits       : %d %c", eax, 10
-                cinvoke printf, "    #Linear Address Bits         : %d %c", edi, 10
-                cinvoke printf, "    #Guest Physical Address Bits*: %d %c", esi, 10
-                cinvoke printf, "     *This value applies only to software operating in a virtual machine %c", 10
+        cinvoke printf, "    #Linear Address Bits         : %d %c", edi, 10
+        cinvoke printf, "    #Guest Physical Address Bits*: %d %c", esi, 10
+        cinvoke printf, "     *This value applies only to software operating in a virtual machine %c", 10
         cinvoke printf, "      (Intel processors enumerate this value as zero). When this field is zero, refer to %c", 10
         cinvoke printf, "      #Physical Address Bits for the number of guest physical address bits %c %c", 10, 10
              

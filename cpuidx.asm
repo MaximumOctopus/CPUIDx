@@ -2,7 +2,7 @@
 ; ===================================================================================
 ;
 ;  (c) Paul Alan Freshney 2022-2025
-;  v0.19, April 19th 2025
+;  v0.20, August 1st 2025
 ;
 ;  Source code:
 ;      https://github.com/MaximumOctopus/CPUIDx
@@ -15,6 +15,7 @@
 ;          October   2022
 ;          June      2023
 ;          March     2024
+;          July      2025
 ;      Intel® 64 and IA-32 Architectures Software Developer's Manual Volume 2
 ;          December  2022
 ;          March     2023
@@ -25,6 +26,7 @@
 ;          October   2024
 ;          December  2024
 ;          March     2025
+;          June      2025
 ;
 ; ===================================================================================
 ; ===================================================================================
@@ -62,7 +64,7 @@ start:  call Arguments
         call BrandString                        ; 0x80000002/3/4
 
 .01h:   call FamilyModel
-                
+
         call CoreCount
 
         call ShowFamilyModel
@@ -226,6 +228,8 @@ start:  call Arguments
         call AMDExtPMandD                       ; 0x80000022
 
         call AMDMultiKeyEMC                     ; 0x80000023
+                
+        call AMDSEV2                            ; 0x80000025
 
         call AMDExtendedCPUTop                  ; 0x80000026
 
@@ -239,7 +243,7 @@ start:  call Arguments
 ; =============================================================================================
 ; =============================================================================================
 
-About:  cinvoke printf, "%c    CPUidx v0.19 :: April 19th 2025 :: Paul A Freshney %c", 10, 10
+About:  cinvoke printf, "%c    CPUidx v0.20 :: June 27th 2025 :: Paul A Freshney %c", 10, 10
 
         cinvoke printf, "       https://github.com/MaximumOctopus/CPUIDx %c %c", 10, 10
 
@@ -423,7 +427,7 @@ CoreCount:
         bt eax, kHTT
         jnc .singlecore
 
-        cinvoke GetActiveProcessorCount, 0xffff  ; all processor groups
+        invoke GetActiveProcessorCount, 0xffff  ; all processor groups
 
         cinvoke printf, "    Logical processors %d %c", eax, 10
 
@@ -584,6 +588,7 @@ __Leaf80__20_5:                 db "(Leaf 80000020h, ecx = 0x05)", 0
 __Leaf80__21:                   db "(Leaf 80000021h)", 0
 __Leaf80__22:                   db "(Leaf 80000022h)", 0
 __Leaf80__23:                   db "(Leaf 80000023h)", 0
+__Leaf80__25:                   db "(Leaf 80000025h)", 0
 __Leaf80__26:                   db "(Leaf 80000026h)", 0
 __Leaf80__FF:                   db "(Leaf 800000FFh)", 0
 

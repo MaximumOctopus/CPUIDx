@@ -2,7 +2,7 @@
 ; ===================================================================================
 ;
 ;  (c) Paul Alan Freshney 2022-2025
-;  v0.19, April 19th 2025
+;  v0.20, August 1st 2025
 ;
 ;  Source code:
 ;      https://github.com/MaximumOctopus/CPUIDx
@@ -341,7 +341,7 @@ __StructuredExtendedFeatureFlags3:
                                 db "SGX-KEYS                          ", 0
                                 db "AVX512_4VNNIW. Intel Xeon Phi only", 0
                                 db "AVX512_4FMAPS. Intel Xeon Phi only", 0
-                                db "Fast Short REP MOV                ", 0
+                                db "Fast Short REP MOVSB              ", 0
                                 db "UINTR                             ", 0
                                 db "Reserved.                         ", 0
                                 db "Reserved.                         ", 0
@@ -433,7 +433,7 @@ __StructuredExtendedFeatureSubLeaf1dFlags:
                                 db "Reserved                                              ", 0
                                 db "Reserved                                              ", 0
                                 db "Reserved                                              ", 0
-                                db "Reserved                                              ", 0
+                                db "SLSM            Supports IA32_INTEGRITY_STATUS MSR    ", 0
                                 db "Reserved                                              ", 0
                                 db "Reserved                                              ", 0
                                 db "Reserved                                              ", 0
