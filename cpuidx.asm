@@ -2,7 +2,7 @@
 ; ===================================================================================
 ;
 ;  (c) Paul Alan Freshney 2022-2025
-;  v0.20, August 1st 2025
+;  v0.21, December 5th 2025
 ;
 ;  Source code:
 ;      https://github.com/MaximumOctopus/CPUIDx
@@ -12,21 +12,18 @@
 ;
 ;  Resources used:
 ;      AMD64 Architecture Programmer’s Manual Volume 3: General-Purpose and System Instructions
-;          October   2022
-;          June      2023
-;          March     2024
-;          July      2025
+;         2022 October
+;         2023 June
+;         2024 March
+;         2025 July
 ;      Intel® 64 and IA-32 Architectures Software Developer's Manual Volume 2
-;          December  2022
-;          March     2023
-;          September 2023
-;          December  2023
-;          March     2024
-;          June      2024
-;          October   2024
-;          December  2024
-;          March     2025
-;          June      2025
+;         2022 December
+;         2023 March, September, December
+;         2024 March, June, October, December
+;         2025 March, June, October
+;		
+;         Intel® 64 and IA-32 Architectures Software Developer's Manual Documentation Changes
+;             https://www.intel.com/content/www/us/en/developer/articles/technical/intel-sdm.html
 ;
 ; ===================================================================================
 ; ===================================================================================
@@ -61,7 +58,7 @@ start:  call Arguments
 
         jl .01h
 
-        call BrandString                        ; 0x80000002/3/4
+        call BrandString                        ; CPUID.80000002H, CPUID.80000003H, CPUID.80000004H
 
 .01h:   call FamilyModel
 
@@ -84,63 +81,63 @@ start:  call Arguments
                                 
         cinvoke printf, "%c      == Intel-specific ======================== %c %c", 10, 10, 10
 
-        call ProcessorSerialNumber              ; 03h
+        call ProcessorSerialNumber              ; CPUID.03H
 
-        call MonitorMWait                       ; 05h
+        call MonitorMWait                       ; CPUID.05H
 
-        call ThermalPower                       ; 06h
+        call ThermalPower                       ; CPUID.06H
 
-        call StructuredExtendedFeatureFlags     ; 07h
+        call StructuredExtendedFeatureFlags     ; CPUID.07H
 
-        call DirectCacheAccessInfo              ; 09h
+        call DirectCacheAccessInfo              ; CPUID.09H
 
-        call ArchitecturalPerfMon               ; 0ah
+        call ArchitecturalPerfMon               ; CPUID.0AH
                 
-        call ExtendedTopology                   ; 0bh
+        call ExtendedTopology                   ; CPUID.0BH
 
-        call ProcExtStateEnumMain               ; 0dh, ecx = 0
+        call ProcExtStateEnumMain               ; CPUID.0DH.00H
 
-        call ProcExtStateEnumSub1               ; 0dh, ecx = 1          
+        call ProcExtStateEnumSub1               ; CPUID.0DH.01H          
 
-        call InternalCache                      ; 02h
+        call InternalCache                      ; CPUID.02H
 
-        call CacheTlb                           ; 04h
+        call CacheTlb                           ; CPUID.04H
 
-        call IntelRDTMonitoring                 ; 0fh
+        call IntelRDTMonitoring                 ; CPUID.0FH
 
-        call IntelRDTAllocEnum                  ; 10h
+        call IntelRDTAllocEnum                  ; CPUID.10H
 
-        call IntelSGXCapability                 ; 12h
+        call IntelSGXCapability                 ; CPUID.12H
 
-        call IntelProcessorTrace                ; 14h
+        call IntelProcessorTrace                ; CPUID.14H
 
-        call TimeStampCounter                   ; 15h
+        call TimeStampCounter                   ; CPUID.15H
 
-        call ProcessorFreqInfo                  ; 16h
+        call ProcessorFreqInfo                  ; CPUID.16H
 
-        call SoCVendor                          ; 17h
+        call SoCVendor                          ; CPUID.17H
 
-        call DATParameters                      ; 18h
+        call DATParameters                      ; CPUID.18H
 
-        call KeyLocker                          ; 19h
+        call KeyLocker                          ; CPUID.19H
 
-        call NativeModelIDEnumeration           ; 1ah
+        call NativeModelIDEnumeration           ; CPUID.1AH
                 
-        call GetPCONFIG                         ; 1bh
+        call GetPCONFIG                         ; CPUID.1BH
 
-        call LastBranchRecords                  ; 1ch
+        call LastBranchRecords                  ; CPUID.1CH
 
-        call TileInformation                    ; 1dh
+        call TileInformation                    ; CPUID.1DH
 
-        call TMULInformation                    ; 1eh
+        call TMULInformation                    ; CPUID.1EH
                 
-        call V2ExtendedTopology                 ; 1fh
+        call V2ExtendedTopology                 ; CPUID.1FH
                 
-        call ProcessorHistoryReset              ; 20h
+        call ProcessorHistoryReset              ; CPUID.20H
                 
-        call APMEMain                           ; 23h
+        call APMEMain                           ; CPUID.23H
                 
-        call ConvergedVectorISAMain             ; 24h
+        call ConvergedVectorISAMain             ; CPUID.24H
 
 ; =============================================================================================
                 
@@ -151,13 +148,13 @@ start:  call Arguments
                 
         cinvoke printf, "%c      == Extended Leafs ======================== %c %c", 10, 10, 10
 
-        call ExtendedFeatures                   ; 0x80000001
+        call ExtendedFeatures                   ; CPUID.80000001H
                 
-        call IntelCacheInformation              ; 0x80000006
+        call IntelCacheInformation              ; CPUID.80000006H
 
-        call InvariantTSC                       ; 0x80000007
+        call InvariantTSC                       ; CPUID.80000007H
 
-        call AddressBits                        ; 0x80000008
+        call AddressBits                        ; CPUID.80000008H
 
         jmp .finish
 
@@ -174,19 +171,19 @@ start:  call Arguments
 
         cinvoke printf, "%c      == AMD-specific ========================== %c %c", 10, 10, 10
                 
-        call AMDMonitorMWait                    ; 05h
+        call AMDMonitorMWait                    ; CPUID.05H
 
-        call PowerManagementRelated             ; 06h
+        call PowerManagementRelated             ; CPUID.06H
                 
-        call AMDStructuredExtendedFeatureIDs    ; 07h
+        call AMDStructuredExtendedFeatureIDs    ; CPUID.07H
 
-        call AMDProcExtTopologyEnum             ; 0bh
+        call AMDProcExtTopologyEnum             ; CPUID.0BH
 
-        call AMDProcExtStateEnum                ; 0dh
+        call AMDProcExtStateEnum                ; CPUID.0DH
                 
-        call AMDPQOSMonitoring                  ; 0fh
+        call AMDPQOSMonitoring                  ; CPUID.0FH
                 
-        call AMDPQECapabilities                 ; 10h
+        call AMDPQECapabilities                 ; CPUID.10H
                 
 ; =============================================================================================
                 
@@ -197,41 +194,41 @@ start:  call Arguments
                 
         cinvoke printf, "%c      == Extended Leafs ======================== %c %c", 10, 10, 10
 
-        call ExtendedFeatures                   ; 0x80000001
+        call ExtendedFeatures                   ; CPUID.80000001H
 
-        call AMDCacheTLBLevelOne                ; 0x80000005
+        call AMDCacheTLBLevelOne                ; CPUID.80000005H
 
-        call AMDCacheTLBLevelThreeCache         ; 0x80000006
+        call AMDCacheTLBLevelThreeCache         ; CPUID.80000006H
 
-        call PPMandRAS                          ; 0x80000007
+        call PPMandRAS                          ; CPUID.80000007H
 
-        call ProcessorCapacityParameters        ; 0x80000008
+        call ProcessorCapacityParameters        ; CPUID.80000008H
 
-        call AMDSVM                             ; 0x8000000A
+        call AMDSVM                             ; CPUID.8000000AH
 
-        call AMDTLBCharacteristics              ; 0x80000019
+        call AMDTLBCharacteristics              ; CPUID.80000019H
 
-        call AMDPerformanceOptimisation         ; 0x8000001A
+        call AMDPerformanceOptimisation         ; CPUID.8000001AH
 
-        call AMDIBS                             ; 0x8000001B
+        call AMDIBS                             ; CPUID.8000001BH
 
-        call AMDLightweightProfiling            ; 0x8000001C
+        call AMDLightweightProfiling            ; CPUID.8000001CH
 
-        call AMDCache                           ; 0x8000001D
+        call AMDCache                           ; CPUID.8000001DH
 
-        call AMDEMS                             ; 0x8000001F
+        call AMDEMS                             ; CPUID.8000001FH
 
-        call AMDQOS                             ; 0x80000020
+        call AMDQOS                             ; CPUID.80000020H
 
-        call AMDEFI2                            ; 0x80000021
+        call AMDEFI2                            ; CPUID.80000021H
 
-        call AMDExtPMandD                       ; 0x80000022
+        call AMDExtPMandD                       ; CPUID.80000022H
 
-        call AMDMultiKeyEMC                     ; 0x80000023
+        call AMDMultiKeyEMC                     ; CPUID.80000023H
                 
-        call AMDSEV2                            ; 0x80000025
+        call AMDSEV2                            ; CPUID.80000025H
 
-        call AMDExtendedCPUTop                  ; 0x80000026
+        call AMDExtendedCPUTop                  ; CPUID.80000026H
 
 .finish:
 
@@ -243,7 +240,7 @@ start:  call Arguments
 ; =============================================================================================
 ; =============================================================================================
 
-About:  cinvoke printf, "%c    CPUidx v0.20 :: June 27th 2025 :: Paul A Freshney %c", 10, 10
+About:  cinvoke printf, "%c    CPUidx v0.21 :: December 5th 2025 :: Paul A Freshney %c", 10, 10
 
         cinvoke printf, "       https://github.com/MaximumOctopus/CPUIDx %c %c", 10, 10
 
@@ -445,7 +442,7 @@ CoreCount:
 
 ; =============================================================================================
 
-; leaf 03h, data in ecx, and edx
+; CPUID.03H, data in ecx, and edx
 ; Available in Pentium III processor only; otherwise, the value in this register is reserved
 ProcessorSerialNumber:
 
@@ -517,80 +514,80 @@ include 'amd.inc'
 ; =============================================================================================
 
 __LeafInvalid:                  db "  Invalid", 0
-__Leaf01ECX:                    db "(Leaf 01h (from ecx))", 0
-__Leaf01EDX:                    db "(Leaf 01h (from edx))", 0
-__Leaf02:                       db "(Leaf 02h)", 0
-__Leaf0400:                     db "(Leaf 04h, ecx = 0x00)", 0
-__Leaf05:                       db "(Leaf 05h)", 0
-__Leaf06:                       db "(Leaf 06h)", 0
-__Leaf0700:                     db "(Leaf 07h, ecx = 0x00)", 0
-__Leaf0701:                     db "(Leaf 07h, ecx = 0x01)", 0
-__Leaf0702:                     db "(Leaf 07h, ecx = 0x02)", 0
-__Leaf09:                       db "(Leaf 09h)", 0
-__Leaf0A:                       db "(Leaf 0Ah)", 0
-__Leaf0B00:                     db "(Leaf 0Bh, ecx = 0x00)", 0
-__Leaf0B01:                     db "(Leaf 0Bh, ecx = 0x01)", 0
-__Leaf0D00:                     db "(Leaf 0Dh, ecx = 0x00)", 0
-__Leaf0D01:                     db "(Leaf 0Dh, ecx = 0x01)", 0
-__Leaf0D02:                     db "(Leaf 0Dh, ecx = 0x02)", 0
-__Leaf0D0B:                     db "(Leaf 0Dh, ecx = 0x0b)", 0
-__Leaf0D0C:                     db "(Leaf 0Dh, ecx = 0x0c)", 0
-__Leaf0D3E:                     db "(Leaf 0Dh, ecx = 0x3e)", 0
-__Leaf0F00:                     db "(Leaf 0Fh, ecx = 0x00)", 0
-__Leaf0F01:                     db "(Leaf 0Fh, ecx = 0x01)", 0
-__Leaf1000:                     db "(Leaf 10h, ecx = 0x00)", 0
-__Leaf1001:                     db "(Leaf 10h, ecx = 0x01)", 0
-__Leaf1002:                     db "(Leaf 10h, ecx = 0x02)", 0
-__Leaf1003:                     db "(Leaf 10h, ecx = 0x03)", 0
-__Leaf1200:                     db "(Leaf 12h, ecx = 0x00)", 0
-__Leaf1201:                     db "(Leaf 12h, ecx = 0x01)", 0
-__Leaf1202:                     db "(Leaf 12h, ecx = 0x02)", 0
-__Leaf1400:                     db "(Leaf 14h, ecx = 0x00)", 0
-__Leaf1401:                     db "(Leaf 14h, ecx = 0x01)", 0
-__Leaf15:                       db "(Leaf 15h)", 0
-__Leaf16:                       db "(Leaf 16h)", 0
-__Leaf1700:                     db "(Leaf 17h, ecx = 0x00)", 0
-__Leaf18:                       db "(Leaf 18h)", 0
-__Leaf19:                       db "(Leaf 19h)", 0
-__Leaf1A00:                     db "(Leaf 1Ah, ecx = 0x00)", 0
-__Leaf1B00:                     db "(Leaf 1Bh, ecx = 0x00)", 0
-__Leaf1C00:                     db "(Leaf 1Ch, ecx = 0x00)", 0
-__Leaf1D00:                     db "(Leaf 1Dh, ecx = 0x00)", 0
-__Leaf1D01:                     db "(Leaf 1Dh, ecx = 0x01)", 0
-__Leaf1E00:                     db "(Leaf 1Eh, ecx = 0x00)", 0
-__Leaf1F00:                     db "(Leaf 1Fh, ecx = 0x00)", 0
-__Leaf20:                       db "(Leaf 20h)", 0
-__Leaf2300:                     db "(Leaf 23h, ecx = 0x00)", 0
-__Leaf2301:                     db "(Leaf 23h, ecx = 0x01)", 0
-__Leaf2302:                     db "(Leaf 23h, ecx = 0x02)", 0
-__Leaf2303:                     db "(Leaf 23h, ecx = 0x03)", 0
-__Leaf2400:                     db "(Leaf 24h, ecx = 0x00)", 0
-__Leaf80__01:                   db "(Leaf 80000001h)", 0
-__Leaf80__02:                   db "(Leaf 80000002h)", 0
-__Leaf80__05:                   db "(Leaf 80000005h)", 0
-__Leaf80__06:                   db "(Leaf 80000006h)", 0
-__Leaf80__07:                   db "(Leaf 80000007h)", 0
-__Leaf80__08:                   db "(Leaf 80000008h)", 0
-__Leaf80__0A:                   db "(Leaf 8000000Ah)", 0
-__Leaf80__0F:                   db "(Leaf 8000000Fh)", 0
-__Leaf80__19:                   db "(Leaf 80000019h)", 0
-__Leaf80__1A:                   db "(Leaf 8000001Ah)", 0
-__Leaf80__1B:                   db "(Leaf 8000001Bh)", 0
-__Leaf80__1C:                   db "(Leaf 8000001Ch)", 0
-__Leaf80__1D:                   db "(Leaf 8000001Dh)", 0
-__Leaf80__1E:                   db "(Leaf 8000001Eh)", 0
-__Leaf80__1F:                   db "(Leaf 8000001Fh)", 0
-__Leaf80__20:                   db "(Leaf 80000020h)", 0
-__Leaf80__20_1:                 db "(Leaf 80000020h, ecx = 0x01)", 0
-__Leaf80__20_2:                 db "(Leaf 80000020h, ecx = 0x02)", 0
-__Leaf80__20_3:                 db "(Leaf 80000020h, ecx = 0x03)", 0
-__Leaf80__20_5:                 db "(Leaf 80000020h, ecx = 0x05)", 0
-__Leaf80__21:                   db "(Leaf 80000021h)", 0
-__Leaf80__22:                   db "(Leaf 80000022h)", 0
-__Leaf80__23:                   db "(Leaf 80000023h)", 0
-__Leaf80__25:                   db "(Leaf 80000025h)", 0
-__Leaf80__26:                   db "(Leaf 80000026h)", 0
-__Leaf80__FF:                   db "(Leaf 800000FFh)", 0
+__Leaf01ECX:                    db "(CPUID.01H:ECX)", 0
+__Leaf01EDX:                    db "(CPUID.01H:EDX)", 0
+__Leaf02:                       db "(CPUID.02H)", 0
+__Leaf0400:                     db "(CPUID.04H:00H)", 0
+__Leaf05:                       db "(CPUID.05H)", 0
+__Leaf06:                       db "(CPUID.06H)", 0
+__Leaf0700:                     db "(CPUID.07H.00H)", 0
+__Leaf0701:                     db "(CPUID.07H.01H)", 0
+__Leaf0702:                     db "(CPUID.07H.02H)", 0
+__Leaf09:                       db "(CPUID.09H)", 0
+__Leaf0A:                       db "(CPUID.0AH)", 0
+__Leaf0B00:                     db "(CPUID.0BH.00H)", 0
+__Leaf0B01:                     db "(CPUID.0BH.01H)", 0
+__Leaf0D00:                     db "(CPUID.0DH.00H)", 0
+__Leaf0D01:                     db "(CPUID.0DH.01H)", 0
+__Leaf0D02:                     db "(CPUID.0DH.02H)", 0
+__Leaf0D0B:                     db "(CPUID.0DH.0BH)", 0
+__Leaf0D0C:                     db "(CPUID.0DH.0CH)", 0
+__Leaf0D3E:                     db "(CPUID.0DH.3EH)", 0
+__Leaf0F00:                     db "(CPUID.0FH.00H)", 0
+__Leaf0F01:                     db "(CPUID.0FH.01H)", 0
+__Leaf1000:                     db "(CPUID.10H.00H)", 0
+__Leaf1001:                     db "(CPUID.10H.01H)", 0
+__Leaf1002:                     db "(CPUID.10H.02H)", 0
+__Leaf1003:                     db "(CPUID.10H.03H)", 0
+__Leaf1200:                     db "(CPUID.12H.00H)", 0
+__Leaf1201:                     db "(CPUID.12H.01H)", 0
+__Leaf1202:                     db "(CPUID.12H.02H)", 0
+__Leaf1400:                     db "(CPUID.14H.00H)", 0
+__Leaf1401:                     db "(CPUID.14H.01H)", 0
+__Leaf15:                       db "(CPUID.15H)", 0
+__Leaf16:                       db "(CPUID.16H)", 0
+__Leaf1700:                     db "(CPUID.17H.00H)", 0
+__Leaf18:                       db "(CPUID.18H)", 0
+__Leaf19:                       db "(CPUID.19H)", 0
+__Leaf1A00:                     db "(CPUID.1AH.00H)", 0
+__Leaf1B00:                     db "(CPUID.1BH.00H)", 0
+__Leaf1C00:                     db "(CPUID.1CH.00H)", 0
+__Leaf1D00:                     db "(CPUID.1DH.00H)", 0
+__Leaf1D01:                     db "(CPUID.1DH.01H)", 0
+__Leaf1E00:                     db "(CPUID.1EH.00H)", 0
+__Leaf1F00:                     db "(CPUID.1FH.00H)", 0
+__Leaf20:                       db "(CPUID.20H)", 0
+__Leaf2300:                     db "(CPUID.23H.00H)", 0
+__Leaf2301:                     db "(CPUID.23H.01H)", 0
+__Leaf2302:                     db "(CPUID.23H.02H)", 0
+__Leaf2303:                     db "(CPUID.23H.03H)", 0
+__Leaf2400:                     db "(CPUID.24H.00H)", 0
+__Leaf80__01:                   db "(CPUID.80000001H)", 0
+__Leaf80__02:                   db "(CPUID.80000002H)", 0
+__Leaf80__05:                   db "(CPUID.80000005H)", 0
+__Leaf80__06:                   db "(CPUID.80000006H)", 0
+__Leaf80__07:                   db "(CPUID.80000007H)", 0
+__Leaf80__08:                   db "(CPUID.80000008H)", 0
+__Leaf80__0A:                   db "(CPUID.8000000AH)", 0
+__Leaf80__0F:                   db "(CPUID.8000000FH)", 0
+__Leaf80__19:                   db "(CPUID.80000019H)", 0
+__Leaf80__1A:                   db "(CPUID.8000001AH)", 0
+__Leaf80__1B:                   db "(CPUID.8000001BH)", 0
+__Leaf80__1C:                   db "(CPUID.8000001CH)", 0
+__Leaf80__1D:                   db "(CPUID.8000001DH)", 0
+__Leaf80__1E:                   db "(CPUID.8000001EH)", 0
+__Leaf80__1F:                   db "(CPUID.8000001FH)", 0
+__Leaf80__20:                   db "(CPUID.80000020H)", 0
+__Leaf80__20_1:                 db "(CPUID.80000020H.01H)", 0
+__Leaf80__20_2:                 db "(CPUID.80000020H.02H)", 0
+__Leaf80__20_3:                 db "(CPUID.80000020H.03H)", 0
+__Leaf80__20_5:                 db "(CPUID.80000020H.05H)", 0
+__Leaf80__21:                   db "(CPUID.80000021H)", 0
+__Leaf80__22:                   db "(CPUID.80000022H)", 0
+__Leaf80__23:                   db "(CPUID.80000023H)", 0
+__Leaf80__25:                   db "(CPUID.80000025H)", 0
+__Leaf80__26:                   db "(CPUID.80000026H)", 0
+__Leaf80__FF:                   db "(CPUID.800000FFH)", 0
 
 ; =============================================================================================
 ; =============================================================================================

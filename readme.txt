@@ -1,6 +1,6 @@
 ==============================================================================
 
-  CPUidX 0.20
+  CPUidX 0.21
   (c) Paul Alan Freshney 2022-2025
 
   paul@freshney.org
@@ -13,22 +13,20 @@
 	
   References
       AMD64 Architecture Programmer’s Manual Volume 3: General-Purpose and System Instructions
-          October   2022
-          June      2023
-          March     2024
-          July      2025
+          2022 October
+          2023 June
+          2024 March
+          2025 July
       Intel® 64 and IA-32 Architectures Software Developer's Manual Volume 2
-          December  2022
-          March     2023
-          September 2023
-          December  2023
-          March     2024  	
-          June      2024
-          October   2024
-          December  2024
-          March     2025
-          June      2025		  
-		  
+          2022 December
+          2023 March, September, December
+          2024 March, June, October, December
+          2025 March, June, October
+
+
+          Intel® 64 and IA-32 Architectures Software Developer's Manual Documentation Changes
+              https://www.intel.com/content/www/us/en/developer/articles/technical/intel-sdm.html
+			  
 ==============================================================================
 
 Run it from a command prompt.
@@ -58,6 +56,13 @@ All of my software is free and open source; please consider donating to a local 
 ==============================================================================
 
 Release History
+
+0.21 / December 5th 2025
+
+Quite a few changes based on the October 2025 Intel document. Several field name changes, and
+a restyling of the leaf identifiers: leaf 07h becomes CPUID.07H; leaf 07h, ecx = 2 becomes CPUID.07H.02H.
+
+Also a few minor tweaks.
 
 0.20 / August 1st 2025
 

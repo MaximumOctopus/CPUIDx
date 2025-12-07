@@ -2,7 +2,7 @@
 ; ===================================================================================
 ;
 ;  (c) Paul Alan Freshney 2022-2025
-;  v0.20, August 1st 2025
+;  v0.21, December 5th 2025
 ;
 ;  Source code:
 ;      https://github.com/MaximumOctopus/CPUIDx
@@ -14,7 +14,7 @@
 ; =================================================================================== 
 
 
-; 07h leaf (amd), bits in ebx (ECX = 0);
+; CPUID.07H.00H:EBX (amd),
 __AMDStructuredExtendedFeatureIDs1Size = 58     ; 57 + null terminator
 __AMDStructuredExtendedFeatureIDs1:
                                 db "FSGSBASE (FS and GS base read/write instruction)         ", 0
@@ -50,7 +50,7 @@ __AMDStructuredExtendedFeatureIDs1:
                                 db "AVX512BW AVX512 Byte/Word Packed Integer instructions    ", 0
                                 db "AVX512VL AVX512 instructions extended to 128 and 256 bits", 0
 
-; 07h leaf (amd), bits in ecx (ECX = 0);
+; CPUID.07H.00H:ECX (amd)
 __AMDStructuredExtendedFeatureIDs2Size = 59     ; 58 + null terminator
 __AMDStructuredExtendedFeatureIDs2:
                                 db "Reserved                                                  ", 0
@@ -86,7 +86,7 @@ __AMDStructuredExtendedFeatureIDs2:
                                 db "Reserved                                                  ", 0
                                 db "Reserved                                                  ", 0
 
-; 07h leaf (amd), bits in eax (ECX = 1);
+; CPUID.07H.01H:EAX (amd)
 __AMDStructuredExtendedFeatureIDs3Size = 44     ; 43 + null terminator
 __AMDStructuredExtendedFeatureIDs3:
                                 db "Reserved                                   ", 0
@@ -122,7 +122,7 @@ __AMDStructuredExtendedFeatureIDs3:
                                 db "Reserved                                   ", 0
                                 db "Reserved                                   ", 0
 
-; AMD: 80000001_ECX
+; AMD: CPUID.80000001H:ECX
 __AMDFeatureIdentifiers1Size = 70 ; 69 + null terminator
 __AMDFeatureIdentifiers1:       db "LahfSahf           (LAHF/SAHF instruction support in 64-bit mode)    ", 0
                                 db "CmpLegacy          (Core multi-processing legacy mode)               ", 0
@@ -157,7 +157,7 @@ __AMDFeatureIdentifiers1:       db "LahfSahf           (LAHF/SAHF instruction su
                                 db "AddrMaskExt        (Breakpoint Addressing masking extended to bit 31)", 0
                                 db "Reserved                                                             ", 0
 
-; AMD: 80000001_EDX
+; AMD: CPUID.80000001H:EDX
 __AMDFeatureIdentifiers2Size = 64               ; 63 + null terminator
 __AMDFeatureIdentifiers2:       db "FPU x87            (x87 floating-point unit on-chip)           ", 0
                                 db "VME                (Virtual-mode enhancements)                 ", 0
@@ -192,7 +192,7 @@ __AMDFeatureIdentifiers2:       db "FPU x87            (x87 floating-point unit 
                                 db "3DNowExt           (AMD extensions to 3DNow! instructions)     ", 0
                                 db "3DNow              (3DNow!(TM) instructions)                   ", 0
 
-; AMD; 80000006
+; AMD; CPUID.80000006H
 __AMDLevelTwoTLBSize = 31       ; 30 + null terminator
 __AMDLevelTwoTLB:               db "L2/L3 cache or TLB is disabled", 0
                                 db "Direct mapped                 ", 0
@@ -211,7 +211,7 @@ __AMDLevelTwoTLB:               db "L2/L3 cache or TLB is disabled", 0
                                 db ">128-way not fully associative", 0
                                 db "Fully associative             ", 0
 
-; AMD; 80000007_EDX
+; AMD; CPUID.80000007H:EDX
 __AMDAPMFeaturesSize = 29       ; 28 + null terminator
 __AMDAPMFeatures:               db "TS, Temperature sensor      ", 0
                                 db "FID, Frequency ID control   ", 0
@@ -227,7 +227,7 @@ __AMDAPMFeatures:               db "TS, Temperature sensor      ", 0
                                 db "ProcFeedbackInterface       ", 0
                                 db "ProcPowerReporting          ", 0
                                                                 
-; AMD; 80000008_EBX
+; AMD; CPUID.80000008H:EBX
 __AMDExtendedFeatureIDSize = 63 ; 62 + null terminator
 __AMDExtendedFeatureID:         db "CLZERO (instruction)                                          ", 0
                                 db "InstRetCntMsr (Instruction Retired Counter MSR)               ", 0
@@ -262,7 +262,7 @@ __AMDExtendedFeatureID:         db "CLZERO (instruction)                        
                                 db "IBPB_RET (BPB clears return address predictor)                ", 0
                                 db "Reserved                                                      ", 0
                                                                
-; AMD; 80000008_ECX
+; AMD; CPUID.80000008H:ECX
 __AMDSizeIndentifiersDescriptionSize = 8        ; 7 + null terminator
 __AMDSizeIndentifiersDescription:
                                 db "40 bits", 0
@@ -270,7 +270,7 @@ __AMDSizeIndentifiersDescription:
                                 db "56 bits", 0
                                 db "64 bits", 0
 
-; AMD; 8000000A_ECX 
+; AMD; CPUID.8000000AH:ECX 
 __SVMFeatureInformation1Size = 47; 46 + null terminator
 __SVMFeatureInformation1:       db "Reserved                                      ", 0
                                 db "Reserved                                      ", 0
@@ -305,7 +305,7 @@ __SVMFeatureInformation1:       db "Reserved                                    
                                 db "Reserved                                      ", 0
                                 db "Reserved                                      ", 0
                                                                                                                            
-; AMD; 8000000A_EDX
+; AMD; CPUID.8000000AH:EDX
 __SVMFeatureInformation2Size = 71; 70 + null terminator
 __SVMFeatureInformation2:       db "NP (Nested paging)                                                    ", 0
                                 db "LbrVirt (LBR virtualization)                                          ", 0
@@ -340,7 +340,7 @@ __SVMFeatureInformation2:       db "NP (Nested paging)                          
                                 db "IdleHltIntercept (Idle HLT intercept)                                 ", 0
                                 db "Reserved                                                              ", 0
 
-; AMD; 8000001B_EAX
+; AMD; CPUID.8000001BH:EAX
 __IBSFeaturesSize = 57          ; 56 + null terminator
 __IBSFeatures:                  db "IBSFFV (IBS feature flags valid)                        ", 0
                                 db "FetchSam (IBS fetch sampling supported)                 ", 0
@@ -355,7 +355,7 @@ __IBSFeatures:                  db "IBSFFV (IBS feature flags valid)            
                                 db "Reserved                                                ", 0
                                 db "IbsL3MissFiltering (L3 Miss Filtering for IBS supported)", 0
                                                                 
-; AMD; 8000001C_EAX             
+; AMD; CPUID.8000001CH:EAX
 __AMDLWPEAXSize = 56            ; 55 + null terminator
 __AMDLWPEAX:                    db "LwpAvail. The LWP feature is supported                 ", 0
                                 db "LwpVAL.   LWPVAL instruction                           ", 0
@@ -390,7 +390,7 @@ __AMDLWPEAX:                    db "LwpAvail. The LWP feature is supported      
                                 db "LwpPTSC. Performance time stamp counter in event record", 0
                                 db "LwpInt.  Interrupt on threshold overflow               ", 0
 
-; AMD; 8000001C_EDX
+; AMD; CPUID.8000001CH:EDX
 __AMDLWPEDXSize = 55            ; 54 + null terminator                    
 __AMDLWPEDX:                    db "LwpAvail Lightweight profiling                        ", 0
                                 db "LwpVAL LWPVAL instruction                             ", 0
@@ -425,7 +425,7 @@ __AMDLWPEDX:                    db "LwpAvail Lightweight profiling              
                                 db "LwpPTSC Performance time stamp counter in event record", 0
                                 db "LwpInt  Interrupt on threshold overflow               ", 0
 
-; AMD; 8000001F_EAX
+; AMD; CPUID.8000001FH:EAX
 __AMDSecureEncryptionSize = 77  ; 76 + null terminator
 __AMDSecureEncryption:          db "SME (Secure Memory Encryption)                                              ", 0
                                 db "SEV (Secure Encrypted Virtualization)                                       ", 0
@@ -460,7 +460,7 @@ __AMDSecureEncryption:          db "SME (Secure Memory Encryption)              
                                 db "HvInUseWrAllowed (Writes to Hypervisor-Owned pages allowed if marked in-use)", 0
                                 db "IbpbOnEntry (IBPB on Entry)                                                 ", 0
 
-; AMD; 80000020_EBX
+; AMD; CPUID.80000020H:EBX
 __AMDPQOSExtendedFeaturesSize = 49          ; 48 + null terminator
 __AMDPQOSExtendedFeatures:      
                                 db "Reserved                                        ", 0
@@ -471,7 +471,7 @@ __AMDPQOSExtendedFeatures:
                                 db "ABMC    Assignable Bandwidth Monitoring Counters", 0
                                 db "SDCIAE  Smart Data Cache Injection              ", 0
 
-; AMD; 80000020 ECX = 3, ECX
+; AMD; CPUID.80000020H.03:ECX
 __AMDPQOSExtendedFeaturesBMECSize = 24       ; 23 + null terminator
 __AMDPQOSExtendedFeaturesBMEC:  
                                 db "L3CacheLclBwFillMon    ", 0
@@ -482,7 +482,7 @@ __AMDPQOSExtendedFeaturesBMEC:
                                 db "L3CacheRmtSlowBwFIllMon", 0
                                 db "L3CacheVicMon          ", 0
 
-; AMD; 80000021_EAX
+; AMD; CPUID.80000021H:EAX
 __AMDExtendedFeatureIdentifiers2Size = 84       ; 83 + null terminator
 __AMDExtendedFeatureIdentifiers2:
                                 db "NoNestedDataBp          Processor ignores nested data breakpoints                  ", 0
@@ -518,7 +518,7 @@ __AMDExtendedFeatureIdentifiers2:
                                 db "SRSO_USER_KERNEL_NO     No Speculative Return Stack Overflow vulnerability         ", 0
                                 db "SRSO_MSR_FIX            Use MSR_BP_CFG[BpSpecReduce] to mitigate SRSO vulnerability", 0
                                                                    
-; AMD; 80000026_ECX
+; AMD; CPUID.80000026H:ECX
 __AMDLevelTypeSize = 8 ; 7 + null terminator
 __AMDLevelType:                 db "Core   ", 0
                                 db "Complex", 0

@@ -2,7 +2,7 @@
 ; ===================================================================================
 ;
 ;  (c) Paul Alan Freshney 2022-2025
-;  v0.20, August 1st 2025
+;  v0.21, December 5th 2025
 ;
 ;  Source code:
 ;      https://github.com/MaximumOctopus/CPUIDx
@@ -13,7 +13,7 @@
 ; ===================================================================================
 ; =================================================================================== 
 
-; leaf 05h, data in eax, ebx, ecx
+; CPUID.05H, data in eax, ebx, ecx
 ; amd implementation
 AMDMonitorMWait:
 
@@ -57,7 +57,7 @@ AMDMonitorMWait:
 
 ; =============================================================================================
 
-; 06h leaf, data in eax and ecx
+; CPUID.06H, data in eax and ecx
 ; AMD implementation
 PowerManagementRelated:
 
@@ -86,7 +86,7 @@ PowerManagementRelated:
 
 ; =============================================================================================
 
-; 07h leaf, flags in ebx, ecx, and edx
+; CPUID.07H, flags in ebx, ecx, and edx
 ; amd implementation
 AMDStructuredExtendedFeatureIDs:
 
@@ -178,13 +178,13 @@ AMDStructuredExtendedFeatureIDs:
 
 ; =============================================================================================
 
-;leaf 0bh, data in eax, ebc, edx
+; CPUID.0BH, data in eax, ebc, edx
 ; AMD implementation
 ; for ecx = 0: ecx only contains thread level (1) in 15:8, and ecx input (0) in 7:0
 ; for ecx = 1: ecx only contains thread level (2) in 15:8, and ecx input (1) in 7:0
 AMDProcExtTopologyEnum:
 
-        cmp [__MaxBasic], 0x0b
+        cmp [__MaxBasic], 0x0B
         jl .fin
                 
         mov esi, dword __Leaf0B00
@@ -193,7 +193,7 @@ AMDProcExtTopologyEnum:
         cinvoke printf, "  Extended Topology Enumeration %c", 10
 
         mov ecx, 0
-        mov eax, 0x0b
+        mov eax, 0x0B
         cpuid
 
         mov edi, ebx
@@ -223,11 +223,11 @@ AMDProcExtTopologyEnum:
 
 ; =============================================================================================
 
-; leaf 0dh
+; CPUID.0DH
 ; amd implementation
 AMDProcExtStateEnum:
 
-        cmp [__MaxBasic], 0x0d
+        cmp [__MaxBasic], 0x0D
         jl .fin
                 
         mov esi, dword __Leaf0D00
@@ -236,7 +236,7 @@ AMDProcExtStateEnum:
         cinvoke printf, "  Processor Extended State Enumeration %c", 10
                 
         mov ecx, 0
-        mov eax, 0x0d                
+        mov eax, 0x0D                
         cpuid
                 
         mov edi, ecx
@@ -257,7 +257,7 @@ AMDProcExtStateEnum:
         call ShowLeafInformation
 
         mov ecx, 1
-        mov eax, 0x0d                
+        mov eax, 0x0D               
         cpuid
                 
         mov edi, eax
@@ -297,7 +297,7 @@ AMDProcExtStateEnum:
         call ShowLeafInformation
                 
         mov ecx, 2
-        mov eax, 0x0d                
+        mov eax, 0x0D                
         cpuid
                 
         mov edi, ebx
@@ -310,7 +310,7 @@ AMDProcExtStateEnum:
         call ShowLeafInformation
 
         mov ecx, 11
-        mov eax, 0x0d
+        mov eax, 0x0D
         cpuid
 
         mov edi, ebx
@@ -329,7 +329,7 @@ AMDProcExtStateEnum:
         call ShowLeafInformation
 
         mov ecx, 12
-        mov eax, 0x0d
+        mov eax, 0x0D
         cpuid
 
         mov edi, ebx
@@ -350,7 +350,7 @@ AMDProcExtStateEnum:
         call ShowLeafInformation
 
         mov ecx, 62
-        mov eax, 0x0d
+        mov eax, 0x0D
         cpuid
 
         mov edi, ebx
@@ -363,7 +363,7 @@ AMDProcExtStateEnum:
 
 ; =============================================================================================
 
-; leaf 0fh, data in eax, ebx, ecx, edx
+; CPUID.0FH, data in eax, ebx, ecx, edx
 ; amd implementation
 AMDPQOSMonitoring:
 
@@ -376,13 +376,13 @@ AMDPQOSMonitoring:
         call ShowLeafInformation
                 
         mov ecx, 0
-        mov eax, 0x0f
+        mov eax, 0x0F
         cpuid           
 
         cinvoke printf, "  AMD PQOS Monitoring (PQM) (EBX:0x%x EDX:0x%x) %c", ebx, edx, 10
 
         mov ecx, 0
-        mov eax, 0x0f
+        mov eax, 0x0F
         cpuid
                 
         mov esi, edx
@@ -398,7 +398,7 @@ AMDPQOSMonitoring:
         call ShowLeafInformation
 
         mov ecx, 1
-        mov eax, 0x0f
+        mov eax, 0x0F
         cpuid
 
         mov edi, ebx
@@ -443,7 +443,7 @@ AMDPQOSMonitoring:
 
 ; =============================================================================================
 
-; leaf 10h, data in eax, ebx, ecx, and edx
+; CPUID.10H, data in eax, ebx, ecx, and edx
 ; amd implementation
 AMDPQECapabilities:
 
@@ -505,7 +505,7 @@ AMDPQECapabilities:
 ; =============================================================================================
 ; =============================================================================================
 
-; extended leaf 80000001h
+; CPUID.80000001H
 ExtendedFeatures:
 
         mov eax, dword [__MaxExtended]
@@ -651,7 +651,7 @@ ExtendedFeatures:
 
 ; =============================================================================================
 
-; extended leaf 80000005h
+; CPUID.80000005H
 ; AMD only
 AMDCacheTLBLevelOne:
 
@@ -821,7 +821,7 @@ AMDCacheTLBLevelOneFromTable:
           
 ; =============================================================================================
 
-; extended leaf 80000006h
+; CPUID.80000006H
 ; AMD implementation
 AMDCacheTLBLevelThreeCache:
 
@@ -990,7 +990,7 @@ AMDCacheTLBLevelThreeCache:
 
 ; =============================================================================================
 
-; extended lead 80000007h, data in ebx, ecx, and edx
+; CPUID.80000007H, data in ebx, ecx, and edx
 ; AMD implementation
 PPMandRAS:
 
@@ -1071,7 +1071,7 @@ PPMandRAS:
 
 ; =============================================================================================
 
-; extended leaf 80000008h, data in eax, ebx, ecx, and edx
+; CPUID.80000008H, data in eax, ebx, ecx, and edx
 ; AMD implementation
 ProcessorCapacityParameters:
 
@@ -1172,7 +1172,7 @@ ProcessorCapacityParameters:
 
 ; =============================================================================================
 
-; leaf 8000000Ah
+; CPUID.8000000AH
 ; AMD only, data in eax, ebx, and edx
 AMDSVM: 
 
@@ -1251,7 +1251,7 @@ AMDSVM:
 
 ; =============================================================================================
 
-; extended leaf 800000019h, data in eax and ebx
+; CPUID.800000019H, data in eax and ebx
 ; AMD only
 AMDTLBCharacteristics:
 
@@ -1351,7 +1351,7 @@ AMDTLBCharacteristics:
 
 ; =============================================================================================
 
-; extended leaf 8000001Ah, data in eax
+; CPUID.8000001AH, data in eax
 ; AMD only
 AMDPerformanceOptimisation:
 
@@ -1393,7 +1393,7 @@ AMDPerformanceOptimisation:
 
 ; =============================================================================================
 
-; extended leaf 80000001Bh, data in eax
+; CPUID.80000001BH, data in eax
 ; AMD only
 AMDIBS: mov eax, dword [__MaxExtended]
 
@@ -1431,7 +1431,7 @@ AMDIBS: mov eax, dword [__MaxExtended]
 
 ; =============================================================================================
 
-; leaf 8000001ch, data in eax, ebx, and ecx
+; CPUID.8000001CH, data in eax, ebx, and ecx
 ; amd only
 AMDLightweightProfiling:
 
@@ -1589,7 +1589,7 @@ showa:  mov esi, 0              ; bit counter
 
 ; =============================================================================================
 
-; leaf 8000001dh, data in eax, ebx, ecx, and edx
+; CPUID.8000001DH, data in eax, ebx, ecx, and edx
 ; AMD only, data in eax
 AMDCache:
 
@@ -1755,7 +1755,7 @@ AMDCache:
 
 ; =============================================================================================
 
-; leaf 8000001eh, data in eax, ebx, and ecx
+; CPUID.8000001EH, data in eax, ebx, and ecx
 ; AMD only
 AMDProcTopology:
 
@@ -1810,7 +1810,7 @@ AMDProcTopology:
 
 ; =============================================================================================             
 
-; leaf 8000001fh
+; CPUID.8000001FH
 ; AMD only, data in eax
 AMDEMS: mov eax, dword [__MaxExtended]
 
@@ -1881,7 +1881,7 @@ AMDEMS: mov eax, dword [__MaxExtended]
 
 ; =============================================================================================            
 
-; leaf 80000020h
+; CPUID.80000020H
 ; AMD only, data in eax, ebx, ecx, and edx 
 AMDQOS: mov eax, dword [__MaxExtended]
 
@@ -2037,7 +2037,7 @@ AMDQOS: mov eax, dword [__MaxExtended]
 
 ; =============================================================================================
 
-; leaf 80000021h
+; CPUID.80000021H
 ; AMD only, data in eax and ebx
 AMDEFI2: 
 
@@ -2106,7 +2106,7 @@ AMDEFI2:
 
 ; =============================================================================================
 
-; leaf 80000022h
+; CPUID.80000022H
 ; AMD only, data in eax and ebx
 AMDExtPMandD:
 
@@ -2165,7 +2165,7 @@ AMDExtPMandD:
                 
 ; =============================================================================================
 
-; leaf 80000023h
+; CPUID.80000023H
 ; AMD only, data in eax and ebx
 AMDMultiKeyEMC:
 
@@ -2201,14 +2201,14 @@ AMDMultiKeyEMC:
 
 ; =============================================================================================
 
-; leaf 80000024h
+; CPUID.80000024H
 ; AMD only
 
 ; Reserved
 
 ; =============================================================================================
 
-; leaf 80000025h
+; CPUID.80000025H
 ; AMD only, data in eax and ebx
 AMDSEV2:
 
@@ -2257,7 +2257,7 @@ AMDSEV2:
 
 ; =============================================================================================
 
-; leaf 80000026h
+; CPUID.80000026H
 ; AMD only, data in eax and ebx
 AMDExtendedCPUTop:
 

@@ -2,7 +2,7 @@
 ; ===================================================================================
 ;
 ;  (c) Paul Alan Freshney 2022-2025
-;  v0.20, August 1st 2025
+;  v0.21, December 5th 2025
 ;
 ;  Source code:
 ;      https://github.com/MaximumOctopus/CPUIDx
@@ -13,7 +13,7 @@
 ; ===================================================================================
 ; =================================================================================== 
 
-; leaf 02h, returns data (as bytes, max of 4 per register) in eax, ebc, ecx, and edx
+; CPUID.02H, returns data (as bytes, max of 4 per register) in eax, ebc, ecx, and edx
 ; Intel only, not supported by AMD
 InternalCache:
 
@@ -139,7 +139,7 @@ GetStringAddress:
                                 
 ; =============================================================================================
 
-; leaf 04, data returned in eax, ebx, and ecx
+; CPUID.04H.00H, data returned in eax, ebx, and ecx
 ; Intel only, not supported by AMD
 CacheTlb:
 
@@ -258,7 +258,7 @@ ShowCache:
                 
 ; =============================================================================================
 
-; leaf 05h, data in eax, ebx, ecx, edx
+; CPUID.05H, data in eax, ebx, ecx, edx
 ; intel implementation
 MonitorMWait:
 
@@ -291,7 +291,7 @@ MonitorMWait:
         bt edi, 0
         jnc .notsupported       ; Monitor-Wait extension beyond EAX/EBX not supported
                 
-        bt edi, kInterruptsBreakEventMWAIT
+        bt edi, kINTERRUPT_AS_BREAK_EVENT
         jnc .cstates
                 
         cinvoke printf, "    Supports treating interrupts as break-event for MWAIT, even when interrupts disabled. %c", 10
@@ -323,7 +323,7 @@ MonitorMWait:
                
 ; =============================================================================================
 
-; 06h leaf, data in eax
+; CPUID.06H, data in eax
 ; Intel implementation
 ThermalPower:
 
@@ -360,7 +360,7 @@ ThermalPower:
 
 ; =================================================================================== 
 
-; 07h leaf, flags in ebx, ecx, and edx
+; CPUID.07H, flags in ebx, ecx, and edx
 ; intel implementation
 StructuredExtendedFeatureFlags:
 
@@ -497,7 +497,7 @@ showe:  mov esi, 0
 
         jne .lfs1
                 
-; sub-leaf 1, ebx
+; CPUID.07H.01:EBX
 
         mov ecx, 0x01
         mov eax, 0x07           ; sub-leaf 1   
@@ -513,14 +513,14 @@ showe:  mov esi, 0
 .b0100: bt esi, kIA32_PPIN
         jnc .b0103
                 
-        cinvoke printf, "    IA32_PPIN and IA32_PPIN_CTL MSRs %c", 10
+        cinvoke printf, "    PPIN: IA32_PPIN and IA32_PPIN_CTL MSRs %c", 10
                 
 .b0103: bt esi, kCPUIDMAXVAL_LIM_RMV
         jnc .sl1d
                 
         cinvoke printf, "    CPUIDMAXVAL_LIM_RMV. IA32_MISC_ENABLE cannot be set to 1 to limit CPUID.00H:EAX[bits 7:0] %c", 10
 
-; sub-leaf 1
+; CPUID.07H.01H
 
 .sl1d:  mov ecx, 0x01
         mov eax, 0x07           ; sub-leaf 1   
@@ -553,6 +553,8 @@ showg:  mov esi, 0
         jne .lfs1d
                 
         jmp sl72
+
+; CPUID.07H.02H
 
 subleaf2: ; sub-leaf 2
 
@@ -604,12 +606,12 @@ sl72:  mov esi, dword __Leaf0702
         cinvoke printf, "    MCDT_NO. %c", 10
         cinvoke printf, "    Processor does not exhibit MXCSR Configuration Dependent Timing (MCDT) %c", 10
                 
-.d0206: bt edi, kUCLockDisable
+.d0206: bt edi, kUC_LOCK_DISABLE
         jnc .d0207
 
         cinvoke printf, "    Supports the UC-lock disable feature and it causes #AC %c", 10             
 
-.d0207: bt edi, 7
+.d0207: bt edi, kMONITOR_MITG_NO
         jnc .fin
 
         cinvoke printf, "    MONITOR_MITG_NO. %c", 10
@@ -622,10 +624,15 @@ sl72:  mov esi, dword __Leaf0702
 
 .fin:
         ret
-                
+
+; =============================================================================================
+; CPUID.08H (intel)
+;
+; reserved
+;
 ; =============================================================================================
 
-; leaf 09h, data in eax only
+; CPUID.09H, data in eax only
 ; Intel only, not supported by AMD
 DirectCacheAccessInfo:
 
@@ -645,7 +652,7 @@ DirectCacheAccessInfo:
 
 ; =============================================================================================
 
-; leaf 0ah
+; CPUID.0AH
 ; intel only
 ArchitecturalPerfMon:
 
@@ -716,10 +723,10 @@ ArchitecturalPerfMon:
 
         shr eax, 24
         and eax, 0x000000FF     ; isolate event bit vector EAX[31:24]
-                mov edi, eax
+        mov edi, eax
         mov esi, ebx
 
-.b1:    bt esi, 0
+.b1:    bt esi, kCORE_CYC_NA
         jc .b1n
 
         cmp edi, 1
@@ -730,7 +737,7 @@ ArchitecturalPerfMon:
 
 .b1n:   cinvoke printf, "    Core cycle event not available %c", 10
 
-.b2:    bt esi, 1
+.b2:    bt esi, kINTR_RET_NA
         jc .b2n
 
         cmp edi, 2
@@ -741,7 +748,7 @@ ArchitecturalPerfMon:
 
 .b2n:   cinvoke printf, "    Instruction retired event not available %c", 10
 
-.b3:    bt esi, 2
+.b3:    bt esi, kREF_CYC_NA
         jc .b3n
 
         cmp edi, 3
@@ -752,7 +759,7 @@ ArchitecturalPerfMon:
 
 .b3n:   cinvoke printf, "    Reference cycles event not available %c", 10
 
-.b4:    bt esi, 3
+.b4:    bt esi, kLLC_CYC_NA
         jc .b4n
 
         cmp edi, 4
@@ -763,7 +770,7 @@ ArchitecturalPerfMon:
 
 .b4n:   cinvoke printf, "    Last-level cache reference event not available %c", 10
 
-.b5:    bt esi, 4
+.b5:    bt esi, kLLC_MISSES_NA
         jc .b5n
 
         cmp edi, 5
@@ -774,7 +781,7 @@ ArchitecturalPerfMon:
 
 .b5n:   cinvoke printf, "    Last-level cache misses event not available %c", 10
 
-.b6:    bt esi, 5
+.b6:    bt esi, kBR_INSTR_RET_NA
         jc .b6n
 
         cmp edi, 6
@@ -785,7 +792,7 @@ ArchitecturalPerfMon:
 
 .b6n:   cinvoke printf, "    Branch instruction retired event not available %c", 10
 
-.b7:    bt esi, 6
+.b7:    bt esi, kBR_MISPRED_RET_NA
         jc .b7n
 
         cmp edi, 7
@@ -796,7 +803,7 @@ ArchitecturalPerfMon:
 
 .b7n:   cinvoke printf, "    Branch mispredict retired event not available %c", 10
 
-.b8:    bt esi, 7
+.b8:    bt esi, kSLOTS_NA
         jc .b8n
 
         cmp edi, 8
@@ -811,24 +818,24 @@ ArchitecturalPerfMon:
 
 ; =============================================================================================
 
-; leaf 0bh, data in eax, ebx, ecx, and edx
+; CPUID.0BH, data in eax, ebx, ecx, and edx
 ; intel implementation
 ExtendedTopology:
 
-        cmp [__MaxBasic], 0x1f                  ; 0x1f is the preferred topology leaf, if it's valid on this CPU, ignore 0bh
+        cmp [__MaxBasic], 0x1F                  ; 0x1f is the preferred topology leaf, if it's valid on this CPU, ignore 0bh
         jge .fin
                 
         mov esi, dword __Leaf1F00
         call ShowLeafInformation
                 
         mov ecx, 0
-        mov eax, 0x1f                
+        mov eax, 0x1F                
         cpuid              
 
         cinvoke printf, "  Extended Topology Enumeration (EAX:0x%x EBX:0x%x ECX:0x%x EDX:0x%x) %c", eax, ebx, ecx, edx, 10
 
         mov ecx, 0
-        mov eax, 0x1f   
+        mov eax, 0x1F   
         cpuid
                 
         cmp eax, 0
@@ -843,7 +850,7 @@ ExtendedTopology:
         cinvoke printf, "%c", 10
 
         mov ecx, 0
-.loop:  mov eax, 0x1f   
+.loop:  mov eax, 0x1F  
         cpuid
                 
         cmp eax, 0
@@ -882,8 +889,13 @@ ExtendedTopology:
 .fin:   ret
 
 ; =============================================================================================
+; CPUID.0CH (intel)
+;
+; reserved
+;
+; =============================================================================================
 
-;leaf 0dh (ecx=0), data in eax, ebx, ecx
+; CPUID.0DH.00H, data in eax, ebx, ecx
 ; intel implementation
 ProcExtStateEnumMain:
 
@@ -934,7 +946,8 @@ ProcExtStateEnumMain:
 
 .fin:   ret
 
-;leaf 0dh (ecx=1), data in eax, ebx, ecx
+; CPUID.0DH.01H, data in eax, ebx, ecx
+
 ProcExtStateEnumSub1:
 
         cmp [__MaxBasic], 0x0D
@@ -986,8 +999,13 @@ ProcExtStateEnumSub1:
 .fin:   ret
 
 ; =============================================================================================
+; CPUID.0EH (intel)
+;
+; reserved
+;
+; =============================================================================================
 
-; leaf 0fh, sub leaf 0 and 1
+; CPUID.0FH.00H
 ; intel implementation
 IntelRDTMonitoring:
 
@@ -1013,11 +1031,13 @@ IntelRDTMonitoring:
                 
         cinvoke printf, "    Max Range of RMID within this physical processor: 0x%x %c", eax, 10
 
-        bt edi, kL3CacheIntelRDTM
+        bt edi, kCMT_L3
         jnc .subleaf
                 
         cinvoke printf, "    Supports L3 Cache Intel RDT Monitoring %c", 10
                 
+; CPUID.0FH.01H				
+				
 .subleaf:
 
         mov esi, dword __Leaf0F01
@@ -1041,17 +1061,17 @@ IntelRDTMonitoring:
 
         cinvoke printf, "    %d-bit counters are supported %c", eax, 10
 
-.bit8:  bt edi, kIA32_QM_CTR
+.bit8:  bt edi, kRDT_M_OVF
         jnc .bit9
                 
         cinvoke printf, "    Overflow bit in IA32_QM_CTR MSR bit 61 %c", 10
                 
-.bit9:  bt edi, kRDT_CMT
+.bit9:  bt edi, kIO_QOS_CMT
         jnc .bita
 
         cinvoke printf, "    Non-CPU agent Intel RDT CMT support %c", 10
                 
-.bita:  bt edi, kRDT_MBM
+.bita:  bt edi, kIO_QOS_MBM
         jnc .next               
                 
         cinvoke printf, "    Non-CPU agent Intel RDT MBM support %c", 10
@@ -1069,17 +1089,17 @@ IntelRDTMonitoring:
 
         cinvoke printf, "    Maximum range of RMID of this resource type: 0x%x %c", edi, 10
 
-        bt esi, kL3OccupancyMonitoring
+        bt esi, kCMT_L3_OCCUP
         jnc .bit1
 
         cinvoke printf, "    Supports L3 occupancy monitoring %c", 10
                 
-.bit1:  bt esi, kL3TotalBandwidthMonitoring
+.bit1:  bt esi, kCMT_L3_TOTAL
         jnc .bit2
                 
         cinvoke printf, "    Supports L3 Total Bandwidth monitoring %c", 10
                 
-.bit2:  bt esi, kL3LocalBandwidthMonitoring
+.bit2:  bt esi, kCMT_L3_LOCAL
         jnc .fin
 
         cinvoke printf, "    Supports L3 Local Bandwidth monitoring %c", 10
@@ -1088,7 +1108,7 @@ IntelRDTMonitoring:
 
 ; =============================================================================================                     
 
-; leaf 10h, sub-leaf 0 (data in ebx only)
+; CPUID.10H.00H (data in ebx only)
 ; intel implementation
 IntelRDTAllocEnum:
 
@@ -1106,22 +1126,22 @@ IntelRDTAllocEnum:
                 
         cinvoke printf, "  Intel Resource Director Technology Allocation Enumeration (EBX:0x%x) %c", edi, 10
                 
-.bit1:  bt edi, kL3CacheAllocationTechnology
+.bit1:  bt edi, kCAT_L3
         jnc .bit2
                 
         cinvoke printf, "    Supports L3 Cache Allocation Technology %c", 10
 
-.bit2:  bt edi, kL2CacheAllocationTechnology
+.bit2:  bt edi, kCAT_L2
         jnc .bit3
                 
         cinvoke printf, "    Supports L2 Cache Allocation Technology %c", 10
 
-.bit3:  bt edi, kMemoryBandwidthAllocation
+.bit3:  bt edi, kMBA
         jnc .subleaf1
                 
         cinvoke printf, "    Supports Memory Bandwidth Allocation %c", 10
                 
-; leaf 10h, leaf 1 (data in eax, ebx, ecx, and edx)
+; CPUID.10H.01H (data in eax, ebx, ecx, and edx)
 
 .subleaf1:
 
@@ -1154,12 +1174,12 @@ IntelRDTAllocEnum:
         mov edi, ecx
         mov esi, edx
                 
-.bit11: bt edi, kL3CATNonCPUAgent
+.bit11: bt edi, kCAT_L3_NONCPU
         jnc .bit12
                                 
         cinvoke printf, "    L3 CAT for non-CPU agents is supported %c", 10
                                 
-.bit12: bt edi, kL3CPT
+.bit12: bt edi, kCAT_L3_CDP
         jnc .cpns1
                 
         cinvoke printf, "    L3 Code and Prioritization Technology supported %c", 10
@@ -1170,7 +1190,7 @@ IntelRDTAllocEnum:
 
         cinvoke printf, "    L3 Code and Prioritization Technology not supported %c", 10
 
-.bit13: bt edi, kNonContiguousCapacityBitmask
+.bit13: bt edi, kCAT_L3_NONCONTIG
         jnc .hcos1
                 
         cinvoke printf, "    Non-contiguous capacity bitmask is supported %c", 10
@@ -1182,7 +1202,7 @@ IntelRDTAllocEnum:
                 
         cinvoke printf, "    Highest CLOS number supported for ResID: %d %c", esi, 10
 
-; leaf 10h, sub-leaf 2 (data in eax, ebx, ecx, and edx)
+; CPUID.10H.02H (data in eax, ebx, ecx, and edx)
 
 .subleaf2:
 
@@ -1215,7 +1235,7 @@ IntelRDTAllocEnum:
         mov edi, ecx
         mov esi, edx
                 
-.bit22: bt edi, kL2CDPT
+.bit22: bt edi, kCAT_L2_CDP
         jnc .bit23
                 
         cinvoke printf, "    L2 Code and Data Prioritization Technology supported %c", 10
@@ -1226,7 +1246,7 @@ IntelRDTAllocEnum:
 
         cinvoke printf, "    Code and Prioritization Technology not supported %c", 10
 
-.bit23: bt edi, kNonContiguousCapacityBitmask
+.bit23: bt edi, kCAT_L2_NONCONTIG
         jnc .hcos2
 
         cinvoke printf, "    Non-contiguous capacity bitmask is supported %c", 10
@@ -1238,7 +1258,7 @@ IntelRDTAllocEnum:
                 
         cinvoke printf, "    Highest COS number supported for ResID 2: %d %c", esi, 10
 
-; leaf 10h, sub-leaf 3 (data in eax, ecx, and edx)
+; CPUID.10H.03H (data in eax, ecx, and edx)
 
 .subleaf3:
 
@@ -1263,7 +1283,7 @@ IntelRDTAllocEnum:
                 
         cinvoke printf, "    Max MBA throttling value supported by ResID 3: %d %c", eax, 10
                 
-        bt edi, kDelayValuesLinear
+        bt edi, kMBA_LINEAR
         jnc .dnl
                 
         cinvoke printf, "    Response of the delay values is linear %c", 10
@@ -1272,7 +1292,7 @@ IntelRDTAllocEnum:
                 
 .dnl:   cinvoke printf, "    Response of the delay values is not linear %c", 10
 
-.hcos3: and esi, 0x0000FFFF
+.hcos3: and esi, 0x0000FFFF	; MBA_MAX_CLOS
 
         cinvoke printf, "    Highest COS number supported for ResID 3: %d %c", esi, 10
 
@@ -1280,6 +1300,11 @@ IntelRDTAllocEnum:
 
         ret
 
+; =============================================================================================
+; CPUID.11H (intel)
+;
+; reserved
+;
 ; =============================================================================================
 
 ; leaf 12h, ecx = 1, data in eax, ebx, and edx
@@ -1312,33 +1337,33 @@ IntelSGXCapability:
         mov edi, ebx
         mov esi, edx
                 
-        bt eax, kSGX1Leaf
+        bt eax, kSGX1
         jnc .bit1
                 
         push eax
         cinvoke printf, "    Intel SGX supports the collection of SGX1 leaf functions %c", 10
         pop eax
                 
-.bit1:  bt eax, kSGX2Leaf
-        jnc .bit5
+.bit1:  bt eax, kSGX2
+        jnc .bit7
                 
         push eax
         cinvoke printf, "    Intel SGX supports the collection of SGX2 leaf functions %c", 10
         pop eax
                 
-.bit5:  bt eax, kENCLVx
-        jnc .bit6
+;.bit5:  bt eax, kENCLVx	; removed in the June 2025 update
+;        jnc .bit6
+;
+;        push eax
+;        cinvoke printf, "    Intel SGX supports ENCLV instructions (EINCVIRTCHILD, EDECVIRTCHILD, and ESETCONTEXT) %c", 10
+;        pop eax
 
-        push eax
-        cinvoke printf, "    Intel SGX supports ENCLV instructions (EINCVIRTCHILD, EDECVIRTCHILD, and ESETCONTEXT) %c", 10
-        pop eax
-
-.bit6:  bt eax, kENCLSx
-        jnc .bit7
+;.bit6:  bt eax, kENCLSx
+;        jnc .bit7
                 
-        push eax
-        cinvoke printf, "    Intel SGX supports ENCLS instructions (ETRACKC, ERDINFO, ELDBC, and ELDUC) %c", 10
-        pop eax
+;        push eax
+;        cinvoke printf, "    Intel SGX supports ENCLS instructions (ETRACKC, ERDINFO, ELDBC, and ELDUC) %c", 10
+;        pop eax
                 
 .bit7:  bt eax, kEVERIFYREPORT2
         jnc .bit10
@@ -1367,14 +1392,14 @@ IntelSGXCapability:
                 
         and eax, 0x000000FF
                 
-        cinvoke printf, "    MaxEnclaveSize_Not64 = 2^%d %c", eax, 10
+        cinvoke printf, "    MAX_ENCLAVE_SIZE_NOT_64 = 2^%d %c", eax, 10
                 
         shr esi, 8
         and esi, 0x000000FF
 
-        cinvoke printf, "    MaxEnclaveSize_64 = 2^%d %c", esi, 10
+        cinvoke printf, "    MAX_ENCLAVE_SIZE_64 = 2^%d %c", esi, 10
 
-; leaf 12h ecx = 1, data in eax, ebx, ecx, and edx
+; CPUID.12H.01H, data in eax, ebx, ecx, and edx
 
         cinvoke printf, "%c", 10
 
@@ -1397,7 +1422,7 @@ IntelSGXCapability:
 
         cinvoke printf, "    SECS.ATTRIBUTES[127:96] = 0x%x %c", esi, 10
 
-; leaf 12h ecx = 2, data in eax, ebx, ecx, and edx
+; CPUID.12H.02H, data in eax, ebx, ecx, and edx
 
         mov esi, dword __Leaf1202
         call ShowLeafInformation
@@ -1445,8 +1470,13 @@ IntelSGXCapability:
         ret
 
 ; =============================================================================================
+; CPUID.13H (intel)
+;
+; reserved
+;
+; =============================================================================================
 
-; leaf 14h, data in eax, ebx, and ecx
+; CPUID.14H, data in eax, ebx, and ecx
 ; Intel only
 IntelProcessorTrace:
 
@@ -1469,22 +1499,22 @@ IntelProcessorTrace:
         mov edi, ebx
         mov esi, ecx
                 
-.bbit0: bt edi, kIA32_RTIT_CTL
+.bbit0: bt edi, kCR3_FILTER
         jnc .bbit1
                 
         cinvoke printf, "    IA32_RTIT_CTL.CR3Filter can be set to 1, IA32_RTIT_CR3_MATCH MSR can be accessed %c", 10
 
-.bbit1: bt edi, kConfigurablePSB
+.bbit1: bt edi, kCYC_ACC
         jnc .bbit2
 
         cinvoke printf, "    Configurable PSB and Cycle-Accurate Mod is supported %c", 10
 
-.bbit2: bt edi, kIPFiltering
+.bbit2: bt edi, kIP_FILTER
         jnc .bbit3
 
         cinvoke printf, "    IP Filtering, TraceStop filtering, and preservation of Intel PT MSRs across warm reset. %c", 10
 
-.bbit3: bt edi, kMTCTimingPacket
+.bbit3: bt edi, kMTC
         jnc .bbit4
 
         cinvoke printf, "    MTC timing packet and suppression of COFI-based packets is supported %c", 10
@@ -1495,51 +1525,51 @@ IntelProcessorTrace:
         cinvoke printf, "    PTWRITE. Writes can set IA32_RTIT_CTL[12] (PTWEn) and IA32_RTIT_CTL[5] (FUPonPTW),%c", 10
         cinvoke printf, "      and PTWRITE can generate packets is supported %c", 10
 
-.bbit5: bt edi, kPwrEvtEn
+.bbit5: bt edi, kPWR_EVT_TRACE
         jnc .bbit6
 
         cinvoke printf, "    Power Event Trace. Writes can set IA32_RTIT_CTL[4] (PwrEvtEn), enabling Power Event Trace packet generation. %c", 10
 
-.bbit6: bt edi, kInjectPsbPmiOnEnable
+.bbit6: bt edi, kPMI_PRESERVE
         jnc .bbit7
 
         cinvoke printf, "    PSB and PMI preservation. Writes can set IA32_RTIT_CTL[56] (InjectPsbPmiOnEnable), enabling the processor %c", 10 
         cinvoke printf, "      to set IA32_RTIT_STATUS[7] (PendTopaPMI) and/or IA32_RTIT_STATUS[6] (PendPSB) in order to preserve ToPA PMIs %c", 10
         cinvoke printf, "      and/or PSBs otherwise lost due to Intel PT disable. Writes can also set PendToPAPMI and PendPSB. %c", 10
 
-.bbit7: bt edi, kEventEn
+.bbit7: bt edi, kEVENT_TRACE
         jnc .bbit8
 
         cinvoke printf, "    Writes can set IA32_RTIT_CTL[31] (EventEn), enabling Event Trace packet generation %c", 10
 
-.bbit8: bt edi, kDisTNT
+.bbit8: bt edi, kTNT_DIS
         jnc .cbit0
 
         cinvoke printf, "    Writes can set IA32_RTIT_CTL[55] (DisTNT), disabling TNT packet generation %c", 10
 
-.cbit0: bt esi, kTracingIA32_RTIT_CTL
+.cbit0: bt esi, kTOPAOUT
         jnc .cbit1
 
         cinvoke printf, "    Tracing can be enabled with IA32_RTIT_CTL.ToPA = 1, hence utilizing the ToPA output scheme; %c", 10
         cinvoke printf, "      IA32_RTIT_OUTPUT_BASE and IA32_RTIT_OUTPUT_MASK_PTRS MSRs can be accessed %c", 10
                 
-.cbit1: bt esi, kToPATables
+.cbit1: bt esi, kMENTRY
         jnc .cbit2
 
         cinvoke printf, "    ToPA tables can hold any number of output entries, up to the maximum allowed by the MaskOrTableOffset %c", 10
         cinvoke printf, "      field of IA32_RTIT_OUTPUT_MASK_PTRS %c", 10
                 
-.cbit2: bt esi, kSingleRangeOutput
+.cbit2: bt esi, kSNGL_RNG_OUT
         jnc .cbit3
 
         cinvoke printf, "    Single-Range Output scheme is supported %c", 10
 
-.cbit3: bt esi, kTraceTransportSubsystem
+.cbit3: bt esi, kTRACE_TRANSPORT_SUBSYSTEM
         jnc .cbitx
 
         cinvoke printf, "    Indicates support of output to Trace Transport subsystem %c", 10
 
-.cbitx: bt esi, kIPPayloadsLIPValues
+.cbitx: bt esi, kLIP
         jnc .fin
 
         cinvoke printf, "    Generated packets which contain IP payloads have LIP values, which include the CS base component %c", 10
@@ -1592,7 +1622,7 @@ IntelProcessorTrace:
 
 ; =============================================================================================
 
-; leaf 15h, data in eax, ebx, and ecx
+; CPUID.15H, data in eax, ebx, and ecx
 ; intel only
 TimeStampCounter:
 
@@ -1624,7 +1654,7 @@ TimeStampCounter:
 
         cinvoke printf, "    Core crystal clock is not enumerated %c", 10
                 
-.nf:    cmp edi, 0
+.nf:    cmp edi, 0       ; NOMINAL_ART_FREQUENCY
         je .nfnotenumerated
                 
         cinvoke printf, "    Core crystal clock nominal freq: %d Hz %c", edi, 10
@@ -1639,7 +1669,7 @@ TimeStampCounter:
 
 ; =============================================================================================
 
-; leaf 16h, data in eax, ebx, and ecx
+; CPUID.16H, data in eax, ebx, and ecx
 ; intel only
 ProcessorFreqInfo:
 
@@ -1663,7 +1693,7 @@ ProcessorFreqInfo:
         cinvoke printf, "  Processor Frequency Information (EAX:0x%x EBX:0x%x ECX:0x%x) %c", eax, edi, esi, 10
         pop eax
 
-.bf:    cmp eax, 0
+.bf:    cmp eax, 0      ; PROCESSOR_BASE_FREQUENCY
         je .bfns
 
         cinvoke printf, "    Base Frequency      : %d MHz %c", eax, 10
@@ -1672,7 +1702,7 @@ ProcessorFreqInfo:
                 
 .bfns:  cinvoke printf, "    Base Frequency      : Unknown %c", 10
 
-.mf:    cmp edi, 0
+.mf:    cmp edi, 0       ; MAXIMUM_FREQUENCY
         je .mfns
 
         cinvoke printf, "    Maximum Frequency   : %d MHz %c", edi, 10
@@ -1681,7 +1711,7 @@ ProcessorFreqInfo:
                 
 .mfns:  cinvoke printf, "    Maximum Frequency   : Unknown %c", 10
                 
-.rf:    cmp esi, 0
+.rf:    cmp esi, 0       ; BUS_FREQUENCY
         je .rfns
                 
         cinvoke printf, "    Bus (Ref) Frequency :  %d MHz %c", esi, 10
@@ -1694,7 +1724,7 @@ ProcessorFreqInfo:
 
 ; =============================================================================================
 
-; leaf 17h, data in eax, ebx, ecx, and edx
+; CPUID.17H, data in eax, ebx, ecx, and edx
 ; intel only
 SoCVendor:
 
@@ -1719,10 +1749,10 @@ SoCVendor:
 
         cinvoke printf, "    SOC Vendor ID: 0x%x %c", ebx, 10
 
-        bt edi, kIsVendorScheme
+        bt edi, kIS_VENDOR_SCHEME
         jnc .p2
 
-        cinvoke printf, "    IsVendorScheme (vendor ID is industry standard) %c", ebx, 10
+        cinvoke printf, "    IS_VENDOR_SCHEME (vendor ID is industry standard) %c", ebx, 10
 
 .p2:    mov ecx, 0
         mov eax, 0x17
@@ -1739,7 +1769,7 @@ SoCVendor:
 
 ; =============================================================================================
 
-; leaf 18h, data in eax, ebx, ecx, and edx
+; CPUID.18H, data in eax, ebx, ecx, and edx
 ; intel only
 DATParameters:
 
@@ -1803,22 +1833,22 @@ DATParameters:
 
         add edi, 13*5
 
-.bit0:  bt ebx, k4PageSize
+.bit0:  bt ebx, k4KB_ENTRIES
         jnc .bit1
 
         cinvoke printf, "    %s 4K page size, %d ways of associativity, %d sets %c", edi, eax, ecx, 10
 
-.bit1:  bt ebx, k2MBPageSize
+.bit1:  bt ebx, k2MB_ENTRIES
         jnc .bit2
                 
         cinvoke printf, "    %s 2MB page size, %d ways of associativity, %d sets %c", edi, eax, ecx, 10
 
-.bit2:  bt ebx, k4MBPageSize
+.bit2:  bt ebx, k4MB_ENTRIES
         jnc .bit3
 
         cinvoke printf, "    %s 4MB page size, %d ways of associativity, %d sets %c", edi, eax, ecx, 10
 
-.bit3:  bt ebx, k1GBPageSize
+.bit3:  bt ebx, k1GB_ENTRIES
         jnc .next
                 
         cinvoke printf, "    %s 1GB page size, %d ways of associativity, %d sets %c", edi, eax, ecx, 10
@@ -1831,7 +1861,7 @@ DATParameters:
 
 ; =============================================================================================
 
-; leaf 19h, data in eax, ebx, and ecx
+; CPUID.19H, data in eax, ebx, and ecx
 ; intel only
 KeyLocker:
 
@@ -1851,17 +1881,17 @@ KeyLocker:
 
         mov edi, eax
 
-        bt edi, kKLCPL0
+        bt edi, kCPL0_RESTRICT
         jnc .a01
 
         cinvoke printf, "    Key Locker restriction of CPL0-only supported %c", 10
 
-.a01:   bt edi, kKLNoEncrypt
+.a01:   bt edi, kNO_ENCRYPT_RESTRICT
         jnc .a02
 
         cinvoke printf, "    Key Locker restriction of no-encrypt supported %c", 10
 
-.a02:   bt edi, kKLNoDecrypt
+.a02:   bt edi, kNO_DECRYPT_RESTRICT
         jnc .b00
 
         cinvoke printf, "    Key Locker restriction of no-decrypt supported %c", 10
@@ -1877,24 +1907,24 @@ KeyLocker:
                 
         cinvoke printf, "    AESKLE. AES Key Locker instructions are fully enabled %c", 10
                 
-.b02:   bt edi, kAESWideKeyLockerInstructions
+.b02:   bt edi, kAES_WIDE
         jnc .b04
                 
         cinvoke printf, "    AES wide Key Locker instructions are supported %c", 10
 
-.b04:   bt edi, kKeyLockerMSRs
+.b04:   bt edi, kIWKEYBACKUP
         jnc .c00
 
         cinvoke printf, "    Platform supports the Key Locker MSRs %c", 10
         cinvoke printf, "      (IA32_COPY_LOCAL_TO_PLATFORM, IA23_COPY_PLATFORM_TO_LOCAL, %c", 10
         cinvoke printf, "       IA32_COPY_STATUS, and IA32_IWKEYBACKUP_STATUS) %c", 10
 
-.c00:   bt esi, kLOADIWKEYNoBackup
+.c00:   bt esi, kNOBACKUP
         jnc .c01
 
         cinvoke printf, "    NoBackup parameter to LOADIWKEY is supported %c", 10
 
-.c01:   bt esi, kKeySourceEncodingOne
+.c01:   bt esi, kRAND_IWKEY
         jnc .fin
 
         cinvoke printf, "    KeySource encoding of 1 (randomization of the internal wrapping key) is supported %c", 10
@@ -1903,11 +1933,11 @@ KeyLocker:
 
 ; =============================================================================================
 
-; leaf 1ah, data in eax
+; CPUID.1AH, data in eax
 ; intel only
 NativeModelIDEnumeration:
 
-        cmp [__MaxBasic], 0x1a
+        cmp [__MaxBasic], 0x1A
         jl .finish
                 
         mov esi, dword __Leaf1A00
@@ -1916,7 +1946,7 @@ NativeModelIDEnumeration:
         cinvoke printf, "  Native Model ID Enumeration %c", 10
 
         mov ecx, 0
-        mov eax, 0x1a   
+        mov eax, 0x1A   
         cpuid
                 
         cmp eax, 0
@@ -1947,7 +1977,7 @@ NativeModelIDEnumeration:
 
 ; =============================================================================================
 
-; leaf 1bh, data in eax, ebx, ecx, and edx
+; CPUID.1BH, data in eax, ebx, ecx, and edx
 ; intel only
 GetPCONFIG:
 
@@ -1955,14 +1985,14 @@ GetPCONFIG:
         call ShowLeafInformation
 
         mov ecx, 0
-        mov eax, 0x1b                
+        mov eax, 0x1B                
         cpuid
                 
         cmp eax, 0              ; value of 0 in eax indicates no support
         je .fin
                 
         mov ecx, 1              ; only other sub-leaf currently supported
-        mov eax, 0x1b   
+        mov eax, 0x1B  
         cpuid
 
         cinvoke printf, "  PCONFIG: EAX:0x%x EBX:0x%x ECX:0x%x EDX:0x%x %c", eax, ebx, ecx, edx, 10
@@ -1971,7 +2001,7 @@ GetPCONFIG:
 
 ; =============================================================================================
 
-; leaf 1ch, data in eax, ebx, and ecx
+; CPUID.1CH, data in eax, ebx, and ecx
 ; intel only
 LastBranchRecords:
 
@@ -2003,12 +2033,12 @@ LastBranchRecords:
         cmp esi, 8
         jne .lbr
                 
-        bt edi, kDeepCStateReset
+        bt edi, kDEEP_C_STATE_RESET
         jnc .a31
                 
         cinvoke printf, "    Deep C-state Reset %c", 10
                 
-.a31:   bt edi, kIPValuesContainLIP
+.a31:   bt edi, kIP_VALUES_CONTAIN_LIP
         jnc .pass2
                 
         cinvoke printf, "    IP Values Contain LIP %c", 10
@@ -2019,38 +2049,38 @@ LastBranchRecords:
         mov edi, ebx
         mov esi, ecx
                 
-.b00:   bt edi, kCPLFiltering
+.b00:   bt edi, kCPL_FILTERING
         jnc .b01
                 
         cinvoke printf, "    CPL Filtering Supported %c", 10
                 
-.b01:   bt edi, kBranchFiltering
+.b01:   bt edi, kBRANCH_FILTERING
         jnc .b02
                 
         cinvoke printf, "    Branch Filtering Supported %c", 10
                 
-.b02:   bt edi, kCallStackMode
+.b02:   bt edi, kCALL_STACK_MODE
         jnc .c00
                 
         cinvoke printf, "    Call-stack Mode Supported %c", 10
                 
-.c00:   bt esi, kMispredictBit
+.c00:   bt esi, kMISPREDICT_BIT
         jnc .c01
 
         cinvoke printf, "    Mispredict Bit Supported %c", 10
 
-.c01:   bt esi, kTimedLBRs
+.c01:   bt esi, kTIMED_LBRS
         jnc .c02
 
         cinvoke printf, "    Timed LBRs Supported %c", 10
 
-.c02:   bt esi, kBranchTypeField
+.c02:   bt esi, kBRANCH_TYPE_FIELD_SUPPORTED
         jnc .c03
 
         cinvoke printf, "    Branch Type Field Supported %c", 10
 
-.c03:   shr esi, 16             ; bits 19-16 are event logging supported bitmap
-        and esi, 0x0f
+.c03:   shr esi, 16             ; bits 19-16 are event logging supported bitmap (EVENT_LOGGING_BITMAP)
+        and esi, 0x0F
                 
         cinvoke printf, "    Event logging supported bitmap 0x%x %c", esi, 10
 
@@ -2058,11 +2088,13 @@ LastBranchRecords:
 
 ; =============================================================================================
 
-; leaf 1dh, data in eax and ebx
+; CPUID.1DH.00H
+; CPUID.1DH.01H
+; data in eax, ebx, ecx
 ; intel only
 TileInformation:
 
-        cmp [__MaxBasic], 0x1d
+        cmp [__MaxBasic], 0x1D
         jl .fin
 
         mov esi, dword __Leaf1D00
@@ -2071,13 +2103,13 @@ TileInformation:
         cinvoke printf, "  Tile Information %c", 10
 
         mov ecx, 0
-        mov eax, 0x1d
+        mov eax, 0x1D
         cpuid
                 
-        cinvoke printf, "    max_palette: %d %c", eax, 10
+        cinvoke printf, "    MAX_PALETTE: %d %c", eax, 10
 
         mov ecx, 1
-        mov eax, 0x1d
+        mov eax, 0x1D
         cpuid
 
         mov edi, eax
@@ -2085,41 +2117,41 @@ TileInformation:
 
         and eax, 0x0000FFFF
 
-        cinvoke printf, "    total_tile_bytes          : %d %c", eax, 10
+        cinvoke printf, "    TOTAL_TILE_BYTES          : %d %c", eax, 10
                 
         shr edi, 16
         and edi, 0x0000FFFF
                 
-        cinvoke printf, "    bytes_per_tile            : %d %c", edi, 10
+        cinvoke printf, "    BYTES_PER_TILE            : %d %c", edi, 10
                 
         mov eax, esi
                 
         and eax, 0x0000FFFF
                 
-        cinvoke printf, "    bytes_per_row             : %d %c", eax, 10
+        cinvoke printf, "    BYTES_PER_ROW             : %d %c", eax, 10
 
         shr esi, 16
         and esi, 0x0000FFFF
                 
-        cinvoke printf, "    max_names (tile_registers): %d %c", esi, 10
+        cinvoke printf, "    MAX_NAMES (tile_registers): %d %c", esi, 10
                 
         mov ecx, 1
-        mov eax, 0x1d
+        mov eax, 0x1D
         cpuid
                 
         and ecx, 0x0000FFFF
                 
-        cinvoke printf, "    max_rows                  : %d %c", ecx, 10
+        cinvoke printf, "    MAX_ROWS                  : %d %c", ecx, 10
 
 .fin:   ret
 
 ; =============================================================================================
 
-; leaf 1eh, data in ebx
+; CPUID.1EH.00H, data in ebx
 ; intel only
 TMULInformation:
 
-        cmp [__MaxBasic], 0x1e
+        cmp [__MaxBasic], 0x1E
         jl .fin
                 
         mov esi, dword __Leaf1E00
@@ -2128,7 +2160,7 @@ TMULInformation:
         cinvoke printf, "  Branch Type Field Supported %c", 10
 
         mov ecx, 0
-        mov eax, 0x1e   
+        mov eax, 0x1E
         cpuid
                 
         mov edi, eax
@@ -2136,22 +2168,22 @@ TMULInformation:
                 
         and edi, 0x000000FF
                 
-        cinvoke printf, "    tmul_maxk = %d %c", edi, 10
+        cinvoke printf, "    TMUL_MAXK = %d %c", edi, 10
                 
         shr esi, 8
         and esi, 0x0000FFFF
                 
-        cinvoke printf, "    tmul_maxn = %d %c", esi, 10
+        cinvoke printf, "    TMUL_MAXN = %d %c", esi, 10
                 
 .fin:   ret
 
 ; =============================================================================================
 
-; leaf 1fh, data in eax, ebx, ecx, and edx
+; CPUID.1FH, data in eax, ebx, ecx, and edx
 ; intel only
 V2ExtendedTopology:
 
-        cmp [__MaxBasic], 0x1f
+        cmp [__MaxBasic], 0x1F
         jl .fin
 
         mov esi, dword __Leaf1F00
@@ -2160,7 +2192,7 @@ V2ExtendedTopology:
         cinvoke printf, "  V2 Extended Topology Enumeration %c", 10
 
         mov ecx, 0
-        mov eax, 0x1f   
+        mov eax, 0x1F   
         cpuid
                 
         cmp eax, 0
@@ -2175,7 +2207,7 @@ V2ExtendedTopology:
         cinvoke printf, "%c", 10
 
         mov ecx, 0
-.loop:  mov eax, 0x1f   
+.loop:  mov eax, 0x1F   
         cpuid
                 
         cmp eax, 0
@@ -2215,7 +2247,7 @@ V2ExtendedTopology:
 
 ; =============================================================================================
 
-; leaf 20h, data in eax and ebx
+; CPUID.20H, data in eax and ebx
 ; intel only
 ProcessorHistoryReset:
 
@@ -2246,26 +2278,23 @@ ProcessorHistoryReset:
 .fin:   ret
 
 ; =============================================================================================
-; =============================================================================================
+
+; CPUID.21H
+; Intel only
+
+; Reserved. EAX/EBX/ECX/EDX = 0
 ;
-; As per the Intel docs:
-;
-; No existing or future CPU will return processor identification or feature information if the initial
-; EAX value is 21H. If the value returned by CPUID.0:EAX (the maximum input value for basic CPUID
-; information) is at least 21H, 0 is returned in the reg
-;
-; No existing or future CPU will return processor identification or feature information if the initial
-; EAX value is in the range 40000000H to 4FFFFFFFH.
-;
-; As per the AMD docs:
-;
-; 40000000h to 400000FFh — Reserved for Hypervisor Use
-; These function numbers are reserved for use by the virtual machine monitor.
-;
-; =============================================================================================
+
 ; =============================================================================================
 
-; leaf 23h, ecx=0, data in eax, ebx, ecx (edx reserved)
+; CPUID.22H
+; Intel only
+
+; Reserved. EAX/EBX/ECX/EDX = 0
+                  
+; =============================================================================================
+
+; CPUID.23H.00H, data in eax, ebx, ecx (edx reserved)
 ; intel only
 
 APMEMain:
@@ -2274,7 +2303,7 @@ APMEMain:
         mov eax, 0x07           ; sub-leaf 1   
         cpuid
                 
-        bt eax, kArchPerfmonExt ; if set, then 23h is supported
+        bt eax, kARCH_PERFMON_EXT ; if set, then 23h is supported
         jc .go
 
         ret
@@ -2293,10 +2322,10 @@ APMEMain:
         mov edi, ebx
         mov esi, ecx
 
-.bb0:   bt edi, kUnitMask2
+.bb0:   bt edi, kUNITMASK2
         jnc .bb1
 
-        cinvoke printf, "    UnitMask2. Supports UnitMask2 field in IA32_PERFEVTSELx MSRs. %c", 10
+        cinvoke printf, "    UNITMASK2. Supports UnitMask2 field in IA32_PERFEVTSELx MSRs. %c", 10
 
 .bb1:   bt edi, kEQBit
         jnc .bex
@@ -2332,7 +2361,7 @@ APMEMain:
 
 ; =============================================================================================
 
-; leaf 23h, ecx=1, data in eax, ebx (ecx/edx reserved)
+; CPUID.23H.01H, data in eax, ebx (ecx/edx reserved)
 ; intel only
 
 APMESub1:
@@ -2356,7 +2385,7 @@ APMESub1:
 
 ; =============================================================================================
 
-; leaf 23h, ecx=2, data in eax, ebx, ecx, edx
+; CPUID.23H.02H, data in eax, ebx, ecx, edx
 ; intel only
 
 APMESub2:
@@ -2396,7 +2425,7 @@ APMESub2:
 
 ; =============================================================================================
 
-; leaf 23h, ecx=3, data in eax (ebx/ecx/edx reserved)
+; CPUID.23H.03H, data in eax (ebx/ecx/edx reserved)
 ; intel only
 
 APMESub3:
@@ -2434,7 +2463,7 @@ APMESub3:
 
 ; =============================================================================================
 
-; leaf 24h, ecx=0, data in eax, ebx (ecx/edx reserved)
+; CPUID.24H.00H, data in eax, ebx (ecx/edx reserved)
 ; intel only
 
 ConvergedVectorISAMain:
@@ -2460,23 +2489,29 @@ ConvergedVectorISAMain:
         mov edi, eax
         mov esi, ebx
 
-        cinvoke printf, "    Sub-leaves supported by 24h: %c", edi, 10
+        cinvoke printf, "    Sub-leaves supported by 24H: %c", edi, 10
 
         mov edi, esi 
 
-        and esi, 0x000000ff       ; bits 07-00
+        and esi, 0x000000FF       ; bits 07-00
 
         cinvoke printf, "    Intel AVX10 Converged Vector ISA version 0x%x (%d) %c", esi, esi, 10
 
-		; changed in March 2025 update (see note 2 on 24h specification), all processors supporting AVX10 support all vector widths.
+		; changed in March 2025 update (see 24H.00H, EBX[18:16 in the spec)
+		; all processors supporting AVX10 support all vector widths.
         cinvoke printf, "    128/256/512-bit vector widths supported %c", 10
 
 .fin:   ret
 
 ; =============================================================================================
+
+; 40000000h to 400000FFh — Reserved for Hypervisor Use
+; These function numbers are reserved for use by the virtual machine monitor.
+
 ; =============================================================================================
 
-; extended leaf 80000002h, data in eax, ebx, ecx, and edx
+; CPUID.80000002H / CPUID.80000003H / CPUID.80000004H
+; data in eax, ebx, ecx, and edx
 ; intel and amd
 BrandString:
 
@@ -2510,14 +2545,14 @@ BrandString:
 
 ; =============================================================================================
 
-; extended leaf 80000005h
+; CPUID.80000005H
 ; Intel only
 
 ; Reserved. EAX/EBX/ECX/EDX = 0
                   
 ; =============================================================================================
           
-; extended leaf 80000006h, data in ecx
+; CPUID.80000006H, data in ecx
 ; Intel implementation
 IntelCacheInformation:
 
@@ -2568,7 +2603,7 @@ IntelCacheInformation:
                   
 ; =============================================================================================
 
-; extended leaf 80000007h, data in edx
+; CPUID.80000007H, data in edx
 ; Intel implementation
 InvariantTSC:
 
@@ -2583,7 +2618,7 @@ InvariantTSC:
         mov eax, 0x80000007
         cpuid
                 
-        bt edx, kInvariantTSC
+        bt edx, kTSC_INVARIANT
         jnc .notavailable
                 
         cinvoke printf, "    Invariant TSC available %c", 10
@@ -2600,7 +2635,7 @@ InvariantTSC:
 
 ; =============================================================================================
 
-; extended leaf 80000008h, data in eax and ebx
+; CPUID.80000008H, data in eax and ebx
 ; intel implementation
 AddressBits:
 
@@ -2617,14 +2652,14 @@ AddressBits:
 
         mov esi, eax
 
-        and eax, 0x000000FF     ; isolate bits 7:0 from eax
+        and eax, 0x000000FF     ; isolate EAX[7:0] (PHYS_ADDR_SIZE)
 
         mov edi, esi
 
-        shr edi, 8              ; isolate bits 15:08 from eax
+        shr edi, 8              ; isolate EAX[15:08] (LIN_ADDR_SIZE)
         and edi, 0x000000FF
 
-        shr esi, 16             ; isolate bits 23:16 from eax
+        shr esi, 16             ; isolate EAX[23:16] (GUEST_PHYS_ADDR_SIZE)
         and esi, 0x000000FF
                 
         cinvoke printf, "    #Physical Address Bits       : %d %c", eax, 10
@@ -2637,16 +2672,16 @@ AddressBits:
         mov eax, 0x80000008
         cpuid
                 
-        bt ebx, kWBOINVD
+        bt ebx, kWBNOINVD
         jnc .notsupported
                 
-        cinvoke printf, "    WBOINVD is available %c", 10
+        cinvoke printf, "    WBNOINVD is available %c", 10
 
         ret
 
 .notsupported:
 
-        cinvoke printf, "    WBOINVD is not available %c", 10
+        cinvoke printf, "    WBNOINVD is not available %c", 10
 
 .fin:   ret
 

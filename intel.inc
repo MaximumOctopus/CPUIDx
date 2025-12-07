@@ -2,7 +2,7 @@
 ; ===================================================================================
 ;
 ;  (c) Paul Alan Freshney 2022-2025
-;  v0.20, August 1st 2025
+;  v0.21, December 5th 2025
 ;
 ;  Source code:
 ;      https://github.com/MaximumOctopus/CPUIDx
@@ -13,76 +13,76 @@
 ; ===================================================================================
 ; =================================================================================== 
 
-; 01h leaf, bits in ecx
-__FeatureStringSize = 59        ; 58 + null terminator
-__FeatureString1:               db "SSE3       (Streaming SIMD Extensions 3)                  ", 0
-                                db "PCLMULQDQ  (PCLMULQDQ instruction)                        ", 0
-                                db "DTES64     (64-bit DS Area)                               ", 0
-                                db "MONITOR    (MONITOR/MWAIT)                                ", 0
-                                db "DS-CPL     (CPL Qualified Debug Store)                    ", 0
-                                db "VMX        (Virtual Machine Extensions)                   ", 0
-                                db "SMX        (Safer Mode Extensions)                        ", 0
-                                db "EIST       (Enhanced Intel SpeedStep technology)          ", 0
-                                db "TM2        (Thermal Monitor 2)                            ", 0
-                                db "SSSE3      (Supplemental Streaming SIMD Extensions 3)     ", 0
-                                db "CNXT-ID    (L1 Context ID)                                ", 0
-                                db "SDBG       (IA32_DEBUG_INTERFACE MSR)                     ", 0
-                                db "FMA        (FMA extensions using YMM state)               ", 0
-                                db "CMPXCHG16B (CMPXCHG16B Available)                         ", 0
-                                db "xTPR       (xTPR Update Control)                          ", 0
-                                db "PDCM       (Perfmon and Debug Capability)                 ", 0
-                                db "Reserved                                                  ", 0
-                                db "PCID       (Process-context identifiers)                  ", 0
-                                db "DCA        (Prefetch data from a memory-mapped device)    ", 0
-                                db "SSE4_1     (SSE4.1)                                       ", 0
-                                db "SSE4_2     (SSE4.2)                                       ", 0
-                                db "x2APIC     (x2APIC feature)                               ", 0
-                                db "MOVBE      (instruction)                                  ", 0
-                                db "POPCNT     (instruction)                                  ", 0
-                                db "TSC        (TSC deadline)                                 ", 0
-                                db "AESNI      (AESNI instruction extensions)                 ", 0
-                                db "XSAVE      (XSAVE/XRSTOR processor extended states)       ", 0
-                                db "OSXSAVE    (XSETBV/XGETBV instructions)                   ", 0
-                                db "AVX        (AVX instruction extensions)                   ", 0
-                                db "F16C       (16-bit floating-point conversion instructions)", 0
-                                db "RDRAND     (RDRAND instruction)                           ", 0
-                                db "Not used                                                  ", 0
+; CPUID.01H:ECX
+__FeatureStringSize = 66        ; 65 + null terminator
+__FeatureString1:               db "SSE3              (Streaming SIMD Extensions 3)                  ", 0
+                                db "PCLMULQDQ         (PCLMULQDQ instruction)                        ", 0
+                                db "DTES64            (64-bit DS Area)                               ", 0
+                                db "MONITOR           (MONITOR/MWAIT)                                ", 0
+                                db "DS-CPL            (CPL Qualified Debug Store)                    ", 0
+                                db "VMX               (Virtual Machine Extensions)                   ", 0
+                                db "SMX               (Safer Mode Extensions)                        ", 0
+                                db "EIST              (Enhanced Intel SpeedStep technology)          ", 0
+                                db "TM2               (Thermal Monitor 2)                            ", 0
+                                db "SSSE3             (Supplemental Streaming SIMD Extensions 3)     ", 0
+                                db "L1_CONTEXT_ID     (L1 Context ID)                                ", 0
+                                db "DEBUG_INTERFACE   (IA32_DEBUG_INTERFACE MSR)                     ", 0
+                                db "FMA               (FMA extensions using YMM state)               ", 0
+                                db "CMPXCHG16B        (CMPXCHG16B Available)                         ", 0
+                                db "xTPR              (Supports IA32_MISC_ENABLE)                    ", 0
+                                db "PERF_CAPABILITIES (Perfmon and Debug Capability)                 ", 0
+                                db "Reserved                                                         ", 0
+                                db "PCID              (Process-context identifiers)                  ", 0
+                                db "DCA               (Prefetch data from a memory-mapped device)    ", 0
+                                db "SSE4_1            (SSE4.1)                                       ", 0
+                                db "SSE4_2            (SSE4.2)                                       ", 0
+                                db "X2APIC            (x2APIC feature)                               ", 0
+                                db "MOVBE             (instruction)                                  ", 0
+                                db "POPCNT            (instruction)                                  ", 0
+                                db "TSC_DEADLINE      (TSC deadline)                                 ", 0
+                                db "AESNI             (AESNI instruction extensions)                 ", 0
+                                db "XSAVE             (XSAVE/XRSTOR processor extended states)       ", 0
+                                db "OSXSAVE           (XSETBV/XGETBV instructions)                   ", 0
+                                db "AVX               (AVX instruction extensions)                   ", 0
+                                db "F16C              (16-bit floating-point conversion instructions)", 0
+                                db "RDRAND            (RDRAND instruction)                           ", 0
+                                db "Not used                                                         ", 0
 
-; 01h leaf, bits in edx
-__FeatureString2:               db "FPU-x87    (Floating-Point Unit On-Chip)                  ", 0
-                                db "VME        (Virtual 8086 Mode Enhancements)               ", 0
-                                db "DE         (Debugging Extensions)                         ", 0
-                                db "PSE        (Page Size Extension)                          ", 0
-                                db "TSC        (Time Stamp Counter)                           ", 0
-                                db "MSR        (Model Specific Registers + RDMSR/WRMSR instr.)", 0
-                                db "PAE        (Physical Address Extension)                   ", 0
-                                db "MCE        (Machine Check Exception)                      ", 0
-                                db "CX8        (CMPXCHG8B Instruction)                        ", 0
-                                db "APIC       (APIC On-Chip)                                 ", 0
-                                db "Reserved                                                  ", 0
-                                db "SEP        (SYSENTER and SYSEXIT Instructions)            ", 0
-                                db "MTRR       (Memory Type Range Registers)                  ", 0
-                                db "PGE        (Page Global Bit)                              ", 0
-                                db "MCA        (Machine Check Architecture)                   ", 0
-                                db "CMOV       (Conditional Move Instructions)                ", 0
-                                db "PAT        (Page Attribute Table)                         ", 0
-                                db "PSE-36     (36-Bit Page Size Extension)                   ", 0
-                                db "PSN        (Processor Serial Number)                      ", 0
-                                db "CLFSH      (LFLUSH Instruction)                           ", 0
-                                db "Reserved                                                  ", 0
-                                db "DS         (Debug Store)                                  ", 0
-                                db "ACPI       (Thermal Monitor and Software Controlled Clock)", 0
-                                db "MMX        (Intel MMX Technology)                         ", 0
-                                db "FXSR       (FXSAVE and FXRSTOR Instructions)              ", 0
-                                db "SSE        (SSE extensions)                               ", 0
-                                db "SSE2       (SSE2 extensions)                              ", 0
-                                db "SS         (Self Snoop)                                   ", 0
-                                db "HTT        (Max APIC IDs reserved field is Valid)         ", 0
-                                db "TM         (Thermal Monitor)                              ", 0
-                                db "Reserved                                                  ", 0
-                                db "PBE        (Pending Break Enable)                         ", 0
+; CPUID.01H:EDX
+__FeatureString2:               db "FPU               (Floating-Point Unit On-Chip)                  ", 0
+                                db "VME               (Virtual 8086 Mode Enhancements)               ", 0
+                                db "DE                (Debugging Extensions)                         ", 0
+                                db "PSE               (Page Size Extension)                          ", 0
+                                db "TSC               (Time Stamp Counter)                           ", 0
+                                db "MSR               (Model Specific Registers + RDMSR/WRMSR instr.)", 0
+                                db "PAE               (Physical Address Extension)                   ", 0
+                                db "MCE               (Machine Check Exception)                      ", 0
+                                db "CMPXCHG8B         (CMPXCHG8B Instruction)                        ", 0
+                                db "APIC              (APIC On-Chip)                                 ", 0
+                                db "Reserved                                                         ", 0
+                                db "SEP               (SYSENTER and SYSEXIT Instructions)            ", 0
+                                db "MTRR              (Memory Type Range Registers)                  ", 0
+                                db "PGE               (Page Global Bit)                              ", 0
+                                db "MCA               (Machine Check Architecture)                   ", 0
+                                db "CMOV              (Conditional Move Instructions)                ", 0
+                                db "PAT               (Page Attribute Table)                         ", 0
+                                db "PSE_36            (36-Bit Page Size Extension)                   ", 0
+                                db "PSN               (Processor Serial Number)                      ", 0
+                                db "CLFLUSH           (CLFLUSH Instruction)                          ", 0
+                                db "Reserved                                                         ", 0
+                                db "DEBUG_STORE       (Debug Store)                                  ", 0
+                                db "ACPI              (Thermal Monitor and Software Controlled Clock)", 0
+                                db "MMX               (Intel MMX Technology)                         ", 0
+                                db "FXSR              (FXSAVE and FXRSTOR Instructions)              ", 0
+                                db "SSE               (SSE extensions)                               ", 0
+                                db "SSE2              (SSE2 extensions)                              ", 0
+                                db "SELF_SNOOP        (Self Snoop)                                   ", 0
+                                db "HTT               (Max APIC IDs reserved field is Valid)         ", 0
+                                db "TM                (Thermal Monitor)                              ", 0
+                                db "Reserved                                                         ", 0
+                                db "PBE               (Pending Break Enable)                         ", 0
 
-; 02h leaf, data stored in eax, ebx, ecx, and edx
+; CPUID.02H, data stored in eax, ebx, ecx, and edx
 __CacheTlbValueTable            db 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E
                                 db 0x1D 
                                 db 0x21, 0x22, 0x23, 0x24, 0x25, 0x29, 0x2C
@@ -115,7 +115,7 @@ __CacheTlbAddressTable          dd __S01, __S02, __S03, __S04, __S05, __S06, __S
                                 dd __SE2, __SE3, __SE4, __SEA, __SEB, __SEC
                                 dd __SF0, __SF1         
 
-; 02h leaf text table
+; CPUID.02H text table
 __S01                           db "TLB: 4 KByte pages, 4-way set associative, 32 entries", 0
 __S02                           db "TLB: 4 MByte pages, fully associative, 2 entries", 0
 __S03                           db "TLB: 4 KByte pages, 4-way set associative, 64 entries", 0
@@ -227,7 +227,7 @@ __SEC                           db "3rd-level cache: 24MByte, 24-way set associa
 __SF0                           db "64-Byte prefetching", 0
 __SF1                           db "128-Byte prefetching", 0                                                           
 
-; 06h leaf, bits in eax
+; CPUID.06H:EAX
 __ThermalPower1Size = 46        ; 45 + null terminator
 __ThermalPower1:                db "Digital temperature sensor supported         ", 0
                                 db "Intel Turbo Boost Technology                 ", 0
@@ -262,25 +262,25 @@ __ThermalPower1:                db "Digital temperature sensor supported        
                                 db "Reserved.                                    ", 0
                                 db "Reserved.                                    ", 0
                                                    
-; 07h leaf (intel), bits in ebx
+; CPUID.07H:EBX (intel)
 __StructuredExtendedFeatureFlags1Size = 45      ; 44 + null terminator
 __StructuredExtendedFeatureFlags1:
                                 db "FSGSBASE                                    ", 0
-                                db "IA32_TSC_ADJUST MSR                         ", 0
-                                db "SGX (Software Guard Extensions)             ", 0
+                                db "TSC_ADJUST IA32_TSC_ADJUST MSR              ", 0
+                                db "SGX  (Software Guard Extensions)            ", 0
                                 db "BMI1                                        ", 0
                                 db "HLE                                         ", 0
                                 db "AVX2 (Intel Advanced Vector Extensions 2)   ", 0
                                 db "FDP_EXCPTN_ONLY                             ", 0
                                 db "SMEP (Supervisor-Mode Execution Prevention) ", 0 
                                 db "BMI2                                        ", 0
-                                db "Enhanced REP MOVSB/STOSB                    ", 0
+                                db "ENH_REP_MOVSB_STOSB Enhanced REP MOVSB/STOSB", 0
                                 db "INVPCID instruction                         ", 0  
                                 db "RTM                                         ", 0
-                                db "RDT-M                                       ", 0
-                                db "Deprecates FPU CS and FPU DS                ", 0
-                                db "MPX (Intel Memory Protection Extensions)    ", 0
-                                db "RDT-A (Intel Resource Director Technology)  ", 0
+                                db "RDT_M                                       ", 0
+                                db "FCS_FDS_DEPRECATION Deprecates FPU CS/FPU DS", 0
+                                db "MPX  (Intel Memory Protection Extensions)   ", 0
+                                db "RDT_A (Intel Resource Director Technology)  ", 0
                                 db "AVX512F                                     ", 0
                                 db "AVX512DQ                                    ", 0
                                 db "RDSEED                                      ", 0
@@ -290,7 +290,7 @@ __StructuredExtendedFeatureFlags1:
                                 db "Reserved                                    ", 0
                                 db "CLFLUSHOPT                                  ", 0
                                 db "CLWB                                        ", 0
-                                db "Intel Processor Trace                       ", 0
+                                db "INTEL_PROC_TRACE Intel Processor Trace      ", 0
                                 db "AVX512PF (Intel Xeon Phi only)              ", 0
                                 db "AVX512ER (Intel Xeon Phi only)              ", 0
                                 db "AVX512CD                                    ", 0
@@ -298,14 +298,14 @@ __StructuredExtendedFeatureFlags1:
                                 db "AVX512BW                                    ", 0
                                 db "AVX512VL                                    ", 0
 
-; 07h leaf (intel), bits in ecx
+; CPUID.07H.00H:ECX (intel)
 __StructuredExtendedFeatureFlags2Size = 50      ; 49 + null terminator
 __StructuredExtendedFeatureFlags2:
-                                db "PREFETCHWT1. Intel Xeon Phi only                 ", 0
+                                db "PREFETCHWT1 (Intel Xeon Phi only)                ", 0
                                 db "AVX512_VBMI                                      ", 0
                                 db "UMIP (user-mode instruction prevention           ", 0
                                 db "PKU (protection keys for user-mode pages)        ", 0
-                                db "OSPKE. CR4.PKE (and RDPKRU/WRPKRU)               ", 0
+                                db "OSPKE (CR4.PKE (and RDPKRU/WRPKRU))              ", 0
                                 db "WAITPKG                                          ", 0
                                 db "AVX512_VBMI2                                     ", 0
                                 db "CET_SS                                           ", 0
@@ -318,13 +318,13 @@ __StructuredExtendedFeatureFlags2:
                                 db "AVX512_VPOPCNTDQ                                 ", 0   
                                 db "Reserved.                                        ", 0
                                 db "LA57 (57-bit linear addresses and 5-level paging)", 0
-                                db "Reserved.                                        ", 0
-                                db "Reserved.                                        ", 0
-                                db "Reserved.                                        ", 0
-                                db "Reserved.                                        ", 0
-                                db "Reserved.                                        ", 0
+                                db "MPX_MAWAU (used by BNDLDX/BNDSTX in 64-bit mode) ", 0
+                                db "RDPID     (IA32_TSC_AUX MSR is available)        ", 0
+                                db "KEY_LOCKER (support)                             ", 0
+                                db "BUS_LOCK_DETECT                                  ", 0
+                                db "Reserved                                         ", 0
                                 db "RDPID and IA32_TSC_AUX                           ", 0
-                                db "KL (Key Locker)                                  ", 0
+                                db "KEY_LOCKER (Key Locker)                          ", 0
                                 db "BUS_LOCK_DETECT, supports OS bus-lock detection  ", 0
                                 db "CLDEMOTE (Supports cache line demote)            ", 0
                                 db "Reserved                                         ", 0
@@ -334,101 +334,101 @@ __StructuredExtendedFeatureFlags2:
                                 db "SGX_LC (SGX Launch Configuration)                ", 0
                                 db "PKS (protection keys for supervisor-mode pages)  ", 0
                                                                 
-; 07h leaf (intel), bits in edx
+; CPUID.07H.00H:EDX (intel)
 __StructuredExtendedFeatureFlags3Size = 35      ; 34 + null terminator
 __StructuredExtendedFeatureFlags3:
                                 db "Reserved                          ", 0
-                                db "SGX-KEYS                          ", 0
+                                db "SGX_KEYS                          ", 0
                                 db "AVX512_4VNNIW. Intel Xeon Phi only", 0
                                 db "AVX512_4FMAPS. Intel Xeon Phi only", 0
-                                db "Fast Short REP MOVSB              ", 0
+                                db "FAST_SHORT_REP_MOVSB              ", 0
                                 db "UINTR                             ", 0
-                                db "Reserved.                         ", 0
-                                db "Reserved.                         ", 0
+                                db "Reserved                          ", 0
+                                db "Reserved                          ", 0
                                 db "AVX512_VP2INTERSECT               ", 0
-                                db "SRBDS_CTRL                        ", 0
+                                db "MCU_OPT_CTRL                      ", 0
                                 db "MD_CLEAR                          ", 0
                                 db "RTM_ALWAYS_ABORT                  ", 0
-                                db "Reserved.                         ", 0
+                                db "Reserved                          ", 0
                                 db "RTM_FORCE_ABORT                   ", 0
                                 db "SERIALIZE                         ", 0
-                                db "Hybrid                            ", 0
-                                db "TSXLDTRK.                         ", 0
-                                db "Reserved.                         ", 0
+                                db "HYBRID                            ", 0
+                                db "TSXLDTRK                          ", 0
+                                db "Reserved                          ", 0
                                 db "PCONFIG                           ", 0
-                                db "Architectural LBRs                ", 0
+                                db "ARCH_LBRS Architectural LBRs      ", 0
                                 db "CET_IBT                           ", 0
-                                db "Reserved.                         ", 0
-                                db "AMX-BF16                          ", 0
+                                db "Reserved                          ", 0
+                                db "AAMX_BF16                         ", 0
                                 db "AVX512_FP16                       ", 0
-                                db "AMX-TILE                          ", 0
-                                db "AMX-INT8                          ", 0
+                                db "AMX_TILE                          ", 0
+                                db "AMX_INT8                          ", 0
                                 db "IBRS and IBPB. IA32_SPEC_CTRL MSR ", 0
-                                db "STIBP. IA32_SPEC_CTRL MSR         ", 0
-                                db "L1D_FLUSH. IA32_FLUSH_CMD MSR     ", 0
-                                db "IA32_ARCH_CAPABILITIES MSR        ", 0
-                                db "IA32_CORE_CAPABILITIES MSR        ", 0
-                                db "SSBD. IA32_SPEC_CTRL MSR          ", 0
+                                db "SPEC_CTRL_ST_PREDICTORS           ", 0
+                                db "L1D_FLUSH_INTERFACE               ", 0
+                                db "ARCH_CAPABILITIES                 ", 0
+                                db "CORE_CAPABILITIES                 ", 0
+                                db "SPEC_CTRL_SSBD                    ", 0
                                                                 
-; 07h leaf (intel), bits in eax
+; CPUID.07.01H:EAX (intel)
 __StructuredExtendedFeatureSubLeaf1aFlagsSize = 71      ; 70 + null terminator
 __StructuredExtendedFeatureSubLeaf1aFlags:
-                                db "SHA512.        SHA512 instructions supported                          ", 0
-                                db "SM3.           SM3 instructions supported                             ", 0
-                                db "SM4.           SM4 instructions supported                             ", 0
+                                db "SHA512           SHA512 instructions supported                        ", 0
+                                db "SM3              SM3 instructions supported                           ", 0
+                                db "SM4              SM4 instructions supported                           ", 0
                                 db "Reserved                                                              ", 0
-                                db "AVX-VNNI.      AVX (VEX-encoded) versions of the VNNI                 ", 0
-                                db "AVX512_BF16.   VNNI supports BFLOAT16 inputs and conversion           ", 0
-                                db "LASS.          Supports Linear Address Space Separation               ", 0
-                                db "CMPCCXADD.     Supports the CMPccXADD instruction                     ", 0
-                                db "ArchPerfmonExt Supports ArchPerfmonExt, Leaf (EAX=23H)                ", 0
+                                db "AVX_VNNI         AVX (VEX-encoded) versions of the VNNI               ", 0
+                                db "AVX512_BF16      VNNI supports BFLOAT16 inputs and conversion         ", 0
+                                db "LASS             Supports Linear Address Space Separation             ", 0
+                                db "CMPCCXADD        Supports the CMPccXADD instruction                   ", 0
+                                db "ARCH_PERFMON_EXT Supports ArchPerfmonExt, Leaf (EAX=23H)              ", 0
                                 db "Reserved                                                              ", 0
-                                db "REP MOVSB.     Fast zero-length instructions supported                ", 0
-                                db "REP STOSB.     Supports fast short instructions                       ", 0
-                                db "REP CMPSB, REP SCASB. Supports fast short instructions                ", 0
-                                db "Reserved                                                              ", 0
-                                db "Reserved                                                              ", 0
+                                db "FAST_REP_MOVSB   Fast zero-length instructions supported              ", 0
+                                db "FAST_REP_STOSB   Supports fast short instructions                     ", 0
+                                db "FAST_REP_CMPSB_SCASB. Supports fast short instructions                ", 0
                                 db "Reserved                                                              ", 0
                                 db "Reserved                                                              ", 0
                                 db "Reserved                                                              ", 0
                                 db "Reserved                                                              ", 0
-                                db "WRMSRNS.       WRMSRNS instruction supported                          ", 0
-                                db "Reserved                                                              ", 0
-                                db "AMX-FP16.      Supports tile computational operations on FP16 numbers ", 0
-                                db "HRESET.        HRESET instruction and IA32_HRESET_ENABLE, Leaf 20H    ", 0
-                                db "AVX-IFMA.      Supports the AVX-IFMA instructions                     ", 0
                                 db "Reserved                                                              ", 0
                                 db "Reserved                                                              ", 0
-                                db "LAM.           Supports Linear Address Masking                        ", 0
-                                db "MSRLIST        Supports RDMSRLIST and WRMSRLIST, IA32_BARRIER MSR     ", 0
+                                db "WRMSRNS          WRMSRNS instruction supported                        ", 0
+                                db "Reserved                                                              ", 0
+                                db "AMX_FP16         Supports tile computational operations on FP16 floats", 0
+                                db "HRESET           HRESET instruction and IA32_HRESET_ENABLE, Leaf 20H  ", 0
+                                db "AVX_IFMA         Supports the AVX-IFMA instructions                   ", 0
+                                db "Reserved                                                              ", 0
+                                db "Reserved                                                              ", 0
+                                db "LAM              Supports Linear Address Masking                      ", 0
+                                db "MSRLIST          Supports RDMSRLIST and WRMSRLIST, IA32_BARRIER MSR   ", 0
                                 db "Reserved                                                              ", 0
                                 db "Reserved                                                              ", 0
                                 db "INVD_DISABLE_POST_BIOS_DONE. INVD execution prevention after BIOS Done", 0
                                 db "Reserved                                                              ", 0
 
-; 07h leaf (intel), bits in edx
+; CPUID.07H.01H::EDX (intel)
 __StructuredExtendedFeatureSubLeaf1dFlagsSize = 55      ; 54 + null terminator
 __StructuredExtendedFeatureSubLeaf1dFlags:
                                 db "Reserved                                              ", 0
                                 db "Reserved                                              ", 0
                                 db "Reserved                                              ", 0
                                 db "Reserved                                              ", 0
-                                db "AVX-VNNI-INT8.  Supports AVX-VNNI-INT8 instructions   ", 0
-                                db "AVX-NE-CONVERT. AVX-NE-CONVERT instructions           ", 0
+                                db "AVX_VNNI_INT8   Supports AVX-VNNI-INT8 instructions   ", 0
+                                db "AVX_NE_CONVERT  AVX-NE-CONVERT instructions           ", 0
                                 db "Reserved                                              ", 0
                                 db "Reserved                                              ", 0
                                 db "Reserved                                              ", 0
                                 db "Reserved                                              ", 0
-                                db "AVX-VNNI-INT16. Supports AVX-VNNI-INT16 instructions  ", 0
+                                db "AVX_VNNI_INT16  Supports AVX-VNNI-INT16 instructions  ", 0
                                 db "Reserved                                              ", 0
                                 db "Reserved                                              ", 0
                                 db "Reserved                                              ", 0
-                                db "PREFETCHI.      Supports PREFETCHIT0/1 instructions   ", 0
+                                db "PREFETCHI       Supports PREFETCHIT0/1 instructions   ", 0
                                 db "Reserved                                              ", 0
                                 db "Reserved                                              ", 0
-                                db "UIRET_UIF.      UIRET sets UIF to bit 1 of RFLAGS     ", 0
-                                db "CET_SSS.        OS can enable supervisor shadow stacks", 0
-                                db "AVX10.          Intel AVX10 instructions supported    ", 0
+                                db "UIRET_UIF       UIRET sets UIF to bit 1 of RFLAGS     ", 0
+                                db "CET_SSS         OS can enable supervisor shadow stacks", 0
+                                db "AVX10           Intel AVX10 instructions supported    ", 0
                                 db "Reserved                                              ", 0
                                 db "Reserved                                              ", 0
                                 db "Reserved                                              ", 0
@@ -441,37 +441,40 @@ __StructuredExtendedFeatureSubLeaf1dFlags:
                                 db "Reserved                                              ", 0
                                 db "Reserved                                              ", 0
                                 db "Reserved                                              ", 0
+								
+; CPUID.07H.02H:EDX (intel) TO DO TO DO
 
-; 0dh, eax[18:00]
-__ProcExtStateEnumMainSize = 30 ; 29 + null terminator
-__ProcExtStateEnumMain:         db "X87 state                    ", 0
-                                db "SSE state                    ", 0
-                                db "AVX state                    ", 0
-                                db "BNDREG    (MPX state)        ", 0
-                                db "BNDCSR    (MPX state)        ", 0
-                                db "opmask    (AVX-512 state)    ", 0
-                                db "ZMM_hi256 (AVX-512 state)    ", 0
-                                db "Hi16_ZMM  (AVX-512 state)    ", 0
-                                db "IA32_XSS state               ", 0
-                                db "PKRU state                   ", 0
-                                db "ENQCMD    (used for IA32_XSS)", 0
-                                db "CETU      (used for IA32_XSS)", 0
-                                db "CETS      (used for IA32_XSS)", 0
-                                db "HDC       (used for IA32_XSS)", 0
-                                db "UINTR     (used for IA32_XSS)", 0
-                                db "ALBR      (used for IA32_XSS)", 0
-                                db "HWP       (used for IA32_XSS)", 0
-                                db "TILECFG state                ", 0
-                                db "TILEDATA state               ", 0
+; CPUID.0DH.00H:EAX (intel)
+; CPUID.0DH.01H:EAX (intel)
+__ProcExtStateEnumMainSize = 52 ; 51 + null terminator
+__ProcExtStateEnumMain:         db "X87 state                                          ", 0
+                                db "SSE state                                          ", 0
+                                db "AVX state                                          ", 0
+                                db "MPX_BNDREGS      (MPX state)                       ", 0
+                                db "MPX_BNDCSR       (MPX state)                       ", 0
+                                db "AVX512_OPMASK    (AVX-512 opmask state)            ", 0
+                                db "AVX512_ZMM_HI256 (AVX-512 ZMM upper 256 data state)", 0
+                                db "AVX512_HI16_ZMM  (AVX-512 upper 16 ZMM state)      ", 0
+                                db "PT state                                           ", 0
+                                db "PKRU state                                         ", 0
+                                db "PASID            (PASID state)                     ", 0
+                                db "CET_U            (CET user state)                  ", 0
+                                db "CET_S            (CET supervisor state)            ", 0
+                                db "HDC              (HDC state)                       ", 0
+                                db "UINTR            (UINTR state)                     ", 0
+                                db "LBR              (LBR state (architectural only)   ", 0
+                                db "HWP              (HWP state)                       ", 0
+                                db "AMX_TILECFG      (TILECFG state)                   ", 0
+                                db "AMX_TILEDATA     (TILEDATA state)                  ", 0
 
-; 12h ecx = 2, ecx[03:00]
+; CPUID.12H.02H:ECX (intel)     ECX[3:0]EPC_SECTION_PROPERTY
 __SGXEPCSubLeaf2Size = 67       ; 66 + null terminator
 __SGXEPCSubLeaf2:               db "This section has confidentiality, integrity, and replay protection", 0
                                 db "This section has confidentiality protection only                  ", 0
                                 db "This section has confidentiality and integrity protection         ", 0
                                                                 
 
-; 18h, edx[04:00]
+; CPUID.18H.ECX >= 1, EDX[04:00]TYPE
 __DATCacheTypeSize = 13         ; 12 + null terminator
 __DATCacheType:                 db "Unknown    :", 0
                                 db "Data       :", 0
@@ -480,7 +483,7 @@ __DATCacheType:                 db "Unknown    :", 0
                                 db "Load Only  :", 0
                                 db "Store Only :", 0
 
-; 1fh, ecx[15:08]
+; CPUID.1FH.ECX >= 0, ECX[15:08]DOMAIN_TYPE
 __LevelTypeSize = 8             ; 7 + null terminator
 __LevelType:                    db "Invalid", 0
                                 db "Logical", 0
@@ -490,23 +493,23 @@ __LevelType:                    db "Invalid", 0
                                 db "Die    ", 0
                                 db "Die/Grp", 0
 
-; 23h, ecx=3; eax[12:00]
-__APMES3Size = 28               ; 27 + null terminator
-__APMES3:                       db "Core cycles                ", 0 
-                                db "Instructions retired       ", 0
-                                db "Reference cycles           ", 0
-                                db "Last level cache references", 0
-                                db "Last level cache misses    ", 0
-                                db "Branch instructions retired", 0
-                                db "Branch mispredicts retired ", 0
-                                db "Topdown slots              ", 0
-                                db "Topdown backend bound      ", 0
-                                db "Topdown bad speculation    ", 0
-                                db "Topdown frontend bound     ", 0
-                                db "Topdown retiring           ", 0
-                                db "LBR inserts                ", 0
+; CPUID.23H.03H, EAX[12:00]
+__APMES3Size = 43               ; 42 + null terminator
+__APMES3:                       db "CORE_CYC       Core cycles                ", 0 
+                                db "INSTR_RET      Instructions retired       ", 0
+                                db "REF_CYC        Reference cycles           ", 0
+                                db "LLC_REF        Last level cache references", 0
+                                db "LLC_MISSES     Last level cache misses    ", 0
+                                db "BR_INSTR_RET   Branch instructions retired", 0
+                                db "BR_MISPRED_RET Branch mispredicts retired ", 0
+                                db "SLOTS          Topdown slots              ", 0
+                                db "BACKEND        Topdown backend bound      ", 0
+                                db "BADSPEC        Topdown bad speculation    ", 0
+                                db "FRONTEND       Topdown frontend bound     ", 0
+                                db "RETIRING       Topdown retiring           ", 0
+                                db "LBR_INSERTS    LBR inserts                ", 0
 
-; Intel 0x80000006; ecx, bits 12-15
+; CPUID.80000006, ECX[15:12]
 __IntelLevelTwoCacheSize = 19   ; 18 + null terminator
 __IntelLevelTwoCache:           db "Disabled          ", 0
                                 db "1 way (direct map)", 0
@@ -515,7 +518,7 @@ __IntelLevelTwoCache:           db "Disabled          ", 0
                                 db "4 ways            ", 0
                                 db "Reserved          ", 0
                                 db "8 ways            ", 0
-                                db "See leaf 04h      ", 0 
+                                db "See 04H.02H       ", 0 
                                 db "16 ways           ", 0
                                 db "Reserved          ", 0
                                 db "32 ways           ", 0
