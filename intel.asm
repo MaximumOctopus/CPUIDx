@@ -1,8 +1,8 @@
 ; ===================================================================================
 ; ===================================================================================
 ;
-;  (c) Paul Alan Freshney 2022-2025
-;  v0.21, December 5th 2025
+;  (c) Paul Alan Freshney 2022-2026
+;  v0.22, February 20th 2026
 ;
 ;  Source code:
 ;      https://github.com/MaximumOctopus/CPUIDx
@@ -511,10 +511,15 @@ showe:  mov esi, 0
         cinvoke printf, "    ebx %02d", esi, 10
 
 .b0100: bt esi, kIA32_PPIN
-        jnc .b0103
-                
+        jnc .b0101
+
         cinvoke printf, "    PPIN: IA32_PPIN and IA32_PPIN_CTL MSRs %c", 10
-                
+
+.b0101: bt esi, kPBNDKB 
+        jnc .b0103
+
+        cinvoke printf, "    PBNDKB: IA32_TSE_CAPABILITY MSR. %c", 10
+
 .b0103: bt esi, kCPUIDMAXVAL_LIM_RMV
         jnc .sl1d
                 
@@ -822,7 +827,7 @@ ArchitecturalPerfMon:
 ; intel implementation
 ExtendedTopology:
 
-        cmp [__MaxBasic], 0x1F                  ; 0x1f is the preferred topology leaf, if it's valid on this CPU, ignore 0bh
+        cmp [__MaxBasic], 0x1F                  ; 0x1F is the preferred topology leaf, if it's valid on this CPU, ignore 0BH
         jge .fin
                 
         mov esi, dword __Leaf1F00
@@ -909,7 +914,7 @@ ProcExtStateEnumMain:
         mov eax, 0x0D
         cpuid
                 
-        mov edi, __ProcExtStateEnumMain
+        mov edi, __ProcExtStateEnumMain00
 
         push eax
         cinvoke printf, "  Processor Extended State Enumeration (EAX:0x%x EBX:0x%x ECX:0x%x) %c", eax, ebx, ecx, 10
@@ -924,7 +929,7 @@ ProcExtStateEnumMain:
         cinvoke printf, "    %02d::%s %c", esi, edi, 10
         pop eax
 
-.next:  add edi, __ProcExtStateEnumMainSize
+.next:  add edi, __ProcExtStateEnumMainSize00
 
         inc esi
 
@@ -936,7 +941,7 @@ ProcExtStateEnumMain:
         mov eax, 0x0D
         cpuid
 
-        mov edi, __ProcExtStateEnumMain
+        mov edi, __ProcExtStateEnumMain00
 
         mov edi, ebx
         mov esi, ecx
@@ -960,41 +965,28 @@ ProcExtStateEnumSub1:
         mov eax, 0x0D
         cpuid
                 
-        mov edi, eax
-        mov esi, ebx
-                
-        bt edi, kXSAVEOPT
-        jnc .bit1
-                
-        cinvoke printf, "    XSAVEOPT available %c", 10
-                
-.bit1:  bt edi, kXSAVEC
-        jnc .bit2
-                
-        cinvoke printf, "    Supports XSAVEC and the compacted form of XRSTOR %c", 10
-                
-.bit2:  bt edi, kXGETBV
-        jnc .bit3
-                
-        cinvoke printf, "    Supports XGETBV %c", 10
+mov edi, __ProcExtStateEnumMain01
 
-.bit3:  bt edi, kIA32_XSS
-        jnc .bit4
-                
-        cinvoke printf, "    Supports XSAVES/XRSTORS and IA32_XSS %c", 10
-                
-.bit4:  bt edi, kXFD
-        jnc .size
-                
-        cinvoke printf, "    Supports extended feature disable (XFD) %c", 10            
+        push eax
+        cinvoke printf, "  Processor Extended State Enumeration (EAX:0x%x EBX:0x%x ECX:0x%x) %c", eax, ebx, ecx, 10
+        pop eax
 
-.size:  cinvoke printf, "    XSAVE area containing all states enabled by XCR0 | IA32_XSS: %d bytes %c", esi, 10
+        mov esi, 0              ; bit counter
 
-        mov ecx, 0x01
-        mov eax, 0x0D
-        cpuid   
-                
-        cinvoke printf, "    IA32_XSS MSR 0x%08X%08X %c", edx, ecx, 10
+.loop:  bt  eax, esi
+        jnc .next
+
+        push eax
+        cinvoke printf, "    %02d::%s %c", esi, edi, 10
+        pop eax
+
+.next:  add edi, __ProcExtStateEnumMainSize01
+
+        inc esi
+
+        cmp esi, 19             ; number of bits to test
+
+        jne .loop
 
 .fin:   ret
 
@@ -1031,13 +1023,13 @@ IntelRDTMonitoring:
                 
         cinvoke printf, "    Max Range of RMID within this physical processor: 0x%x %c", eax, 10
 
-        bt edi, kCMT_L3
+        bt edi, kL3_MON
         jnc .subleaf
                 
         cinvoke printf, "    Supports L3 Cache Intel RDT Monitoring %c", 10
                 
-; CPUID.0FH.01H				
-				
+; CPUID.0FH.01H                         
+                                
 .subleaf:
 
         mov esi, dword __Leaf0F01
@@ -1066,12 +1058,12 @@ IntelRDTMonitoring:
                 
         cinvoke printf, "    Overflow bit in IA32_QM_CTR MSR bit 61 %c", 10
                 
-.bit9:  bt edi, kIO_QOS_CMT
+.bit9:  bt edi, kIO_RDT_CMT
         jnc .bita
 
         cinvoke printf, "    Non-CPU agent Intel RDT CMT support %c", 10
                 
-.bita:  bt edi, kIO_QOS_MBM
+.bita:  bt edi, kIO_RDT_MBM
         jnc .next               
                 
         cinvoke printf, "    Non-CPU agent Intel RDT MBM support %c", 10
@@ -1094,12 +1086,12 @@ IntelRDTMonitoring:
 
         cinvoke printf, "    Supports L3 occupancy monitoring %c", 10
                 
-.bit1:  bt esi, kCMT_L3_TOTAL
+.bit1:  bt esi, kMBM_L3_TOTAL
         jnc .bit2
                 
         cinvoke printf, "    Supports L3 Total Bandwidth monitoring %c", 10
                 
-.bit2:  bt esi, kCMT_L3_LOCAL
+.bit2:  bt esi, kMBM_L3_LOCAL
         jnc .fin
 
         cinvoke printf, "    Supports L3 Local Bandwidth monitoring %c", 10
@@ -1159,13 +1151,13 @@ IntelRDTAllocEnum:
         cpuid
                 
         mov edi, eax
-        mov esi, eax
+        mov esi, ebx
                 
         and edi, 0x0000001F
         inc edi
                 
-        cinvoke printf, "    ResID 1 Capacity bit mask length: %d %c", edi, 10
-        cinvoke printf, "    Bit-granular map of isolation/contention of allocation units: 0x%x %c", esi, 10
+        cinvoke printf, "    ResID 1 Capacity bit mask length: %d %c", edi, 10                                                                  ; CAT_L3_BITMASK_LENGTH
+        cinvoke printf, "    Bit-granular map of isolation/contention of allocation units: 0x%x %c", esi, 10    ; CAT_L3_CONTENTION
                 
         mov ecx, 1
         mov eax, 0x10   
@@ -1292,7 +1284,7 @@ IntelRDTAllocEnum:
                 
 .dnl:   cinvoke printf, "    Response of the delay values is not linear %c", 10
 
-.hcos3: and esi, 0x0000FFFF	; MBA_MAX_CLOS
+.hcos3: and esi, 0x0000FFFF     ; MBA_MAX_CLOS
 
         cinvoke printf, "    Highest COS number supported for ResID 3: %d %c", esi, 10
 
@@ -1351,7 +1343,7 @@ IntelSGXCapability:
         cinvoke printf, "    Intel SGX supports the collection of SGX2 leaf functions %c", 10
         pop eax
                 
-;.bit5:  bt eax, kENCLVx	; removed in the June 2025 update
+;.bit5:  bt eax, kENCLVx        ; removed in the June 2025 update
 ;        jnc .bit6
 ;
 ;        push eax
@@ -1543,9 +1535,14 @@ IntelProcessorTrace:
         cinvoke printf, "    Writes can set IA32_RTIT_CTL[31] (EventEn), enabling Event Trace packet generation %c", 10
 
 .bbit8: bt edi, kTNT_DIS
-        jnc .cbit0
+        jnc .bbit9
 
         cinvoke printf, "    Writes can set IA32_RTIT_CTL[55] (DisTNT), disabling TNT packet generation %c", 10
+
+.bbit9: bt edi, kPTTT
+        jnc .cbit0
+
+        cinvoke printf, "    Processor Trace Trigger Tracing (PTTT) is supported %c", 10
 
 .cbit0: bt esi, kTOPAOUT
         jnc .cbit1
@@ -1595,6 +1592,17 @@ IntelProcessorTrace:
 
         cinvoke printf, "    Configurable Address Ranges for filtering: %d %c", eax, 10
 
+        mov eax, edi
+
+        shr edi, 8          ; TRIGGER_CFG_CNT
+        and edi, 0x00000007
+                
+                shl edi, 2          ; number of triggers is 4x the value stored in eax
+
+        cinvoke printf, "    Number of IA32_RTIT_TRIGGERx_CFG MSRs: %x %c", edi, 10
+
+        mov eax, edi
+
         shr edi, 16
         and edi, 0x0000FFFF
 
@@ -1610,6 +1618,27 @@ IntelProcessorTrace:
         and esi, 0x0000FFFF
 
         cinvoke printf, "    Bitmap of supported Configurable PSB freq encodings: 0x%x %c", esi, 10
+                
+        mov ecx, 1
+        mov eax, 0x14
+        cpuid
+
+        mov edi, ecx
+                
+.cb10:  bt esi, kICNT
+        jnc .cb11
+                
+        cinvoke printf, "    The trigger action EN_ICNT is supported %c", 10            
+                
+.cb11:  bt esi, kTRIGGER_PAUSE
+        jnc .cb15
+                
+        cinvoke printf, "    The trigger actions TRACE_PAUSE and TRACE_RESUME are supported %c", 10
+                
+.cb15:  bt esi, kTRIGGER_DR_MATCH
+        jnc .fin
+                
+        cinvoke printf, "    Trigger input DR match is supported %c", 10                
 
 .fin:   ret
 
@@ -2282,8 +2311,9 @@ ProcessorHistoryReset:
 ; CPUID.21H
 ; Intel only
 
-; Reserved. EAX/EBX/ECX/EDX = 0
-;
+; Does not return feature information for the processor. Allocated for use by TDX modules; 
+; see Intel Trust Domain Extensions (Intel TDX) Module Base Architecture Specification. 
+; Software emulating CPUID should not change the information returned for this leaf.
 
 ; =============================================================================================
 
@@ -2356,6 +2386,11 @@ APMEMain:
         jnc .fin
                 
         call APMESub3
+
+.sl4:   bt eax, 3
+        jnc .fin
+                
+        call APMESub4
 
 .fin:   ret
 
@@ -2463,6 +2498,103 @@ APMESub3:
 
 ; =============================================================================================
 
+; CPUID.23H.04H, data in eax (ebx/ecx/edx reserved)
+; intel only
+
+APMESub4:
+
+        mov esi, dword __Leaf2304
+        call ShowLeafInformation
+
+        cinvoke printf, "  Architectural Performance Monitoring Extended Sub-Leaf 4 %c", 10             
+        cinvoke printf, "    PEBS Capabilities %c", 10
+
+        mov ecx, 4
+        mov eax, 0x23
+        cpuid
+
+        mov edi, ebx
+
+.b3:    bt edi, kALLOW_IN_RECORD
+        jnc .b4
+
+        cinvoke printf, "    The ALLOW_IN_RECORD bit is available in the IA32_PMC_GPn_CFG_C and IA32_PMC_FXm_CFG_C MSRs %c", 10
+
+.b4:    bt edi, kCNTR_GP
+        jnc .b5
+
+        cinvoke printf, "    Counters group sub-group general-purpose counters is available %c", 10
+		
+.b5:    bt edi, kCNTR_FIXED
+        jnc .b6
+
+        cinvoke printf, "    Counters group sub-group fixed-function counters is available. %c", 10
+
+.b6:    bt edi, kCNTR_METRICS
+        jnc .b8
+
+        cinvoke printf, "    Counters group sub-group performance metrics is available. %c", 10
+
+.b8:    mov esi, edi
+
+        shr esi, 8
+        and esi, 0x03
+
+        cinvoke printf, "    LBR %d %c", esi, 10
+
+.b16:   mov esi, edi
+
+        shr esi, 16
+        and esi, 0xFF
+
+        cinvoke printf, "    XER %d %c", esi, 10
+
+.b29:   bt edi, kGPR
+        jnc .b30
+
+        cinvoke printf, "    GPR group is available %c", 10
+
+.b30:   bt edi, kGPR
+        jnc .fin
+
+        cinvoke printf, "    AUX group is available %c", 10
+
+.fin:   ret
+
+; =============================================================================================
+
+; CPUID.23H.05H, data in eax (ebx/ecx/edx reserved)
+; intel only
+
+APMESub5:
+
+        mov esi, dword __Leaf2305
+        call ShowLeafInformation
+
+        cinvoke printf, "  Architectural Performance Monitoring Extended Sub-Leaf 5 %c", 10             
+        cinvoke printf, "    Arch PEBS GP and Fixed Counters supported %c", 10
+
+        mov ecx, 5
+        mov eax, 0x23
+        cpuid
+
+        mov edi, ecx
+        mov esi, edx
+
+        push ebx
+        cinvoke printf, "    GP_PEBS: 0x%x %c", eax, 10
+        pop ebx
+
+        cinvoke printf, "    GP_PDIST: 0x%x %c", ebx, 10
+
+        cinvoke printf, "    FIXED_PEBS: 0x%x %c", edi, 10
+
+        cinvoke printf, "    FIXED_PDIST: 0x%x %c", esi, 10
+
+        ret
+
+; =============================================================================================
+
 ; CPUID.24H.00H, data in eax, ebx (ecx/edx reserved)
 ; intel only
 
@@ -2497,9 +2629,253 @@ ConvergedVectorISAMain:
 
         cinvoke printf, "    Intel AVX10 Converged Vector ISA version 0x%x (%d) %c", esi, esi, 10
 
-		; changed in March 2025 update (see 24H.00H, EBX[18:16 in the spec)
-		; all processors supporting AVX10 support all vector widths.
+        ; changed in March 2025 update (see 24H.00H, EBX[18:16] in the spec)
+        ; all processors supporting AVX10 support all vector widths.
         cinvoke printf, "    128/256/512-bit vector widths supported %c", 10
+
+.fin:   ret
+
+; =============================================================================================
+
+; CPUID.27H.00H, data in ebx, ecx (eax/edx reserved)
+; intel only
+
+IRDTAM:
+
+        cmp [__MaxBasic], 0x27
+        jl .fin
+
+        mov esi, dword __Leaf2700
+        call ShowLeafInformation
+
+        cinvoke printf, "  Intel Resource Director Technology (Intel RDT) Asymmetric Monitoring %c", 10
+
+        mov ecx, 0
+        mov eax, 0x27
+        cpuid
+
+        mov edi, edx 
+
+        cinvoke printf, "  Maximum range (zero-based) of RMID within this physical processor of all types: %d %c", ebx, 10
+
+.l3mon: bt edi, kL3_MON
+        jnc .fin
+
+; =============================================================================================
+
+; CPUID.27H.01H, data in eax, ebx, ecx, edx
+; intel only
+
+        mov esi, dword __Leaf2701
+        call ShowLeafInformation
+
+        cinvoke printf, "  L3 Cache Intel Resource Director Technology Asymmetric Monitoring %c", 10
+
+        mov ecx, 1
+        mov eax, 0x27
+        cpuid
+
+        mov edi, ecx
+        mov esi, edx
+
+        and eax, 0x000000FF
+
+        push ebx
+        cinvoke printf, "  CTR_WIDTH: %d %c", eax, 10        
+		pop ebx
+
+        cinvoke printf, "  CONV_FACTOR for IA32_QM_CTR: %d %c", ebx, 10
+
+        cinvoke printf, "  MAX_RMID_L3 (0-based) of RMID: %d %c", edi, 10
+
+.2710:  bt esi, kCMT_L3_OCCUP
+        jnc .fin
+		
+        cinvoke printf, "  Supports L3 occupancy monitoring %c", 10
+		
+.2711:  bt esi, kMBM_L3_TOTAL
+        jnc .fin
+		
+        cinvoke printf, "  Supports L3 total bandwidth monitoring %c", 10
+		
+.2712:  bt esi, kMBM_L3_LOCAL
+        jnc .fin
+
+        cinvoke printf, "  Supports L3 local bandwidth monitoring %c", 10
+
+.fin:   ret
+
+; =============================================================================================
+
+; CPUID.28H.00H, data in ebx
+; intel only
+
+IRDTAA:
+
+        cmp [__MaxBasic], 0x28
+        jl .fin
+
+        mov esi, dword __Leaf2800
+        call ShowLeafInformation
+
+        cinvoke printf, "  Intel Resource Director Technology (Intel RDT) Asymmetric Allocation %c", 10
+
+        mov ecx, 0
+        mov eax, 0x28
+        cpuid
+
+.bx1:   bt ebx, kCAT_L3
+        jnc .bx2
+
+        push ebx
+		call IRDTAA01
+        pop ebx
+
+.bx2:   bt ebx, kCAT_L2
+        jnc .bx3
+
+        push ebx
+		call IRDTAA02
+        pop ebx
+
+.bx3:   bt ebx, kMBA
+        jnc .fin
+
+        push ebx
+		call IRDTAA03
+        pop ebx
+
+.fin:
+
+; =============================================================================================
+
+; CPUID.28H.01H, data in eax, ebx, ecx, edx
+; intel only
+
+IRDTAA01:
+
+        mov esi, dword __Leaf2801
+        call ShowLeafInformation
+
+        cinvoke printf, "  Asymmetric L3 Cache Allocation Technology %c", 10
+
+        mov ecx, 1
+        mov eax, 0x28
+        cpuid
+
+        mov edi, ecx
+        mov esi, edx
+
+        and eax, 0x0000001F
+        inc eax
+
+        push ebx
+        cinvoke printf, "    Length of the capacity bit mask for the corresponding ResID: %d %c", eax, 10
+        pop ebx
+
+        cinvoke printf, "    Bit-granular map of isolation/contention of allocation units: 0x%x %c", ebx, 10
+
+.2811:  bt edi, kCAT_L3_NONCPU
+        jnc .2812
+
+        cinvoke printf, "    CAT_L3_NONCPU LOL :( %c", 10
+
+.2812:  bt edi, kCAT_L3_CDP
+        jnc .2813
+
+        cinvoke printf, "    Supports L3 Code and Data Prioritization Technology %c", 10
+
+.2813:  bt edi, kCAT_L3_NONCONTIG
+        jnc .28d
+
+        cinvoke printf, "    Supports non-contiguous capacity bitmasks %c", 10
+
+.28d:   and esi, 0x0000FFFF ; CAT_L3_MAX_CLOS
+
+        cinvoke printf, "    Highest Class of Service (COS) number supported for this ResID 0x%x %c", esi, 10
+
+.fin:   ret
+
+; =============================================================================================
+
+; CPUID.28H.02H, data in eax, ebx, ecx, edx
+; intel only
+
+IRDTAA02:
+
+        mov esi, dword __Leaf2802
+        call ShowLeafInformation
+
+        cinvoke printf, "  Asymmetric L2 Cache Allocation Technology %c", 10
+
+        mov ecx, 2
+        mov eax, 0x28
+        cpuid
+
+        mov edi, ecx
+        mov esi, edx
+
+        and eax, 0x0000001F
+        inc eax
+
+        push ebx
+        cinvoke printf, "    Length of the capacity bit mask for the corresponding ResID: %d %c", eax, 10
+        pop ebx
+
+        cinvoke printf, "    Bit-granular map of isolation/contention of allocation units: 0x%x %c", ebx, 10
+
+.2822:  bt edi, kCAT_L2_CDP
+        jnc .2822
+
+        cinvoke printf, "    Supports L3 Code and Data Prioritization Technology %c", 10
+
+.2823:  bt edi, kCAT_L2_NONCONTIG
+        jnc .28d
+
+        cinvoke printf, "    Supports non-contiguous capacity bitmasks %c", 10
+
+.28d:   and esi, 0x0000FFFF ; CAT_L2_MAX_CLOS
+
+        cinvoke printf, "    Highest Class of Service (COS) number supported for this ResID 0x%x %c", edi, 10
+
+.fin:   ret
+
+; =============================================================================================
+
+; CPUID.28H.03H, data in eax, ecx, edx (ebx reserved)
+; intel only
+
+IRDTAA03:
+
+        mov esi, dword __Leaf2803
+        call ShowLeafInformation
+
+        cinvoke printf, "  Asymmetric Memory Bandwidth Allocation %c", 10
+
+        mov ecx, 3
+        mov eax, 0x28
+        cpuid
+
+        mov edi, ecx
+        mov esi, edx
+		
+        and eax, 0x00000FFF
+
+        cinvoke printf, "    Maximum MBA throttling value supported for the corresponding ResID %d %c", edi, 10
+
+.2830:  bt edi, kPER_THREAD_MBA
+        jnc .2832
+
+        cinvoke printf, "    Per-thread MBA controls are supported %c", 10
+
+.2832:  bt edi, kMBA_LINEAR
+        jnc .28d
+
+        cinvoke printf, "    Response of the delay values is linear %c", 10
+
+.28d:   and esi, 0x0000FFFF ; MBA_MAX_CLOS
+
+        cinvoke printf, "    Highest Class of Service (COS) number supported for this ResID 0x%x %c", edi, 10
 
 .fin:   ret
 

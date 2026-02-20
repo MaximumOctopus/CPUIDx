@@ -1,8 +1,8 @@
 ; ===================================================================================
 ; ===================================================================================
 ;
-;  (c) Paul Alan Freshney 2022-2025
-;  v0.21, December 5th 2025
+;  (c) Paul Alan Freshney 2022-2026
+;  v0.22, February 20th 2026
 ;
 ;  Source code:
 ;      https://github.com/MaximumOctopus/CPUIDx
@@ -101,7 +101,7 @@ AMDStructuredExtendedFeatureIDs:
         cinvoke printf, "  Structured Extended Feature Identifiers (0x%x) %c", ebx, 10
         pop ebx
 
-        mov edi, __AMDStructuredExtendedFeatureIDs1	; pointer to start of table
+        mov edi, __AMDStructuredExtendedFeatureIDs1     ; pointer to start of table
 
         mov esi, 0              ; bit counter
 
@@ -146,14 +146,14 @@ AMDStructuredExtendedFeatureIDs:
         cmp esi, 32
 
         jne .lf2
-		
-		mov ecx, 1
+                
+                mov ecx, 1
         mov eax, 0x07           ; added July 2025
         cpuid
-		
+                
         push eax
         cinvoke printf, "  Structured Extended Feature Identifiers (0x%x) %c", eax, 10
-        pop eax	
+        pop eax 
 
         mov edi, __AMDStructuredExtendedFeatureIDs3
 
@@ -796,7 +796,7 @@ AMDCacheTLBLevelOneFromTable:
         cmp eax, kOneWayAssociative
         je .oneway
                 
-        cmp eax, kFullyAssociative
+        cmp eax, kFullyAssociativeValue
         je .fully
                 
         cinvoke printf, "    %d-way associative %c", eax, 10
@@ -1190,7 +1190,7 @@ AMDSVM:
         cpuid
                 
         mov edi, ebx
-        mov esi, ecx	        ; added in July 2025
+        mov esi, ecx            ; added in July 2025
                 
         and eax, 0x000000FF
                 
@@ -1219,12 +1219,12 @@ AMDSVM:
         cmp esi, 32             ; number of bits to test
 
         jne .l1
-		
+                
         mov eax, 0x8000000A
-        cpuid		
+        cpuid           
 
         mov edi, edx
-		
+                
         cinvoke printf, "  SVM Feature Identification (EDX) %c", 10
                 
         mov eax, edi
@@ -1245,7 +1245,7 @@ AMDSVM:
 
         cmp esi, 32             ; number of bits to test
 
-        jne .l2		
+        jne .l2         
 
 .fin:   ret
 
@@ -1670,7 +1670,7 @@ AMDCache:
 
 .nsi:   cinvoke printf, "    SelfInitialization. Hardware does not initialize this cache %c", 10
 
-.fa:    bt edi, kFullyAssociative
+.fa:    bt edi, kBitFullyAssociative
         jnc .nfa
 
         cinvoke printf, "    FullyAssociative. Cache is fully associative %c", 10
@@ -2049,7 +2049,7 @@ AMDEFI2:
         mov esi, dword __Leaf80__21
         call ShowLeafInformation
 
-        mov eax, 0x80000021	; testing eax data
+        mov eax, 0x80000021     ; testing eax data
         cpuid
 
         push eax
@@ -2073,13 +2073,13 @@ AMDEFI2:
         cmp esi, 18             ; number of bits to test
 
         jne .loop
-		
+                
         mov eax, 0x80000021 ; testing ebx data
-        cpuid		
+        cpuid           
 
         cinvoke printf, "  Extended Feature Identification 2 (EBX:0x%x) %c", ebx, 10
 
-        mov edi, ebx	
+        mov edi, ebx    
 
         and ebx, 0xFFFF ; MicrocodePatchSize (stored as 16-byte multiples)
 
@@ -2222,8 +2222,8 @@ AMDSEV2:
 
         mov eax, 0x80000025
         cpuid
-		
-		cinvoke printf, "  SEV Capabilities 2 (EAX:0x%x EBX:0x%x) %c", eax, ebx, 10
+                
+                cinvoke printf, "  SEV Capabilities 2 (EAX:0x%x EBX:0x%x) %c", eax, ebx, 10
 
         mov eax, 0x80000025
         cpuid
@@ -2231,7 +2231,7 @@ AMDSEV2:
         mov edi, eax
         mov esi, ebx
 
-        and eax, 0x3F	; MinRmpSegSize
+        and eax, 0x3F   ; MinRmpSegSize
 
         cinvoke printf, "     Minimum supported RMP segment size %d %c", eax, 10
 
@@ -2244,12 +2244,12 @@ AMDSEV2:
         mov eax, esi
         and eax, 0x1FF  ; NumCachedSegments
 
-        cinvoke printf, "     Number of cached RMP segment definitions %d %c", eax, 10	
+        cinvoke printf, "     Number of cached RMP segment definitions %d %c", eax, 10  
 
         bt esi, kNumSegReduction
         jnc .fin
 
-        cinvoke printf, "     Number of RMP segments is reduced %c", 10	
+        cinvoke printf, "     Number of RMP segments is reduced %c", 10 
 
 .fin:
 

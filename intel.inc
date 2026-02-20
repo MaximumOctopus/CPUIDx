@@ -1,8 +1,8 @@
 ; ===================================================================================
 ; ===================================================================================
 ;
-;  (c) Paul Alan Freshney 2022-2025
-;  v0.21, December 5th 2025
+;  (c) Paul Alan Freshney 2022-2026
+;  v0.22, February 20th 2026
 ;
 ;  Source code:
 ;      https://github.com/MaximumOctopus/CPUIDx
@@ -46,7 +46,7 @@ __FeatureString1:               db "SSE3              (Streaming SIMD Extensions
                                 db "AVX               (AVX instruction extensions)                   ", 0
                                 db "F16C              (16-bit floating-point conversion instructions)", 0
                                 db "RDRAND            (RDRAND instruction)                           ", 0
-                                db "Not used                                                         ", 0
+                                db "Not used                                                         ", 0 ; Intel processors always return 0. Allocated for use by software emulation.
 
 ; CPUID.01H:EDX
 __FeatureString2:               db "FPU               (Floating-Point Unit On-Chip)                  ", 0
@@ -70,7 +70,7 @@ __FeatureString2:               db "FPU               (Floating-Point Unit On-Ch
                                 db "PSN               (Processor Serial Number)                      ", 0
                                 db "CLFLUSH           (CLFLUSH Instruction)                          ", 0
                                 db "Reserved                                                         ", 0
-                                db "DEBUG_STORE       (Debug Store)                                  ", 0
+                                db "DS                (Supports Debug Store feature)                 ", 0
                                 db "ACPI              (Thermal Monitor and Software Controlled Clock)", 0
                                 db "MMX               (Intel MMX Technology)                         ", 0
                                 db "FXSR              (FXSAVE and FXRSTOR Instructions)              ", 0
@@ -386,8 +386,8 @@ __StructuredExtendedFeatureSubLeaf1aFlags:
                                 db "FAST_REP_MOVSB   Fast zero-length instructions supported              ", 0
                                 db "FAST_REP_STOSB   Supports fast short instructions                     ", 0
                                 db "FAST_REP_CMPSB_SCASB. Supports fast short instructions                ", 0
-                                db "Reserved                                                              ", 0
-                                db "Reserved                                                              ", 0
+                                db "FRED             Supports Flexible Return and Event Delivery          ", 0
+                                db "LKGS             Supports 'load into IA32_KERNEL_GS_BASE' instruction ", 0
                                 db "Reserved                                                              ", 0
                                 db "Reserved                                                              ", 0
                                 db "Reserved                                                              ", 0
@@ -431,8 +431,8 @@ __StructuredExtendedFeatureSubLeaf1dFlags:
                                 db "AVX10           Intel AVX10 instructions supported    ", 0
                                 db "Reserved                                              ", 0
                                 db "Reserved                                              ", 0
-                                db "Reserved                                              ", 0
-                                db "Reserved                                              ", 0
+                                db "SEC-TEE-ATTESTATION                                   ", 0
+                                db "MWAIT           MWAIT is supported                    ", 0
                                 db "SLSM            Supports IA32_INTEGRITY_STATUS MSR    ", 0
                                 db "Reserved                                              ", 0
                                 db "Reserved                                              ", 0
@@ -441,13 +441,12 @@ __StructuredExtendedFeatureSubLeaf1dFlags:
                                 db "Reserved                                              ", 0
                                 db "Reserved                                              ", 0
                                 db "Reserved                                              ", 0
-								
+                                                                
 ; CPUID.07H.02H:EDX (intel) TO DO TO DO
 
 ; CPUID.0DH.00H:EAX (intel)
-; CPUID.0DH.01H:EAX (intel)
-__ProcExtStateEnumMainSize = 52 ; 51 + null terminator
-__ProcExtStateEnumMain:         db "X87 state                                          ", 0
+__ProcExtStateEnumMainSize00 = 52 ; 51 + null terminator
+__ProcExtStateEnumMain00:       db "X87 state                                          ", 0
                                 db "SSE state                                          ", 0
                                 db "AVX state                                          ", 0
                                 db "MPX_BNDREGS      (MPX state)                       ", 0
@@ -455,8 +454,30 @@ __ProcExtStateEnumMain:         db "X87 state                                   
                                 db "AVX512_OPMASK    (AVX-512 opmask state)            ", 0
                                 db "AVX512_ZMM_HI256 (AVX-512 ZMM upper 256 data state)", 0
                                 db "AVX512_HI16_ZMM  (AVX-512 upper 16 ZMM state)      ", 0
-                                db "PT state                                           ", 0
+                                db "Always return 0  (Allocated for IA32_XSS)          ", 0
                                 db "PKRU state                                         ", 0
+                                db "Always return 0  (Allocated for IA32_XSS)          ", 0
+                                db "Always return 0  (Allocated for IA32_XSS)          ", 0
+                                db "Always return 0  (Allocated for IA32_XSS)          ", 0
+                                db "Always return 0  (Allocated for IA32_XSS)          ", 0
+                                db "Always return 0  (Allocated for IA32_XSS)          ", 0
+                                db "Always return 0  (Allocated for IA32_XSS)          ", 0
+                                db "Always return 0  (Allocated for IA32_XSS)          ", 0
+                                db "AMX_TILECFG      (TILECFG state)                   ", 0
+                                db "AMX_TILEDATA     (TILEDATA state)                  ", 0                                                             
+
+; CPUID.0DH.01H:ECX (intel)
+__ProcExtStateEnumMainSize01 = 52 ; 51 + null terminator                                                                
+__ProcExtStateEnumMain01:       db "Always return 0  (Allocated for XCR0)              ", 0
+                                db "Always return 0  (Allocated for XCR0)              ", 0
+                                db "Always return 0  (Allocated for XCR0)              ", 0
+                                db "Always return 0  (Allocated for XCR0)              ", 0
+                                db "Always return 0  (Allocated for XCR0)              ", 0
+                                db "Always return 0  (Allocated for XCR0)              ", 0
+                                db "Always return 0  (Allocated for XCR0)              ", 0
+                                db "Always return 0  (Allocated for XCR0)              ", 0
+                                db "PT               (PT State)                        ", 0
+                                                                db "Always return 0  (Allocated for XCR0)              ", 0
                                 db "PASID            (PASID state)                     ", 0
                                 db "CET_U            (CET user state)                  ", 0
                                 db "CET_S            (CET supervisor state)            ", 0
@@ -464,8 +485,12 @@ __ProcExtStateEnumMain:         db "X87 state                                   
                                 db "UINTR            (UINTR state)                     ", 0
                                 db "LBR              (LBR state (architectural only)   ", 0
                                 db "HWP              (HWP state)                       ", 0
-                                db "AMX_TILECFG      (TILECFG state)                   ", 0
-                                db "AMX_TILEDATA     (TILEDATA state)                  ", 0
+                                db "Always return 0  (Allocated for XCR0)              ", 0
+                                db "Always return 0  (Allocated for XCR0)              ", 0
+                                ; ECX[31:19] are Reserved
+                                                                
+; CPUID.0DH.01H:EDX (intel)                                                             
+                                ; EDX[31:0] are Reserved
 
 ; CPUID.12H.02H:ECX (intel)     ECX[3:0]EPC_SECTION_PROPERTY
 __SGXEPCSubLeaf2Size = 67       ; 66 + null terminator
@@ -527,6 +552,6 @@ __IntelLevelTwoCache:           db "Disabled          ", 0
                                 db "96 ways           ", 0
                                 db "128 ways          ", 0
                                 db "Fully associative ", 0
-								
+                                                                
 ; ===================================================================================
 ; ===================================================================================

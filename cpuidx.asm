@@ -1,8 +1,8 @@
 ; ===================================================================================
 ; ===================================================================================
 ;
-;  (c) Paul Alan Freshney 2022-2025
-;  v0.21, December 5th 2025
+;  (c) Paul Alan Freshney 2022-2026
+;  v0.22, February 20th 2026
 ;
 ;  Source code:
 ;      https://github.com/MaximumOctopus/CPUIDx
@@ -21,9 +21,10 @@
 ;         2023 March, September, December
 ;         2024 March, June, October, December
 ;         2025 March, June, October
-;		
-;         Intel® 64 and IA-32 Architectures Software Developer's Manual Documentation Changes
-;             https://www.intel.com/content/www/us/en/developer/articles/technical/intel-sdm.html
+;         2026 February
+;
+;      Intel® 64 and IA-32 Architectures Software Developer's Manual Documentation Changes
+;         https://www.intel.com/content/www/us/en/developer/articles/technical/intel-sdm.html
 ;
 ; ===================================================================================
 ; ===================================================================================
@@ -139,6 +140,10 @@ start:  call Arguments
                 
         call ConvergedVectorISAMain             ; CPUID.24H
 
+        call IRDTAM                             ; CPUID.27H
+		
+        call IRDTAA                             ; CPUID.28H		
+
 ; =============================================================================================
                 
         mov [__MaxExtended], eax
@@ -240,7 +245,7 @@ start:  call Arguments
 ; =============================================================================================
 ; =============================================================================================
 
-About:  cinvoke printf, "%c    CPUidx v0.21 :: December 5th 2025 :: Paul A Freshney %c", 10, 10
+About:  cinvoke printf, "%c    CPUidx v0.22 :: February 20th 2026 :: Paul A Freshney %c", 10, 10
 
         cinvoke printf, "       https://github.com/MaximumOctopus/CPUIDx %c %c", 10, 10
 
@@ -426,7 +431,7 @@ CoreCount:
 
         invoke GetActiveProcessorCount, 0xffff  ; all processor groups
 
-        cinvoke printf, "    Logical processors %d %c", eax, 10
+        cinvoke printf, "    Logical processors: %d %c", eax, 10
 
         ret
 
@@ -561,7 +566,15 @@ __Leaf2300:                     db "(CPUID.23H.00H)", 0
 __Leaf2301:                     db "(CPUID.23H.01H)", 0
 __Leaf2302:                     db "(CPUID.23H.02H)", 0
 __Leaf2303:                     db "(CPUID.23H.03H)", 0
+__Leaf2304:                     db "(CPUID.23H.04H)", 0
+__Leaf2305:                     db "(CPUID.23H.05H)", 0
 __Leaf2400:                     db "(CPUID.24H.00H)", 0
+__Leaf2700:                     db "(CPUID.27H.00H)", 0
+__Leaf2701:                     db "(CPUID.27H.01H)", 0
+__Leaf2800:                     db "(CPUID.28H.00H)", 0
+__Leaf2801:                     db "(CPUID.28H.01H)", 0
+__Leaf2802:                     db "(CPUID.28H.02H)", 0
+__Leaf2803:                     db "(CPUID.28H.03H)", 0
 __Leaf80__01:                   db "(CPUID.80000001H)", 0
 __Leaf80__02:                   db "(CPUID.80000002H)", 0
 __Leaf80__05:                   db "(CPUID.80000005H)", 0

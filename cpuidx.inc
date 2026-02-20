@@ -1,8 +1,8 @@
 ; ===================================================================================
 ; ===================================================================================
 ;
-;  (c) Paul Alan Freshney 2022-2025
-;  v0.21, December 5th 2025
+;  (c) Paul Alan Freshney 2022-2026
+;  v0.22, February 20th 2026
 ;
 ;  Source code:
 ;      https://github.com/MaximumOctopus/CPUIDx
@@ -35,6 +35,7 @@ kEffFreq = 0
 kSGX = 2                        ; CPUID.07H.00H:EBX (Intel)
 
 kIA32_PPIN = 0                  ; CPUID.07H.01H (Intel)
+kPBNDKB = 1
 kCPUIDMAXVAL_LIM_RMV = 3
 kARCH_PERFMON_EXT = 8
 kAVX10 = 19
@@ -76,25 +77,25 @@ kSUCCOR = 1
 kHWA = 2
 kScalableMca = 3
 
-kCMT_L3 = 1                     ; CPUID.0FH.00H (Intel)
+kL3_MON = 1                     ; CPUID.0FH.00H (Intel)
 kRDT_M_OVF = 8
-kIO_QOS_CMT = 9
-kIO_QOS_MBM = 10
+kIO_RDT_CMT = 9
+kIO_RDT_MBM = 10
 
 kCMT_L3_OCCUP = 0               ; CPUID.0FH.01H (Intel)
-kCMT_L3_TOTAL = 1
-kCMT_L3_LOCAL = 2
+kMBM_L3_TOTAL = 1
+kMBM_L3_LOCAL = 2
 kL3CacheOccMon = 0
 kL3CacheBWMonEvt0 = 1
 kL3CacheBWMonEvt1 = 2
 
 kL3CacheMon = 1                 ; CPUID.0FH (AMD)
 
-kCAT_L3 = 1; 10h (Intel)
+kCAT_L3 = 1                     ; CPUID.10H (Intel)
 kCAT_L2 = 2
 kMBA = 3
 
-kCAT_L3_NONCPU= 1			    ; CPUID.10H.01H (Intel)
+kCAT_L3_NONCPU = 1			    ; CPUID.10H.01H (Intel)
 kCAT_L3_CDP = 2
 kCAT_L3_NONCONTIG = 3
 
@@ -123,6 +124,11 @@ kPWR_EVT_TRACE = 5
 kPMI_PRESERVE = 6
 kEVENT_TRACE = 7
 kTNT_DIS = 8
+kPTTT = 9
+
+kICNT = 0						; CPUID.14H.01H (Intel)
+kTRIGGER_PAUSE = 1
+kTRIGGER_DR_MATCH = 2
 
 kTOPAOUT = 0
 kMENTRY = 1
@@ -162,9 +168,36 @@ kBRANCH_TYPE_FIELD_SUPPORTED = 2
 kUNITMASK2 = 0                  ; CPUID.23H.00H (Intel)
 kEQBit = 1                      ;
 
+kALLOW_IN_RECORD = 3            ; CPUID.23H.04H (Intel)
+kCNTR_GP = 4
+kCNTR_FIXED = 5
+kCNTR_METRICS = 6
+kGPR = 29
+kAUX = 30
+
 k128BitVector = 16              ; CPUID.24H.00H (Intel)
 k256BitVector = 17
 k512BitVector = 18
+
+;kL3_MON = 1                    ; CPUID.27H.00H (Intel)
+
+kRDT_M_OVF = 8
+kIO_RDT_CMT = 9
+kIO_RDT_MBM = 10
+
+kCMT_L3_OCCUP = 0
+kMBM_L3_TOTAL = 1
+kMBM_L3_LOCAL = 2
+
+;kCAT_L3_NONCPU = 1              ; CPUID.28H.01H (Intel)
+;kCAT_L3_CDP = 2
+;kCAT_L3_NONCONTIG = 3
+
+;kCAT_L2_CDP = 2                 ; CPUID.28H.02H (Intel)
+;kCAT_L2_NONCONTIG = 3
+
+kPER_THREAD_MBA = 0             ; CPUID.28H.03H (Intel)
+kMBA_LINEAR = 2
 
 kPQE = 15                       ; CPUID.80000000H (AMD)
 
@@ -180,7 +213,7 @@ kIntel64Architecture = 29
 kTopologyExtensions = 22        ; CPUID.80000001H (AMD)
 
 kOneWayAssociative = 1          ; CPUID.80000005H (AMD)
-kFullyAssociative = 255
+kFullyAssociativeValue = 255
 
 kWBNOINVD = 9                   ; CPUID.80000008H (Intel)
 
@@ -197,7 +230,7 @@ kLwpCacheLevels = 30
 kLwpCacheLatency = 31
 
 kSelfInitialization = 8         ; CPUID.8000001DH (AMD)
-kFullyAssociative = 9
+kBitFullyAssociative = 9
 
 kWBINVD = 0                     ; CPUID.8000001DH (AMD)
 kCacheInclusive = 1
