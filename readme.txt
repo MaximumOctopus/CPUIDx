@@ -1,7 +1,7 @@
 ==============================================================================
 
   CPUidX 0.23
-  (c) Paul Alan Freshney 2022-2025
+  (c) Paul Alan Freshney 2022-2026
 
   paul@freshney.org
 
@@ -22,7 +22,7 @@
           2023 March, September, December
           2024 March, June, October, December
           2025 March, June, October
-          2026 February
+          2026 February, April
 
           Intel® 64 and IA-32 Architectures Software Developer's Manual Documentation Changes
               https://www.intel.com/content/www/us/en/developer/articles/technical/intel-sdm.html
