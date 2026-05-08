@@ -2,7 +2,7 @@
 ; ===================================================================================
 ;
 ;  (c) Paul Alan Freshney 2022-2026
-;  v0.22, February 20th 2026
+;  v0.23, May 7th 2026
 ;
 ;  Source code:
 ;      https://github.com/MaximumOctopus/CPUIDx
@@ -525,9 +525,27 @@ showe:  mov esi, 0
                 
         cinvoke printf, "    CPUIDMAXVAL_LIM_RMV. IA32_MISC_ENABLE cannot be set to 1 to limit CPUID.00H:EAX[bits 7:0] %c", 10
 
-; CPUID.07H.01H
+; CPUID.07H.01H:ECX
 
 .sl1d:  mov ecx, 0x01
+        mov eax, 0x07           ; sub-leaf 1   
+        cpuid
+
+        mov edx, edi
+
+.d0100: bt esi, kRDT_M_ASYM
+        jnc .d0101
+
+        cinvoke printf, "    RDT_M_ASYM. At least one logical processor support Asymmetrical Intel RDT Monitoring %c", 10
+
+.d0101: bt esi, kRDT_A_ASYM
+        jnc .sl2d
+
+        cinvoke printf, "    RDT_A_ASYM. At least one logical processor support Asymmetrical Intel RDT Allocation %c", 10
+
+; CPUID.07H.01H:EDX
+
+.sl2d:  mov ecx, 0x01
         mov eax, 0x07           ; sub-leaf 1   
         cpuid
                 
@@ -1129,9 +1147,19 @@ IntelRDTAllocEnum:
         cinvoke printf, "    Supports L2 Cache Allocation Technology %c", 10
 
 .bit3:  bt edi, kMBA
-        jnc .subleaf1
+        jnc .bit5
                 
         cinvoke printf, "    Supports Memory Bandwidth Allocation %c", 10
+                
+.bit5:  bt edi, kCBA
+        jnc .bit6
+                
+        cinvoke printf, "    Supports Cache Bandwidth Allocation %c", 10
+
+.bit6:  bt edi, kRESOURCE_PRIORITY
+        jnc .subleaf1
+                
+        cinvoke printf, "    Supports Resource Priority %c", 10
                 
 ; CPUID.10H.01H (data in eax, ebx, ecx, and edx)
 
@@ -1287,6 +1315,83 @@ IntelRDTAllocEnum:
 .hcos3: and esi, 0x0000FFFF     ; MBA_MAX_CLOS
 
         cinvoke printf, "    Highest COS number supported for ResID 3: %d %c", esi, 10
+
+        
+; CPUID.10H.05H (data in eax, ecx, and edx)
+
+.subleaf5:
+
+        mov esi, dword __Leaf1005
+        call ShowLeafInformation
+
+        mov ecx, 5
+        mov eax, 0x10                
+        cpuid
+
+        cinvoke printf, "  Cache Bandwidth Allocation (EAX:0x%x ECX:0x%x EDX:0x%x) %c", eax, ecx, edx, 10
+                
+        mov ecx, 5
+        mov eax, 0x10   
+        cpuid
+                
+        mov edi, ecx
+        mov esi, edx
+
+        mov ebx, eax
+        and eax, 0x000000FF
+        inc eax
+
+        push ebx
+        cinvoke printf, "    Maximum core throttling level supported by ResID 5: %d %c", eax, 10
+        pop ebx
+             
+        mov eax, ebx
+        shr eax, 8
+        and eax, 0x0F
+                         
+        cinvoke printf, "    Logical processor scope: %d %c", eax, 10
+                
+        bt edi, kCBA_LINEAR
+        jnc .cbanl
+                
+        cinvoke printf, "    Response of the bandwidth control is approx. linear %c", 10
+                
+                jmp .d500
+                
+.cbanl: cinvoke printf, "    Response of the bandwidth control is non-linear %c", 10            
+
+.d500:  and esi, 0x0000FFFF     ; CBA_MAX_CLOS
+
+        cinvoke printf, "    Highest COS number supported for ResID 5: %d %c", esi, 10
+        
+; CPUID.10H.06H (data in eax)
+
+.subleaf6:
+
+        mov esi, dword __Leaf1006
+        call ShowLeafInformation
+
+        mov ecx, 6
+        mov eax, 0x10                
+        cpuid
+
+        cinvoke printf, "  Resource Priority Control (EAX:0x%x) %c", eax, ecx, edx, 10
+                
+        mov ecx, 6
+        mov eax, 0x10   
+        cpuid
+
+        mov edi, eax
+                
+.e600:  bt edi, kTHREAD_ENABLE
+        jnc .e601
+                
+        cinvoke printf, "    Supports per-thread enable of RP through IA32_RESOURCE_PRIORITY MSR %c", 10
+                
+.e601:  bt edi, kPACKAGE_ENABLE
+        jnc .fin
+                
+        cinvoke printf, "    Supports physical processor package enable of RP through the IA32_RESOURCEPRIORITY_PKG MS %c", 10
 
 .fin:
 
@@ -2524,7 +2629,7 @@ APMESub4:
         jnc .b5
 
         cinvoke printf, "    Counters group sub-group general-purpose counters is available %c", 10
-		
+                
 .b5:    bt edi, kCNTR_FIXED
         jnc .b6
 
@@ -2682,7 +2787,7 @@ IRDTAM:
 
         push ebx
         cinvoke printf, "  CTR_WIDTH: %d %c", eax, 10        
-		pop ebx
+                pop ebx
 
         cinvoke printf, "  CONV_FACTOR for IA32_QM_CTR: %d %c", ebx, 10
 
@@ -2690,14 +2795,14 @@ IRDTAM:
 
 .2710:  bt esi, kCMT_L3_OCCUP
         jnc .fin
-		
+                
         cinvoke printf, "  Supports L3 occupancy monitoring %c", 10
-		
+                
 .2711:  bt esi, kMBM_L3_TOTAL
         jnc .fin
-		
+                
         cinvoke printf, "  Supports L3 total bandwidth monitoring %c", 10
-		
+                
 .2712:  bt esi, kMBM_L3_LOCAL
         jnc .fin
 
@@ -2728,21 +2833,35 @@ IRDTAA:
         jnc .bx2
 
         push ebx
-		call IRDTAA01
+                call IRDTAA01
         pop ebx
 
 .bx2:   bt ebx, kCAT_L2
         jnc .bx3
 
         push ebx
-		call IRDTAA02
+                call IRDTAA02
         pop ebx
 
 .bx3:   bt ebx, kMBA
-        jnc .fin
+        jnc .bx5
 
         push ebx
-		call IRDTAA03
+                call IRDTAA03
+        pop ebx
+                
+.bx5:   bt edi, kCBA
+        jnc .bx6
+                
+        push ebx
+                call IRDTAA05
+        pop ebx
+
+.bx6:   bt edi, kRESOURCE_PRIORITY
+        jnc .fin
+                
+        push ebx
+                call IRDTAA06
         pop ebx
 
 .fin:
@@ -2858,7 +2977,7 @@ IRDTAA03:
 
         mov edi, ecx
         mov esi, edx
-		
+                
         and eax, 0x00000FFF
 
         cinvoke printf, "    Maximum MBA throttling value supported for the corresponding ResID %d %c", edi, 10
@@ -2876,6 +2995,90 @@ IRDTAA03:
 .28d:   and esi, 0x0000FFFF ; MBA_MAX_CLOS
 
         cinvoke printf, "    Highest Class of Service (COS) number supported for this ResID 0x%x %c", edi, 10
+
+.fin:   ret
+
+; =============================================================================================
+; CPUID.28H.05H (data in eax, ecx, and edx)
+; intel only
+
+IRDTAA05:
+
+        mov esi, dword __Leaf1005
+        call ShowLeafInformation
+
+        mov ecx, 5
+        mov eax, 0x10                
+        cpuid
+
+        cinvoke printf, "  Cache Bandwidth Allocation (EAX:0x%x ECX:0x%x EDX:0x%x) %c", eax, ecx, edx, 10
+                
+        mov ecx, 5
+        mov eax, 0x10   
+        cpuid
+                
+        mov edi, ecx
+        mov esi, edx
+
+        mov ebx, eax
+        and eax, 0x000000FF
+        inc eax
+
+        push ebx
+        cinvoke printf, "    Maximum core throttling level supported by ResID 5: %d %c", eax, 10
+        pop ebx
+             
+        mov eax, ebx
+        shr eax, 8
+        and eax, 0x0F
+                         
+        cinvoke printf, "    Logical processor scope: %d %c", eax, 10
+                
+        bt edi, kCBA_LINEAR
+        jnc .cbanl
+                
+        cinvoke printf, "    Response of the bandwidth control is approx. linear %c", 10
+                
+                jmp .d500
+                
+.cbanl: cinvoke printf, "    Response of the bandwidth control is non-linear %c", 10            
+
+.d500:  and esi, 0x0000FFFF     ; CBA_MAX_CLOS
+
+        cinvoke printf, "    Highest COS number supported for ResID 5: %d %c", esi, 10
+        
+.fin:   ret
+
+; =============================================================================================
+; CPUID.28H.06H (data in eax)
+; intel only
+
+IRDTAA06:
+
+        mov esi, dword __Leaf1006
+        call ShowLeafInformation
+
+        mov ecx, 6
+        mov eax, 0x10                
+        cpuid
+
+        cinvoke printf, "  Resource Priority Control (EAX:0x%x) %c", eax, ecx, edx, 10
+                
+        mov ecx, 6
+        mov eax, 0x10   
+        cpuid
+
+        mov edi, eax
+                
+.e600:  bt edi, kTHREAD_ENABLE
+        jnc .e601
+                
+        cinvoke printf, "    Supports per-thread enable of RP through IA32_RESOURCE_PRIORITY MSR %c", 10
+                
+.e601:  bt edi, kPACKAGE_ENABLE
+        jnc .fin
+                
+        cinvoke printf, "    Supports physical processor package enable of RP through the IA32_RESOURCEPRIORITY_PKG MS %c", 10
 
 .fin:   ret
 
@@ -3038,9 +3241,9 @@ AddressBits:
         shr esi, 16             ; isolate EAX[23:16] (GUEST_PHYS_ADDR_SIZE)
         and esi, 0x000000FF
                 
-        cinvoke printf, "    #Physical Address Bits       : %d %c", eax, 10
-        cinvoke printf, "    #Linear Address Bits         : %d %c", edi, 10
-        cinvoke printf, "    #Guest Physical Address Bits*: %d %c", esi, 10
+        cinvoke printf, "    #Physical Address Bits        : %d %c", eax, 10
+        cinvoke printf, "    #Linear Address Bits          : %d %c", edi, 10
+        cinvoke printf, "    #Guest Physical Address Bits* : %d %c", esi, 10
         cinvoke printf, "     *This value applies only to software operating in a virtual machine %c", 10
         cinvoke printf, "      (Intel processors enumerate this value as zero). When this field is zero, refer to %c", 10
         cinvoke printf, "      #Physical Address Bits for the number of guest physical address bits %c %c", 10, 10

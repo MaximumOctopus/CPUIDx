@@ -2,7 +2,7 @@
 ; ===================================================================================
 ;
 ;  (c) Paul Alan Freshney 2022-2026
-;  v0.22, February 20th 2026
+;  v0.23, May 7th 2026
 ;
 ;  Source code:
 ;      https://github.com/MaximumOctopus/CPUIDx
@@ -39,6 +39,9 @@ kPBNDKB = 1
 kCPUIDMAXVAL_LIM_RMV = 3
 kARCH_PERFMON_EXT = 8
 kAVX10 = 19
+
+kRDT_M_ASYM = 0
+kRDT_A_ASYM = 1
 
 kPSFD = 0                       ; CPUID.07H.02H (Intel)
 kIPRED_CTRL = 1
@@ -94,6 +97,8 @@ kL3CacheMon = 1                 ; CPUID.0FH (AMD)
 kCAT_L3 = 1                     ; CPUID.10H (Intel)
 kCAT_L2 = 2
 kMBA = 3
+kCBA = 5
+kRESOURCE_PRIORITY = 6
 
 kCAT_L3_NONCPU = 1			    ; CPUID.10H.01H (Intel)
 kCAT_L3_CDP = 2
@@ -103,6 +108,9 @@ kCAT_L2_CDP = 2                 ; CPUID.10H.02H (Intel)
 kCAT_L2_NONCONTIG = 3
 
 kMBA_LINEAR = 2                 ; CPUID.10H.03H (Intel)
+kCBA_LINEAR = 3
+kTHREAD_ENABLE = 0
+kPACKAGE_ENABLE = 1
 
 kL3Alloc = 1                    ; CPUID.10H (AMD)
 kCDP = 2

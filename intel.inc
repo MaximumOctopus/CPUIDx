@@ -205,9 +205,9 @@ __SB6                           db "TLB: 4KByte pages, 8-way set associative, 12
 __SBA                           db "TLB1: 4 KByte pages, 4-way associative, 64 entries", 0
 __SC0                           db "TLB: 4 KByte and 4 MByte pages, 4-way associative, 8 entries", 0
 __SC1                           db "Shared 2nd-Level TLB: 4 KByte/2MByte pages, 8-way associative, 1024 entries", 0
-__SC2                           db "DTLB: 4 KByte/2 MByte pages, 4-way associative, 16 entries", 0
+__SC2                           db "DTLB: 2 MByte/4 MByte pages, 4-way associative, 16 entries", 0
 __SC3                           db "Shared 2nd-Level TLB: 4 KByte /2 MByte pages, 6-way associative, 1536 entries. Also 1GBbyte pages, 4-way, 16 entries.", 0
-__SC4                           db "DTLB: 2M/4M Byte pages, 4-way associative, 32 entries", 0
+__SC4                           db "DTLB: 2M/4MByte pages, 4-way associative, 32 entries", 0
 __SCA                           db "Shared 2nd-Level TLB: 4 KByte pages, 4-way associative, 512 entries", 0
 __SD0                           db "3rd-level cache: 512 KByte, 4-way set associative, 64 byte line size", 0
 __SD1                           db "3rd-level cache: 1 MByte, 4-way set associative, 64 byte line size", 0
@@ -417,7 +417,7 @@ __StructuredExtendedFeatureSubLeaf1dFlags:
                                 db "AVX_NE_CONVERT  AVX-NE-CONVERT instructions           ", 0
                                 db "Reserved                                              ", 0
                                 db "Reserved                                              ", 0
-                                db "Reserved                                              ", 0
+                                db "AMX_COMPLEX     Supports this instruction             ", 0
                                 db "Reserved                                              ", 0
                                 db "AVX_VNNI_INT16  Supports AVX-VNNI-INT16 instructions  ", 0
                                 db "Reserved                                              ", 0

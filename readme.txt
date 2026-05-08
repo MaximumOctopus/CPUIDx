@@ -1,6 +1,6 @@
 ==============================================================================
 
-  CPUidX 0.22
+  CPUidX 0.23
   (c) Paul Alan Freshney 2022-2025
 
   paul@freshney.org
@@ -56,6 +56,12 @@ All of my software is free and open source; please consider donating to a local 
 ==============================================================================
 
 Release History
+
+0.23 / May 7th 2026
+
+A few changes from the April Intel docs.
+
+A couple of minor tweaks and fixes.
 
 0.22 / February 20th 2026
 

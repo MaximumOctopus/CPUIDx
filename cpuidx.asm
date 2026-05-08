@@ -2,7 +2,7 @@
 ; ===================================================================================
 ;
 ;  (c) Paul Alan Freshney 2022-2026
-;  v0.22, February 20th 2026
+;  v0.23, May 7th 2026
 ;
 ;  Source code:
 ;      https://github.com/MaximumOctopus/CPUIDx
@@ -21,7 +21,7 @@
 ;         2023 March, September, December
 ;         2024 March, June, October, December
 ;         2025 March, June, October
-;         2026 February
+;         2026 February, April
 ;
 ;      Intel® 64 and IA-32 Architectures Software Developer's Manual Documentation Changes
 ;         https://www.intel.com/content/www/us/en/developer/articles/technical/intel-sdm.html
@@ -141,8 +141,8 @@ start:  call Arguments
         call ConvergedVectorISAMain             ; CPUID.24H
 
         call IRDTAM                             ; CPUID.27H
-		
-        call IRDTAA                             ; CPUID.28H		
+                
+        call IRDTAA                             ; CPUID.28H             
 
 ; =============================================================================================
                 
@@ -237,7 +237,7 @@ start:  call Arguments
 
 .finish:
 
-        cinvoke printf, "%c %c -- End of Report %c", 10, 10, 10
+        cinvoke printf, "%c %c -- End of Report :) %c", 10, 10, 10
 
         xor eax, eax
         ret
@@ -245,7 +245,7 @@ start:  call Arguments
 ; =============================================================================================
 ; =============================================================================================
 
-About:  cinvoke printf, "%c    CPUidx v0.22 :: February 20th 2026 :: Paul A Freshney %c", 10, 10
+About:  cinvoke printf, "%c    CPUidx v0.23 :: May 7th 2026 :: Paul A Freshney %c", 10, 10
 
         cinvoke printf, "       https://github.com/MaximumOctopus/CPUIDx %c %c", 10, 10
 
@@ -262,11 +262,11 @@ Arguments:
         mov eax, [__argc]
 
         cmp eax, 0x01                   ; value in eax (argument count) is 1 if no command-line parameters
-        jle .finish                     ; if <=1 then exit (should never be zero. probably)
+        jle .fin                        ; if <=1 then exit (should never be zero. probably)
                 
         mov [__ShowDetail], 1           ; set flag
 
-.finish:
+.fin:
 
         ret
 
@@ -544,6 +544,8 @@ __Leaf1000:                     db "(CPUID.10H.00H)", 0
 __Leaf1001:                     db "(CPUID.10H.01H)", 0
 __Leaf1002:                     db "(CPUID.10H.02H)", 0
 __Leaf1003:                     db "(CPUID.10H.03H)", 0
+__Leaf1005:                     db "(CPUID.10H.05H)", 0
+__Leaf1006:                     db "(CPUID.10H.06H)", 0
 __Leaf1200:                     db "(CPUID.12H.00H)", 0
 __Leaf1201:                     db "(CPUID.12H.01H)", 0
 __Leaf1202:                     db "(CPUID.12H.02H)", 0
