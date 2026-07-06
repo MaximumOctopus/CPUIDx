@@ -2,7 +2,7 @@
 ; ===================================================================================
 ;
 ;  (c) Paul Alan Freshney 2022-2026
-;  v0.23, May 7th 2026
+;  v0.24, July 6th 2026
 ;
 ;  Source code:
 ;      https://github.com/MaximumOctopus/CPUIDx
@@ -25,6 +25,7 @@ kCacheInclusiveLowerLevels = 1
 kComplexFunctionIndexCache = 2
 
 kINTERRUPT_AS_BREAK_EVENT  = 1  ; CPUID.05H (Intel)
+kMONITORLESS_MWAIT = 3
 
 kEMX = 0                        ; CPUID.05H (AMD)
 kIBE = 1
@@ -42,6 +43,7 @@ kAVX10 = 19
 
 kRDT_M_ASYM = 0
 kRDT_A_ASYM = 1
+kMSR_IMM = 5
 
 kPSFD = 0                       ; CPUID.07H.02H (Intel)
 kIPRED_CTRL = 1

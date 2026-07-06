@@ -1,7 +1,8 @@
 ==============================================================================
 
-  CPUidX 0.23
+  CPUidX 0.24
   (c) Paul Alan Freshney 2022-2026
+  v0.24, July 6th 2026
 
   paul@freshney.org
 
@@ -24,8 +25,8 @@
           2025 March, June, October
           2026 February, April
 
-          Intel® 64 and IA-32 Architectures Software Developer's Manual Documentation Changes
-              https://www.intel.com/content/www/us/en/developer/articles/technical/intel-sdm.html
+      Intel® 64 and IA-32 Architectures Software Developer's Manual Documentation Changes
+          https://www.intel.com/content/www/us/en/developer/articles/technical/intel-sdm.html
 			  
 ==============================================================================
 
@@ -56,6 +57,10 @@ All of my software is free and open source; please consider donating to a local 
 ==============================================================================
 
 Release History
+
+0.24 / July 6th 2026
+
+A couple of minor changes from the July Intel docs.
 
 0.23 / May 7th 2026
 

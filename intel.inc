@@ -2,7 +2,7 @@
 ; ===================================================================================
 ;
 ;  (c) Paul Alan Freshney 2022-2026
-;  v0.22, February 20th 2026
+;  v0.24, July 6th 2026
 ;
 ;  Source code:
 ;      https://github.com/MaximumOctopus/CPUIDx
@@ -393,7 +393,7 @@ __StructuredExtendedFeatureSubLeaf1aFlags:
                                 db "Reserved                                                              ", 0
                                 db "Reserved                                                              ", 0
                                 db "WRMSRNS          WRMSRNS instruction supported                        ", 0
-                                db "Reserved                                                              ", 0
+                                db "NMI_SRC          NMI-source reporting supported                       ", 0
                                 db "AMX_FP16         Supports tile computational operations on FP16 floats", 0
                                 db "HRESET           HRESET instruction and IA32_HRESET_ENABLE, Leaf 20H  ", 0
                                 db "AVX_IFMA         Supports the AVX-IFMA instructions                   ", 0
@@ -424,7 +424,7 @@ __StructuredExtendedFeatureSubLeaf1dFlags:
                                 db "Reserved                                              ", 0
                                 db "Reserved                                              ", 0
                                 db "PREFETCHI       Supports PREFETCHIT0/1 instructions   ", 0
-                                db "Reserved                                              ", 0
+                                db "USER_MSR        Supports URDMSR + UWRMSR instructions ", 0
                                 db "Reserved                                              ", 0
                                 db "UIRET_UIF       UIRET sets UIF to bit 1 of RFLAGS     ", 0
                                 db "CET_SSS         OS can enable supervisor shadow stacks", 0

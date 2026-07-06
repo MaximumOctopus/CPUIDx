@@ -2,7 +2,7 @@
 ; ===================================================================================
 ;
 ;  (c) Paul Alan Freshney 2022-2026
-;  v0.23, May 7th 2026
+;  v0.24, July 6th 2026
 ;
 ;  Source code:
 ;      https://github.com/MaximumOctopus/CPUIDx

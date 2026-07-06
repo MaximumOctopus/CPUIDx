@@ -2,7 +2,7 @@
 ; ===================================================================================
 ;
 ;  (c) Paul Alan Freshney 2022-2026
-;  v0.23, May 7th 2026
+;  v0.24, July 6th 2026
 ;
 ;  Source code:
 ;      https://github.com/MaximumOctopus/CPUIDx
@@ -21,7 +21,7 @@
 ;         2023 March, September, December
 ;         2024 March, June, October, December
 ;         2025 March, June, October
-;         2026 February, April
+;         2026 February, April, June
 ;
 ;      Intel® 64 and IA-32 Architectures Software Developer's Manual Documentation Changes
 ;         https://www.intel.com/content/www/us/en/developer/articles/technical/intel-sdm.html
@@ -245,7 +245,7 @@ start:  call Arguments
 ; =============================================================================================
 ; =============================================================================================
 
-About:  cinvoke printf, "%c    CPUidx v0.23 :: May 7th 2026 :: Paul A Freshney %c", 10, 10
+About:  cinvoke printf, "%c    CPUidx v0.24 :: July 6th 2026 :: Paul A Freshney %c", 10, 10
 
         cinvoke printf, "       https://github.com/MaximumOctopus/CPUIDx %c %c", 10, 10
 

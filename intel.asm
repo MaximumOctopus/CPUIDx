@@ -2,7 +2,7 @@
 ; ===================================================================================
 ;
 ;  (c) Paul Alan Freshney 2022-2026
-;  v0.23, May 7th 2026
+;  v0.24, July 6th 2026
 ;
 ;  Source code:
 ;      https://github.com/MaximumOctopus/CPUIDx
@@ -292,10 +292,15 @@ MonitorMWait:
         jnc .notsupported       ; Monitor-Wait extension beyond EAX/EBX not supported
                 
         bt edi, kINTERRUPT_AS_BREAK_EVENT
-        jnc .cstates
+        jnc .ecx03
                 
         cinvoke printf, "    Supports treating interrupts as break-event for MWAIT, even when interrupts disabled. %c", 10
                 
+.ecx03: bt edi, kMONITORLESS_MWAIT
+        jnc .cstates
+		
+        cinvoke printf, "    Supports monitorless MWAIT. %c", 10		
+				
 .cstates:
 
         mov edi, 0
@@ -539,6 +544,11 @@ showe:  mov esi, 0
         cinvoke printf, "    RDT_M_ASYM. At least one logical processor support Asymmetrical Intel RDT Monitoring %c", 10
 
 .d0101: bt esi, kRDT_A_ASYM
+        jnc .d0105
+
+        cinvoke printf, "    RDT_A_ASYM. At least one logical processor support Asymmetrical Intel RDT Allocation %c", 10
+
+.d0105: bt esi, kMSR_IMM
         jnc .sl2d
 
         cinvoke printf, "    RDT_A_ASYM. At least one logical processor support Asymmetrical Intel RDT Allocation %c", 10
@@ -3229,8 +3239,7 @@ AddressBits:
         mov eax, 0x80000008
         cpuid
 
-        mov esi, eax
-
+        mov esi, eax		
         and eax, 0x000000FF     ; isolate EAX[7:0] (PHYS_ADDR_SIZE)
 
         mov edi, esi
